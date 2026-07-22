@@ -28,7 +28,8 @@ const fmtDate = (d) =>
 
 const selectStyle = {
   padding: "10px 36px 10px 14px",
-  background: "#1E293B",
+  width: "100%",
+  background: "#0F172A",
   border: "1px solid rgba(255,255,255,0.08)",
   borderRadius: "10px",
   color: "#F1F5F9",
@@ -62,35 +63,29 @@ export default function TransactionsPage() {
       if (cat && cat !== "All") params.category = cat;
       if (wal && wal !== "All") params.wallet = wal;
       const res = await getTransactions(params);
-      setRows(res.results || []);
-      setCount(res.count || 0);
+      setRows(res?.results || []);
+      setCount(res?.count || 0);
     } catch {}
     setLoading(false);
   };
 
-  // auth guard + load dropdowns on mount
   useEffect(() => {
     if (!localStorage.getItem("access_token")) {
       router.push("/auth");
       return;
     }
-
     getCategories().then((res) => {
       if (res?.success) setCategories(["All", ...res.data]);
     });
-
     getWallets().then((res) => {
       if (res?.success) {
-        // filter out "null" strings the backend may return
         const clean = res.data.filter((w) => w && w !== "null");
         setWallets(["All", ...clean]);
       }
     });
-
     fetchData(1, "", "All", "All");
   }, []);
 
-  // debounce filter changes
   useEffect(() => {
     const t = setTimeout(() => {
       setPage(1);
@@ -99,7 +94,6 @@ export default function TransactionsPage() {
     return () => clearTimeout(t);
   }, [search, category, wallet]);
 
-  // page change
   useEffect(() => {
     fetchData(page, search, category, wallet);
   }, [page]);
@@ -113,6 +107,7 @@ export default function TransactionsPage() {
 
   return (
     <div
+      className="mobile-page-wrap"
       style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
     >
       {/* HEADER */}
@@ -120,7 +115,7 @@ export default function TransactionsPage() {
         style={{
           background: "#1E293B",
           borderBottom: "1px solid rgba(255,255,255,0.07)",
-          padding: "0 24px",
+          padding: "0 20px",
           height: "60px",
           display: "flex",
           alignItems: "center",
@@ -156,36 +151,38 @@ export default function TransactionsPage() {
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <Link
-            href="/dashboard"
-            style={{
-              padding: "7px 14px",
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "8px",
-              color: "#94A3B8",
-              textDecoration: "none",
-              fontSize: "13px",
-              fontWeight: "600",
-            }}
-          >
-            ← Dashboard
-          </Link>
-          <Link
-            href="/report"
-            style={{
-              padding: "7px 14px",
-              background: "rgba(99,102,241,0.12)",
-              border: "1px solid rgba(99,102,241,0.25)",
-              borderRadius: "8px",
-              color: "#818CF8",
-              textDecoration: "none",
-              fontSize: "13px",
-              fontWeight: "600",
-            }}
-          >
-            📊 Reports
-          </Link>
+          <div className="hide-mobile" style={{ gap: "10px" }}>
+            <Link
+              href="/dashboard"
+              style={{
+                padding: "7px 14px",
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "8px",
+                color: "#94A3B8",
+                textDecoration: "none",
+                fontSize: "13px",
+                fontWeight: "600",
+              }}
+            >
+              ← Dashboard
+            </Link>
+            <Link
+              href="/report"
+              style={{
+                padding: "7px 14px",
+                background: "rgba(99,102,241,0.12)",
+                border: "1px solid rgba(99,102,241,0.25)",
+                borderRadius: "8px",
+                color: "#818CF8",
+                textDecoration: "none",
+                fontSize: "13px",
+                fontWeight: "600",
+              }}
+            >
+              📊 Reports
+            </Link>
+          </div>
           <button
             onClick={handleLogout}
             style={{
@@ -205,11 +202,12 @@ export default function TransactionsPage() {
       </header>
 
       <main
-        style={{ maxWidth: "1000px", margin: "0 auto", padding: "28px 24px" }}
+        className="mobile-main"
+        style={{ maxWidth: "1000px", margin: "0 auto", padding: "24px 20px" }}
       >
-        {/* TITLE */}
-        <div style={{ marginBottom: "24px" }}>
+        <div style={{ marginBottom: "20px" }}>
           <h1
+            className="page-title"
             style={{
               fontSize: "22px",
               fontWeight: "800",
@@ -231,100 +229,92 @@ export default function TransactionsPage() {
           style={{
             background: "#1E293B",
             borderRadius: "14px",
-            padding: "16px 20px",
+            padding: "16px",
             border: "1px solid rgba(255,255,255,0.07)",
-            display: "flex",
-            gap: "12px",
-            flexWrap: "wrap",
             marginBottom: "20px",
-            alignItems: "center",
           }}
         >
-          {/* Search */}
-          <div style={{ position: "relative", flex: "1", minWidth: "180px" }}>
-            <span
-              style={{
-                position: "absolute",
-                left: "13px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                fontSize: "14px",
-                color: "#475569",
-                pointerEvents: "none",
-              }}
-            >
-              🔍
-            </span>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name…"
-              style={{
-                width: "100%",
-                padding: "10px 14px 10px 36px",
-                background: "#0F172A",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "10px",
-                color: "#F1F5F9",
-                fontSize: "14px",
-                outline: "none",
-              }}
-            />
+          <div className="filter-bar">
+            {/* Search */}
+            <div style={{ position: "relative", flex: 1, minWidth: "180px" }}>
+              <span
+                style={{
+                  position: "absolute",
+                  left: "13px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: "14px",
+                  color: "#475569",
+                  pointerEvents: "none",
+                }}
+              >
+                🔍
+              </span>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name…"
+                style={{
+                  ...selectStyle,
+                  padding: "10px 14px 10px 36px",
+                  background: "#0F172A",
+                }}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: "140px" }}>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                style={selectStyle}
+              >
+                {categories.map((c) => (
+                  <option key={c} value={c} style={{ background: "#1E293B" }}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ flex: 1, minWidth: "140px" }}>
+              <select
+                value={wallet}
+                onChange={(e) => setWallet(e.target.value)}
+                style={selectStyle}
+              >
+                {wallets.map((w) => (
+                  <option key={w} value={w} style={{ background: "#1E293B" }}>
+                    {w}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {filtersActive && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setCategory("All");
+                  setWallet("All");
+                }}
+                style={{
+                  padding: "10px 14px",
+                  background: "rgba(239,68,68,0.1)",
+                  border: "1px solid rgba(239,68,68,0.2)",
+                  borderRadius: "10px",
+                  color: "#FCA5A5",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                ✕ Clear
+              </button>
+            )}
           </div>
-
-          {/* Category dropdown */}
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            style={selectStyle}
-          >
-            {categories.map((c) => (
-              <option key={c} value={c} style={{ background: "#1E293B" }}>
-                {c}
-              </option>
-            ))}
-          </select>
-
-          {/* Wallet dropdown */}
-          <select
-            value={wallet}
-            onChange={(e) => setWallet(e.target.value)}
-            style={selectStyle}
-          >
-            {wallets.map((w) => (
-              <option key={w} value={w} style={{ background: "#1E293B" }}>
-                {w}
-              </option>
-            ))}
-          </select>
-
-          {/* Clear */}
-          {filtersActive && (
-            <button
-              onClick={() => {
-                setSearch("");
-                setCategory("All");
-                setWallet("All");
-              }}
-              style={{
-                padding: "10px 14px",
-                background: "rgba(239,68,68,0.1)",
-                border: "1px solid rgba(239,68,68,0.2)",
-                borderRadius: "10px",
-                color: "#FCA5A5",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: "600",
-                whiteSpace: "nowrap",
-              }}
-            >
-              ✕ Clear
-            </button>
-          )}
         </div>
 
-        {/* TABLE */}
+        {/* ── DESKTOP TABLE ── */}
         <div
+          className="tx-table-view"
           style={{
             background: "#1E293B",
             borderRadius: "16px",
@@ -356,7 +346,6 @@ export default function TransactionsPage() {
               </span>
             ))}
           </div>
-
           {loading ? (
             <div style={{ padding: "40px", textAlign: "center" }}>
               <div
@@ -370,7 +359,6 @@ export default function TransactionsPage() {
                   animation: "spin 0.8s linear infinite",
                 }}
               />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
           ) : rows.length === 0 ? (
             <div
@@ -389,9 +377,6 @@ export default function TransactionsPage() {
                 }}
               >
                 No transactions found
-              </p>
-              <p style={{ fontSize: "13px", marginTop: "4px" }}>
-                Try adjusting your filters
               </p>
             </div>
           ) : (
@@ -468,6 +453,123 @@ export default function TransactionsPage() {
           )}
         </div>
 
+        {/* ── MOBILE CARDS ── */}
+        <div className="tx-cards-view">
+          {loading ? (
+            <div style={{ padding: "40px", textAlign: "center" }}>
+              <div
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  margin: "0 auto",
+                  border: "3px solid #1E293B",
+                  borderTop: "3px solid #6366F1",
+                  borderRadius: "50%",
+                  animation: "spin 0.8s linear infinite",
+                }}
+              />
+            </div>
+          ) : rows.length === 0 ? (
+            <div
+              style={{
+                padding: "60px 20px",
+                textAlign: "center",
+                color: "#475569",
+                background: "#1E293B",
+                borderRadius: "16px",
+                border: "1px solid rgba(255,255,255,0.07)",
+              }}
+            >
+              <div style={{ fontSize: "36px", marginBottom: "12px" }}>🔍</div>
+              <p
+                style={{
+                  fontSize: "15px",
+                  fontWeight: "600",
+                  color: "#64748B",
+                }}
+              >
+                No transactions found
+              </p>
+            </div>
+          ) : (
+            rows.map((tx) => {
+              const cs = CAT_STYLE[tx.category] || {
+                bg: "rgba(100,116,139,0.15)",
+                text: "#94A3B8",
+              };
+              return (
+                <div
+                  key={tx.id}
+                  style={{
+                    background: "#1E293B",
+                    borderRadius: "14px",
+                    padding: "16px",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "15px",
+                        fontWeight: "700",
+                        color: "#E2E8F0",
+                      }}
+                    >
+                      {tx.name}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        color: "#64748B",
+                        flexShrink: 0,
+                        marginLeft: "8px",
+                      }}
+                    >
+                      {fmtDate(tx.date)}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span
+                      style={{
+                        padding: "3px 10px",
+                        borderRadius: "20px",
+                        background: cs.bg,
+                        color: cs.text,
+                        fontSize: "12px",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {tx.category}
+                    </span>
+                    <span style={{ fontSize: "12px", color: "#64748B" }}>
+                      · {tx.wallet}
+                    </span>
+                    {tx.notes && (
+                      <span style={{ fontSize: "12px", color: "#475569" }}>
+                        · {tx.notes}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
         {/* PAGINATION */}
         {totalPages > 1 && (
           <div
@@ -486,7 +588,7 @@ export default function TransactionsPage() {
                 onClick={() => setPage((p) => p - 1)}
                 disabled={page === 1 || loading}
                 style={{
-                  padding: "8px 18px",
+                  padding: "10px 20px",
                   background: page === 1 ? "#1E293B" : "rgba(99,102,241,0.15)",
                   border: `1px solid ${
                     page === 1
@@ -496,7 +598,7 @@ export default function TransactionsPage() {
                   borderRadius: "8px",
                   color: page === 1 ? "#334155" : "#818CF8",
                   cursor: page === 1 ? "not-allowed" : "pointer",
-                  fontSize: "13px",
+                  fontSize: "14px",
                   fontWeight: "600",
                 }}
               >
@@ -506,7 +608,7 @@ export default function TransactionsPage() {
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page === totalPages || loading}
                 style={{
-                  padding: "8px 18px",
+                  padding: "10px 20px",
                   background:
                     page === totalPages ? "#1E293B" : "rgba(99,102,241,0.15)",
                   border: `1px solid ${
@@ -517,7 +619,7 @@ export default function TransactionsPage() {
                   borderRadius: "8px",
                   color: page === totalPages ? "#334155" : "#818CF8",
                   cursor: page === totalPages ? "not-allowed" : "pointer",
-                  fontSize: "13px",
+                  fontSize: "14px",
                   fontWeight: "600",
                 }}
               >
@@ -527,6 +629,22 @@ export default function TransactionsPage() {
           </div>
         )}
       </main>
+
+      {/* BOTTOM TAB BAR */}
+      <nav className="bottom-tab-bar">
+        <Link href="/dashboard" className="bottom-tab-link">
+          <span className="bottom-tab-icon">🏠</span>Dashboard
+        </Link>
+        <Link
+          href="/transactions"
+          className="bottom-tab-link bottom-tab-active"
+        >
+          <span className="bottom-tab-icon">📋</span>Transactions
+        </Link>
+        <Link href="/report" className="bottom-tab-link">
+          <span className="bottom-tab-icon">📊</span>Reports
+        </Link>
+      </nav>
     </div>
   );
 }

@@ -18,7 +18,6 @@ const MONTHS = [
   { label: "November", value: 11 },
   { label: "December", value: 12 },
 ];
-
 const RANGES = [
   { label: "This Week", value: "this_week" },
   { label: "Last Week", value: "last_week" },
@@ -26,10 +25,8 @@ const RANGES = [
   { label: "Last Month", value: "last_month" },
   { label: "This Year", value: "this_year" },
 ];
-
 const currentYear = new Date().getFullYear();
 const YEARS = [currentYear - 2, currentYear - 1, currentYear];
-
 const COLORS = [
   "#6366F1",
   "#10B981",
@@ -41,43 +38,49 @@ const COLORS = [
 ];
 
 function scoreColor(s) {
-  if (s >= 8) return "#34D399";
-  if (s >= 6) return "#10B981";
-  if (s >= 4) return "#F59E0B";
-  return "#F87171";
+  return s >= 8
+    ? "#34D399"
+    : s >= 6
+    ? "#10B981"
+    : s >= 4
+    ? "#F59E0B"
+    : "#F87171";
 }
 function scoreLabel(s) {
-  if (s >= 8) return "Excellent";
-  if (s >= 6) return "Good";
-  if (s >= 4) return "Fair";
-  return "Needs Work";
+  return s >= 8
+    ? "Excellent"
+    : s >= 6
+    ? "Good"
+    : s >= 4
+    ? "Fair"
+    : "Needs Work";
 }
 
 function HealthRing({ score }) {
-  const color = scoreColor(score);
-  const r = 48;
-  const circ = 2 * Math.PI * r;
+  const color = scoreColor(score),
+    r = 48,
+    circ = 2 * Math.PI * r;
   return (
     <div
       style={{
         position: "relative",
-        width: "140px",
-        height: "140px",
+        width: "130px",
+        height: "130px",
         flexShrink: 0,
       }}
     >
-      <svg width="140" height="140" viewBox="0 0 140 140">
+      <svg width="130" height="130" viewBox="0 0 130 130">
         <circle
-          cx="70"
-          cy="70"
+          cx="65"
+          cy="65"
           r={r}
           fill="none"
           stroke="rgba(255,255,255,0.06)"
           strokeWidth="12"
         />
         <circle
-          cx="70"
-          cy="70"
+          cx="65"
+          cy="65"
           r={r}
           fill="none"
           stroke={color}
@@ -85,7 +88,7 @@ function HealthRing({ score }) {
           strokeDasharray={circ}
           strokeDashoffset={circ * (1 - score / 10)}
           strokeLinecap="round"
-          transform="rotate(-90 70 70)"
+          transform="rotate(-90 65 65)"
           style={{ transition: "stroke-dashoffset 1s ease" }}
         />
       </svg>
@@ -100,11 +103,11 @@ function HealthRing({ score }) {
         }}
       >
         <span
-          style={{ fontSize: "32px", fontWeight: "800", color, lineHeight: 1 }}
+          style={{ fontSize: "28px", fontWeight: "800", color, lineHeight: 1 }}
         >
           {score}
         </span>
-        <span style={{ fontSize: "12px", color: "#64748B", marginTop: "2px" }}>
+        <span style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>
           /10
         </span>
         <span
@@ -123,8 +126,8 @@ function HealthRing({ score }) {
 }
 
 function CategoryBar({ item, index, maxTotal }) {
-  const pct = Math.round((item.total / maxTotal) * 100);
-  const color = COLORS[index % COLORS.length];
+  const pct = Math.round((item.total / maxTotal) * 100),
+    color = COLORS[index % COLORS.length];
   return (
     <div style={{ marginBottom: "16px" }}>
       <div
@@ -137,7 +140,7 @@ function CategoryBar({ item, index, maxTotal }) {
         <span style={{ fontSize: "13px", color: "#CBD5E1", fontWeight: "500" }}>
           {item.category_name}
         </span>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <span style={{ fontSize: "12px", color: "#64748B" }}>{pct}%</span>
           <span
             style={{ fontSize: "13px", color: "#F1F5F9", fontWeight: "600" }}
@@ -170,7 +173,8 @@ function CategoryBar({ item, index, maxTotal }) {
 }
 
 const selectStyle = {
-  padding: "12px 36px 12px 16px",
+  padding: "12px 36px 12px 14px",
+  width: "100%",
   background: "#0F172A",
   border: "1px solid rgba(255,255,255,0.08)",
   borderRadius: "10px",
@@ -188,15 +192,11 @@ const selectStyle = {
 export default function ReportPage() {
   const router = useRouter();
   const now = new Date();
-
-  // AI report state
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // Download state
   const [range, setRange] = useState("this_month");
   const [downloading, setDownloading] = useState(false);
   const [dlError, setDlError] = useState("");
@@ -205,7 +205,6 @@ export default function ReportPage() {
     if (!localStorage.getItem("access_token")) router.push("/auth");
   }, [router]);
 
-  // ── AI report ──
   const handleGenerate = async () => {
     setError("");
     setReport(null);
@@ -220,7 +219,6 @@ export default function ReportPage() {
     setLoading(false);
   };
 
-  // ── Excel download ──
   const handleDownload = async () => {
     setDlError("");
     setDownloading(true);
@@ -230,7 +228,6 @@ export default function ReportPage() {
         setDlError("Download failed. Please try again.");
         return;
       }
-
       const buffer = await res.arrayBuffer();
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -238,7 +235,13 @@ export default function ReportPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `statement_${range}.xlsx`;
+      const disposition = res.headers.get("Content-Disposition");
+      const match = disposition?.match(
+        /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+      );
+      a.download = match
+        ? match[1].replace(/['"]/g, "")
+        : `statement_${range}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -260,6 +263,7 @@ export default function ReportPage() {
 
   return (
     <div
+      className="mobile-page-wrap"
       style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
     >
       {/* HEADER */}
@@ -267,7 +271,7 @@ export default function ReportPage() {
         style={{
           background: "#1E293B",
           borderBottom: "1px solid rgba(255,255,255,0.07)",
-          padding: "0 24px",
+          padding: "0 20px",
           height: "60px",
           display: "flex",
           alignItems: "center",
@@ -303,21 +307,23 @@ export default function ReportPage() {
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <Link
-            href="/dashboard"
-            style={{
-              padding: "7px 14px",
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "8px",
-              color: "#94A3B8",
-              textDecoration: "none",
-              fontSize: "13px",
-              fontWeight: "600",
-            }}
-          >
-            ← Dashboard
-          </Link>
+          <div className="hide-mobile" style={{ gap: "10px" }}>
+            <Link
+              href="/dashboard"
+              style={{
+                padding: "7px 14px",
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "8px",
+                color: "#94A3B8",
+                textDecoration: "none",
+                fontSize: "13px",
+                fontWeight: "600",
+              }}
+            >
+              ← Dashboard
+            </Link>
+          </div>
           <button
             onClick={handleLogout}
             style={{
@@ -337,32 +343,34 @@ export default function ReportPage() {
       </header>
 
       <main
-        style={{ maxWidth: "900px", margin: "0 auto", padding: "32px 24px" }}
+        className="mobile-main"
+        style={{ maxWidth: "900px", margin: "0 auto", padding: "24px 20px" }}
       >
-        <div style={{ marginBottom: "28px" }}>
+        <div style={{ marginBottom: "24px" }}>
           <h1
+            className="page-title"
             style={{
-              fontSize: "24px",
+              fontSize: "22px",
               fontWeight: "800",
               letterSpacing: "-0.5px",
-              marginBottom: "6px",
+              marginBottom: "4px",
             }}
           >
             Reports
           </h1>
           <p style={{ color: "#64748B", fontSize: "14px" }}>
-            Download your expenses or get an AI-powered monthly analysis
+            Download your expenses or get an AI-powered analysis
           </p>
         </div>
 
-        {/* ── DOWNLOAD EXCEL CARD ── */}
+        {/* DOWNLOAD CARD */}
         <div
           style={{
             background: "#1E293B",
             borderRadius: "16px",
-            padding: "24px",
+            padding: "20px",
             border: "1px solid rgba(16,185,129,0.2)",
-            marginBottom: "20px",
+            marginBottom: "16px",
           }}
         >
           <div
@@ -370,7 +378,7 @@ export default function ReportPage() {
               display: "flex",
               alignItems: "center",
               gap: "10px",
-              marginBottom: "18px",
+              marginBottom: "16px",
             }}
           >
             <span style={{ fontSize: "20px" }}>📥</span>
@@ -391,19 +399,13 @@ export default function ReportPage() {
               </p>
             </div>
           </div>
-
           <div
-            style={{
-              display: "flex",
-              gap: "12px",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
+            style={{ display: "flex", flexDirection: "column", gap: "10px" }}
           >
             <select
               value={range}
               onChange={(e) => setRange(e.target.value)}
-              style={{ ...selectStyle, background: "#0F172A" }}
+              style={selectStyle}
             >
               {RANGES.map((r) => (
                 <option
@@ -415,12 +417,11 @@ export default function ReportPage() {
                 </option>
               ))}
             </select>
-
             <button
               onClick={handleDownload}
               disabled={downloading}
               style={{
-                padding: "12px 24px",
+                padding: "13px",
                 background: downloading
                   ? "#334155"
                   : "linear-gradient(135deg, #10B981, #34D399)",
@@ -430,14 +431,13 @@ export default function ReportPage() {
                 fontSize: "14px",
                 fontWeight: "700",
                 cursor: downloading ? "not-allowed" : "pointer",
-                transition: "all 0.2s",
                 boxShadow: downloading
                   ? "none"
                   : "0 6px 20px rgba(16,185,129,0.3)",
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: "8px",
-                whiteSpace: "nowrap",
               }}
             >
               {downloading ? (
@@ -455,10 +455,9 @@ export default function ReportPage() {
                   Downloading…
                 </>
               ) : (
-                <> ⬇ Download .xlsx </>
+                "⬇ Download .xlsx"
               )}
             </button>
-
             {dlError && (
               <span style={{ fontSize: "13px", color: "#FCA5A5" }}>
                 {dlError}
@@ -467,14 +466,14 @@ export default function ReportPage() {
           </div>
         </div>
 
-        {/* ── AI REPORT CARD ── */}
+        {/* AI REPORT CARD */}
         <div
           style={{
             background: "#1E293B",
             borderRadius: "16px",
-            padding: "24px",
+            padding: "20px",
             border: "1px solid rgba(255,255,255,0.07)",
-            marginBottom: "28px",
+            marginBottom: "24px",
           }}
         >
           <div
@@ -482,7 +481,7 @@ export default function ReportPage() {
               display: "flex",
               alignItems: "center",
               gap: "10px",
-              marginBottom: "18px",
+              marginBottom: "16px",
             }}
           >
             <span style={{ fontSize: "20px" }}>🤖</span>
@@ -499,23 +498,17 @@ export default function ReportPage() {
               <p
                 style={{ fontSize: "12px", color: "#64748B", marginTop: "2px" }}
               >
-                Get a detailed AI breakdown for any month
+                Detailed AI breakdown for any month
               </p>
             </div>
           </div>
-
           <div
-            style={{
-              display: "flex",
-              gap: "12px",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
+            style={{ display: "flex", flexDirection: "column", gap: "10px" }}
           >
             <select
               value={month}
               onChange={(e) => setMonth(Number(e.target.value))}
-              style={{ ...selectStyle, background: "#0F172A" }}
+              style={selectStyle}
             >
               {MONTHS.map((m) => (
                 <option
@@ -527,11 +520,10 @@ export default function ReportPage() {
                 </option>
               ))}
             </select>
-
             <select
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
-              style={{ ...selectStyle, background: "#0F172A" }}
+              style={selectStyle}
             >
               {YEARS.map((y) => (
                 <option key={y} value={y} style={{ background: "#1E293B" }}>
@@ -539,12 +531,11 @@ export default function ReportPage() {
                 </option>
               ))}
             </select>
-
             <button
               onClick={handleGenerate}
               disabled={loading}
               style={{
-                padding: "12px 24px",
+                padding: "13px",
                 background: loading
                   ? "#334155"
                   : "linear-gradient(135deg, #6366F1, #818CF8)",
@@ -557,17 +548,15 @@ export default function ReportPage() {
                 boxShadow: loading
                   ? "none"
                   : "0 6px 20px rgba(99,102,241,0.35)",
-                whiteSpace: "nowrap",
               }}
             >
               {loading ? "Generating…" : "Generate Report"}
             </button>
           </div>
-
           {error && (
             <div
               style={{
-                marginTop: "14px",
+                marginTop: "12px",
                 padding: "12px 16px",
                 borderRadius: "10px",
                 background: "rgba(239,68,68,0.1)",
@@ -581,16 +570,16 @@ export default function ReportPage() {
           )}
         </div>
 
-        {/* LOADING SKELETON */}
+        {/* LOADING */}
         {loading && (
           <div
             style={{ display: "flex", flexDirection: "column", gap: "16px" }}
           >
-            {[200, 300, 180, 240].map((h, i) => (
+            {[180, 280, 160, 200].map((h, i) => (
               <div
                 key={i}
                 style={{
-                  height: `${h}px`,
+                  height: h,
                   background: "#1E293B",
                   borderRadius: "16px",
                   opacity: 0.6,
@@ -600,28 +589,22 @@ export default function ReportPage() {
           </div>
         )}
 
-        {/* REPORT RESULTS */}
+        {/* RESULTS */}
         {report && !loading && (
           <div
-            style={{ display: "flex", flexDirection: "column", gap: "20px" }}
+            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
           >
-            {/* Health Score + Total */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
-              }}
-            >
+            {/* Health + Total */}
+            <div className="report-top-grid">
               <div
                 style={{
                   background: "#1E293B",
                   borderRadius: "16px",
-                  padding: "28px 24px",
+                  padding: "24px",
                   border: "1px solid rgba(255,255,255,0.07)",
                   display: "flex",
                   alignItems: "center",
-                  gap: "24px",
+                  gap: "20px",
                 }}
               >
                 <HealthRing score={report.health_score} />
@@ -636,7 +619,7 @@ export default function ReportPage() {
                       marginBottom: "8px",
                     }}
                   >
-                    Financial Health Score
+                    Financial Health
                   </p>
                   <p style={{ fontSize: "14px", color: "#94A3B8" }}>
                     {selectedMonthLabel} {report.year}
@@ -653,12 +636,11 @@ export default function ReportPage() {
                   </p>
                 </div>
               </div>
-
               <div
                 style={{
                   background: "#1E293B",
                   borderRadius: "16px",
-                  padding: "28px 24px",
+                  padding: "24px",
                   border: "1px solid rgba(255,255,255,0.07)",
                   display: "flex",
                   flexDirection: "column",
@@ -679,7 +661,7 @@ export default function ReportPage() {
                 </p>
                 <p
                   style={{
-                    fontSize: "38px",
+                    fontSize: "34px",
                     fontWeight: "800",
                     color: "#F87171",
                     letterSpacing: "-1.5px",
@@ -706,7 +688,7 @@ export default function ReportPage() {
               style={{
                 background: "#1E293B",
                 borderRadius: "16px",
-                padding: "24px",
+                padding: "20px",
                 border: "1px solid rgba(255,255,255,0.07)",
               }}
             >
@@ -732,27 +714,21 @@ export default function ReportPage() {
               ))}
             </div>
 
-            {/* Top Category */}
+            {/* Top category */}
             <div
               style={{
                 background: "rgba(99,102,241,0.08)",
                 borderRadius: "16px",
-                padding: "20px 24px",
+                padding: "18px 20px",
                 border: "1px solid rgba(99,102,241,0.2)",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  gap: "12px",
-                  alignItems: "flex-start",
-                }}
-              >
-                <span style={{ fontSize: "22px", flexShrink: 0 }}>🏆</span>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <span style={{ fontSize: "20px", flexShrink: 0 }}>🏆</span>
                 <div>
                   <p
                     style={{
-                      fontSize: "12px",
+                      fontSize: "11px",
                       color: "#818CF8",
                       fontWeight: "700",
                       textTransform: "uppercase",
@@ -775,27 +751,21 @@ export default function ReportPage() {
               </div>
             </div>
 
-            {/* Spending Trend */}
+            {/* Trend */}
             <div
               style={{
                 background: "#1E293B",
                 borderRadius: "16px",
-                padding: "20px 24px",
+                padding: "18px 20px",
                 border: "1px solid rgba(255,255,255,0.07)",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  gap: "12px",
-                  alignItems: "flex-start",
-                }}
-              >
-                <span style={{ fontSize: "22px", flexShrink: 0 }}>📈</span>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <span style={{ fontSize: "20px", flexShrink: 0 }}>📈</span>
                 <div>
                   <p
                     style={{
-                      fontSize: "12px",
+                      fontSize: "11px",
                       color: "#64748B",
                       fontWeight: "700",
                       textTransform: "uppercase",
@@ -823,22 +793,16 @@ export default function ReportPage() {
               style={{
                 background: "#1E293B",
                 borderRadius: "16px",
-                padding: "20px 24px",
+                padding: "18px 20px",
                 border: "1px solid rgba(255,255,255,0.07)",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  gap: "12px",
-                  alignItems: "flex-start",
-                }}
-              >
-                <span style={{ fontSize: "22px", flexShrink: 0 }}>🔍</span>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <span style={{ fontSize: "20px", flexShrink: 0 }}>🔍</span>
                 <div>
                   <p
                     style={{
-                      fontSize: "12px",
+                      fontSize: "11px",
                       color: "#64748B",
                       fontWeight: "700",
                       textTransform: "uppercase",
@@ -846,7 +810,7 @@ export default function ReportPage() {
                       marginBottom: "8px",
                     }}
                   >
-                    Patterns Identified
+                    Patterns
                   </p>
                   <p
                     style={{
@@ -866,7 +830,7 @@ export default function ReportPage() {
               style={{
                 background: "#1E293B",
                 borderRadius: "16px",
-                padding: "24px",
+                padding: "20px",
                 border: "1px solid rgba(255,255,255,0.07)",
               }}
             >
@@ -875,13 +839,13 @@ export default function ReportPage() {
                   display: "flex",
                   gap: "12px",
                   alignItems: "center",
-                  marginBottom: "20px",
+                  marginBottom: "16px",
                 }}
               >
-                <span style={{ fontSize: "22px" }}>💡</span>
+                <span style={{ fontSize: "20px" }}>💡</span>
                 <p
                   style={{
-                    fontSize: "12px",
+                    fontSize: "11px",
                     color: "#64748B",
                     fontWeight: "700",
                     textTransform: "uppercase",
@@ -895,7 +859,7 @@ export default function ReportPage() {
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "12px",
+                  gap: "10px",
                 }}
               >
                 {report.suggestions.map((tip, i) => (
@@ -903,9 +867,9 @@ export default function ReportPage() {
                     key={i}
                     style={{
                       display: "flex",
-                      gap: "14px",
+                      gap: "12px",
                       alignItems: "flex-start",
-                      padding: "16px",
+                      padding: "14px",
                       background: "#0F172A",
                       borderRadius: "12px",
                       border: "1px solid rgba(255,255,255,0.05)",
@@ -913,8 +877,8 @@ export default function ReportPage() {
                   >
                     <div
                       style={{
-                        width: "26px",
-                        height: "26px",
+                        width: "24px",
+                        height: "24px",
                         borderRadius: "50%",
                         background: "linear-gradient(135deg, #6366F1, #818CF8)",
                         display: "flex",
@@ -945,7 +909,6 @@ export default function ReportPage() {
           </div>
         )}
 
-        {/* EMPTY STATE */}
         {!report && !loading && !error && (
           <div
             style={{
@@ -957,21 +920,31 @@ export default function ReportPage() {
             <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
             <p
               style={{
-                fontSize: "16px",
+                fontSize: "15px",
                 fontWeight: "600",
                 color: "#64748B",
                 marginBottom: "6px",
               }}
             >
-              Select a month and year above
+              Select a month and generate a report
             </p>
-            <p style={{ fontSize: "13px" }}>
-              Your AI-powered financial report will appear here
-            </p>
+            <p style={{ fontSize: "13px" }}>Or download your statement above</p>
           </div>
         )}
       </main>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {/* BOTTOM TAB BAR */}
+      <nav className="bottom-tab-bar">
+        <Link href="/dashboard" className="bottom-tab-link">
+          <span className="bottom-tab-icon">🏠</span>Dashboard
+        </Link>
+        <Link href="/transactions" className="bottom-tab-link">
+          <span className="bottom-tab-icon">📋</span>Transactions
+        </Link>
+        <Link href="/report" className="bottom-tab-link bottom-tab-active">
+          <span className="bottom-tab-icon">📊</span>Reports
+        </Link>
+      </nav>
     </div>
   );
 }
