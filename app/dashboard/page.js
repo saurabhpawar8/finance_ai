@@ -3,6 +3,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import {
+  Wallet,
+  LayoutDashboard,
+  Receipt,
+  BarChart3,
+  LogOut,
+  Send,
+} from "lucide-react";
 import { getSummary, getPieSummary, sendChat, removeTokens } from "@/lib/api";
 
 const ExpensePieChart = dynamic(() => import("@/components/ExpensePieChart"), {
@@ -88,15 +96,37 @@ export default function DashboardPage() {
   };
   const fmt = (n) => (n ? `₹${Number(n).toLocaleString("en-IN")}` : "₹0");
 
+  const NavLink = ({ href, icon: Icon, label, color, bg, border }) => (
+    <Link
+      href={href}
+      style={{
+        padding: "7px 14px",
+        background: bg,
+        border: `1px solid ${border}`,
+        borderRadius: "8px",
+        color,
+        textDecoration: "none",
+        fontSize: "13px",
+        fontWeight: "600",
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+      }}
+    >
+      <Icon size={14} strokeWidth={2} />
+      {label}
+    </Link>
+  );
+
   return (
     <div
       className="mobile-page-wrap"
-      style={{ minHeight: "100vh", background: "#1F1A16", color: "#F2E8D9" }}
+      style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
     >
-      {/* ── HEADER ── */}
+      {/* HEADER */}
       <header
         style={{
-          background: "#2C2520",
+          background: "#1E293B",
           borderBottom: "1px solid rgba(255,255,255,0.07)",
           padding: "0 20px",
           height: "60px",
@@ -118,10 +148,9 @@ export default function DashboardPage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "17px",
             }}
           >
-            💰
+            <Wallet size={18} color="#fff" strokeWidth={2} />
           </div>
           <span
             style={{
@@ -133,40 +162,24 @@ export default function DashboardPage() {
             FinanceAI
           </span>
         </div>
-
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {/* Desktop nav — hidden on mobile */}
           <div className="hide-mobile" style={{ gap: "10px" }}>
-            <Link
+            <NavLink
               href="/transactions"
-              style={{
-                padding: "7px 14px",
-                background: "rgba(16,185,129,0.12)",
-                border: "1px solid rgba(16,185,129,0.25)",
-                borderRadius: "8px",
-                color: "#34D399",
-                textDecoration: "none",
-                fontSize: "13px",
-                fontWeight: "600",
-              }}
-            >
-              📋 Transactions
-            </Link>
-            <Link
+              icon={Receipt}
+              label="Transactions"
+              color="#34D399"
+              bg="rgba(16,185,129,0.12)"
+              border="rgba(16,185,129,0.25)"
+            />
+            <NavLink
               href="/report"
-              style={{
-                padding: "7px 14px",
-                background: "rgba(99,102,241,0.12)",
-                border: "1px solid rgba(99,102,241,0.25)",
-                borderRadius: "8px",
-                color: "#818CF8",
-                textDecoration: "none",
-                fontSize: "13px",
-                fontWeight: "600",
-              }}
-            >
-              📊 Reports
-            </Link>
+              icon={BarChart3}
+              label="Reports"
+              color="#818CF8"
+              bg="rgba(99,102,241,0.12)"
+              border="rgba(99,102,241,0.25)"
+            />
           </div>
           <button
             onClick={handleLogout}
@@ -175,18 +188,22 @@ export default function DashboardPage() {
               background: "transparent",
               border: "1px solid rgba(255,255,255,0.12)",
               borderRadius: "8px",
-              color: "#A89E94",
+              color: "#94A3B8",
               cursor: "pointer",
               fontSize: "13px",
               fontWeight: "500",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
             }}
           >
+            <LogOut size={14} strokeWidth={2} />
             Sign Out
           </button>
         </div>
       </header>
 
-      {/* ── MAIN ── */}
+      {/* MAIN */}
       <main
         className="mobile-main"
         style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 20px" }}
@@ -195,7 +212,7 @@ export default function DashboardPage() {
           style={{
             fontSize: "12px",
             fontWeight: "600",
-            color: "#5E5148",
+            color: "#475569",
             textTransform: "uppercase",
             letterSpacing: "1px",
             marginBottom: "16px",
@@ -204,163 +221,91 @@ export default function DashboardPage() {
           {dataLoading ? "Loading…" : summary?.month || "This Month"}
         </p>
 
-        {/* ── SUMMARY CARDS ── */}
+        {/* SUMMARY CARDS */}
         <div className="cards-grid">
-          <div
-            style={{
-              background: "#2C2520",
-              borderRadius: "16px",
-              padding: "20px",
-              border: "1px solid rgba(255,255,255,0.07)",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: "-20px",
-                right: "-20px",
-                width: "80px",
-                height: "80px",
-                background: "rgba(239,68,68,0.08)",
-                borderRadius: "50%",
-              }}
-            />
-            <p
-              style={{
-                fontSize: "11px",
-                color: "#7A6E63",
-                fontWeight: "600",
-                textTransform: "uppercase",
-                letterSpacing: "0.8px",
-                marginBottom: "10px",
-              }}
-            >
-              Total Spent
-            </p>
-            <p
-              style={{
-                fontSize: "28px",
-                fontWeight: "800",
-                color: "#F87171",
-                letterSpacing: "-1px",
-                lineHeight: 1,
-              }}
-            >
-              {dataLoading ? "—" : fmt(summary?.total_expense)}
-            </p>
-            <p style={{ fontSize: "12px", color: "#5E5148", marginTop: "6px" }}>
-              This month
-            </p>
-          </div>
-
-          <div
-            style={{
-              background: "#2C2520",
-              borderRadius: "16px",
-              padding: "20px",
-              border: "1px solid rgba(255,255,255,0.07)",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: "-20px",
-                right: "-20px",
-                width: "80px",
-                height: "80px",
-                background: "rgba(99,102,241,0.08)",
-                borderRadius: "50%",
-              }}
-            />
-            <p
-              style={{
-                fontSize: "11px",
-                color: "#7A6E63",
-                fontWeight: "600",
-                textTransform: "uppercase",
-                letterSpacing: "0.8px",
-                marginBottom: "10px",
-              }}
-            >
-              Transactions
-            </p>
-            <p
-              style={{
-                fontSize: "28px",
-                fontWeight: "800",
-                color: "#818CF8",
-                letterSpacing: "-1px",
-                lineHeight: 1,
-              }}
-            >
-              {dataLoading ? "—" : summary?.total_transactions ?? 0}
-            </p>
-            <p style={{ fontSize: "12px", color: "#5E5148", marginTop: "6px" }}>
-              This month
-            </p>
-          </div>
-
-          <div
-            style={{
-              background: "#2C2520",
-              borderRadius: "16px",
-              padding: "20px",
-              border: "1px solid rgba(255,255,255,0.07)",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: "-20px",
-                right: "-20px",
-                width: "80px",
-                height: "80px",
-                background: "rgba(16,185,129,0.08)",
-                borderRadius: "50%",
-              }}
-            />
-            <p
-              style={{
-                fontSize: "11px",
-                color: "#7A6E63",
-                fontWeight: "600",
-                textTransform: "uppercase",
-                letterSpacing: "0.8px",
-                marginBottom: "10px",
-              }}
-            >
-              Top Category
-            </p>
-            <p
-              style={{
-                fontSize: "18px",
-                fontWeight: "800",
-                color: "#34D399",
-                letterSpacing: "-0.5px",
-                lineHeight: 1.2,
-              }}
-            >
-              {dataLoading ? "—" : summary?.top_category || "—"}
-            </p>
-            <p style={{ fontSize: "12px", color: "#5E5148", marginTop: "6px" }}>
-              {summary?.category_amount
+          {[
+            {
+              label: "Total Spent",
+              value: dataLoading ? "—" : fmt(summary?.total_expense),
+              color: "#F87171",
+              glow: "rgba(239,68,68,0.08)",
+            },
+            {
+              label: "Transactions",
+              value: dataLoading ? "—" : summary?.total_transactions ?? 0,
+              color: "#818CF8",
+              glow: "rgba(99,102,241,0.08)",
+            },
+            {
+              label: "Top Category",
+              value: dataLoading ? "—" : summary?.top_category || "—",
+              color: "#34D399",
+              glow: "rgba(16,185,129,0.08)",
+              size: "18px",
+              sub: summary?.category_amount
                 ? `${fmt(summary.category_amount)} spent`
-                : "No data yet"}
-            </p>
-          </div>
+                : "No data yet",
+            },
+          ].map((c, i) => (
+            <div
+              key={i}
+              style={{
+                background: "#1E293B",
+                borderRadius: "16px",
+                padding: "20px",
+                border: "1px solid rgba(255,255,255,0.07)",
+                position: "relative",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: "-20px",
+                  right: "-20px",
+                  width: "80px",
+                  height: "80px",
+                  background: c.glow,
+                  borderRadius: "50%",
+                }}
+              />
+              <p
+                style={{
+                  fontSize: "11px",
+                  color: "#64748B",
+                  fontWeight: "600",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.8px",
+                  marginBottom: "10px",
+                }}
+              >
+                {c.label}
+              </p>
+              <p
+                style={{
+                  fontSize: c.size || "28px",
+                  fontWeight: "800",
+                  color: c.color,
+                  letterSpacing: "-1px",
+                  lineHeight: 1,
+                }}
+              >
+                {c.value}
+              </p>
+              <p
+                style={{ fontSize: "12px", color: "#475569", marginTop: "6px" }}
+              >
+                {c.sub || "This month"}
+              </p>
+            </div>
+          ))}
         </div>
 
-        {/* ── PIE + CHAT ── */}
+        {/* PIE + CHAT */}
         <div className="bottom-grid">
           <div
             style={{
-              background: "#2C2520",
+              background: "#1E293B",
               borderRadius: "16px",
               padding: "20px",
               border: "1px solid rgba(255,255,255,0.07)",
@@ -373,7 +318,7 @@ export default function DashboardPage() {
               style={{
                 fontSize: "11px",
                 fontWeight: "600",
-                color: "#7A6E63",
+                color: "#64748B",
                 textTransform: "uppercase",
                 letterSpacing: "0.8px",
                 marginBottom: "16px",
@@ -388,7 +333,7 @@ export default function DashboardPage() {
 
           <div
             style={{
-              background: "#2C2520",
+              background: "#1E293B",
               borderRadius: "16px",
               padding: "20px",
               border: "1px solid rgba(255,255,255,0.07)",
@@ -401,7 +346,7 @@ export default function DashboardPage() {
               style={{
                 fontSize: "11px",
                 fontWeight: "600",
-                color: "#7A6E63",
+                color: "#64748B",
                 textTransform: "uppercase",
                 letterSpacing: "0.8px",
                 marginBottom: "16px",
@@ -435,8 +380,8 @@ export default function DashboardPage() {
                     background:
                       msg.role === "user"
                         ? "linear-gradient(135deg, #6366F1, #818CF8)"
-                        : "#1F1A16",
-                    color: msg.role === "user" ? "#fff" : "#D8CCBE",
+                        : "#0F172A",
+                    color: msg.role === "user" ? "#fff" : "#CBD5E1",
                     fontSize: "14px",
                     lineHeight: "1.5",
                     border:
@@ -459,7 +404,7 @@ export default function DashboardPage() {
                     alignSelf: "flex-start",
                     padding: "12px 16px",
                     borderRadius: "16px 16px 16px 4px",
-                    background: "#1F1A16",
+                    background: "#0F172A",
                     border: "1px solid rgba(255,255,255,0.07)",
                     display: "flex",
                     gap: "4px",
@@ -473,7 +418,7 @@ export default function DashboardPage() {
                         width: "6px",
                         height: "6px",
                         borderRadius: "50%",
-                        background: "#5E5148",
+                        background: "#475569",
                         animation: `bounce 1.2s infinite ${i * 0.2}s`,
                       }}
                     />
@@ -523,10 +468,10 @@ export default function DashboardPage() {
                 style={{
                   flex: 1,
                   padding: "12px 16px",
-                  background: "#1F1A16",
+                  background: "#0F172A",
                   border: "1px solid rgba(255,255,255,0.08)",
                   borderRadius: "10px",
-                  color: "#F2E8D9",
+                  color: "#F1F5F9",
                   fontSize: "14px",
                   outline: "none",
                 }}
@@ -535,37 +480,42 @@ export default function DashboardPage() {
                 onClick={() => handleSend()}
                 disabled={chatLoading || !input.trim()}
                 style={{
-                  padding: "12px 20px",
+                  padding: "12px 16px",
                   background:
                     !input.trim() || chatLoading
-                      ? "#302820"
+                      ? "#1E3A5F"
                       : "linear-gradient(135deg, #6366F1, #818CF8)",
                   border: "none",
                   borderRadius: "10px",
-                  color: !input.trim() || chatLoading ? "#5E5148" : "#fff",
-                  fontSize: "20px",
+                  color: !input.trim() || chatLoading ? "#475569" : "#fff",
                   cursor:
                     !input.trim() || chatLoading ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   flexShrink: 0,
                 }}
               >
-                ↑
+                <Send size={16} strokeWidth={2} />
               </button>
             </div>
           </div>
         </div>
       </main>
 
-      {/* ── BOTTOM TAB BAR (mobile only) ── */}
+      {/* BOTTOM TAB BAR */}
       <nav className="bottom-tab-bar">
         <Link href="/dashboard" className="bottom-tab-link bottom-tab-active">
-          <span className="bottom-tab-icon">🏠</span>Dashboard
+          <LayoutDashboard size={22} strokeWidth={1.5} />
+          Dashboard
         </Link>
         <Link href="/transactions" className="bottom-tab-link">
-          <span className="bottom-tab-icon">📋</span>Transactions
+          <Receipt size={22} strokeWidth={1.5} />
+          Transactions
         </Link>
         <Link href="/report" className="bottom-tab-link">
-          <span className="bottom-tab-icon">📊</span>Reports
+          <BarChart3 size={22} strokeWidth={1.5} />
+          Reports
         </Link>
       </nav>
     </div>

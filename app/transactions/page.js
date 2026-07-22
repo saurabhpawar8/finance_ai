@@ -3,6 +3,16 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
+  Wallet,
+  LayoutDashboard,
+  Receipt,
+  BarChart3,
+  LogOut,
+  Search,
+  X,
+  ArrowLeft,
+} from "lucide-react";
+import {
   getTransactions,
   getCategories,
   getWallets,
@@ -29,10 +39,10 @@ const fmtDate = (d) =>
 const selectStyle = {
   padding: "10px 36px 10px 14px",
   width: "100%",
-  background: "#1F1A16",
+  background: "#0F172A",
   border: "1px solid rgba(255,255,255,0.08)",
   borderRadius: "10px",
-  color: "#F2E8D9",
+  color: "#F1F5F9",
   fontSize: "14px",
   outline: "none",
   cursor: "pointer",
@@ -78,10 +88,8 @@ export default function TransactionsPage() {
       if (res?.success) setCategories(["All", ...res.data]);
     });
     getWallets().then((res) => {
-      if (res?.success) {
-        const clean = res.data.filter((w) => w && w !== "null");
-        setWallets(["All", ...clean]);
-      }
+      if (res?.success)
+        setWallets(["All", ...res.data.filter((w) => w && w !== "null")]);
     });
     fetchData(1, "", "All", "All");
   }, []);
@@ -105,15 +113,50 @@ export default function TransactionsPage() {
     router.push("/auth");
   };
 
+  const Spinner = () => (
+    <div style={{ padding: "40px", textAlign: "center" }}>
+      <div
+        style={{
+          width: "28px",
+          height: "28px",
+          margin: "0 auto",
+          border: "3px solid #1E293B",
+          borderTop: "3px solid #6366F1",
+          borderRadius: "50%",
+          animation: "spin 0.8s linear infinite",
+        }}
+      />
+    </div>
+  );
+
+  const EmptyState = () => (
+    <div
+      style={{ padding: "60px 20px", textAlign: "center", color: "#475569" }}
+    >
+      <Search
+        size={36}
+        color="#334155"
+        strokeWidth={1.5}
+        style={{ margin: "0 auto 12px" }}
+      />
+      <p style={{ fontSize: "15px", fontWeight: "600", color: "#64748B" }}>
+        No transactions found
+      </p>
+      <p style={{ fontSize: "13px", marginTop: "4px" }}>
+        Try adjusting your filters
+      </p>
+    </div>
+  );
+
   return (
     <div
       className="mobile-page-wrap"
-      style={{ minHeight: "100vh", background: "#1F1A16", color: "#F2E8D9" }}
+      style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
     >
       {/* HEADER */}
       <header
         style={{
-          background: "#2C2520",
+          background: "#1E293B",
           borderBottom: "1px solid rgba(255,255,255,0.07)",
           padding: "0 20px",
           height: "60px",
@@ -135,10 +178,9 @@ export default function TransactionsPage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "17px",
             }}
           >
-            💰
+            <Wallet size={18} color="#fff" strokeWidth={2} />
           </div>
           <span
             style={{
@@ -159,13 +201,17 @@ export default function TransactionsPage() {
                 background: "rgba(255,255,255,0.05)",
                 border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: "8px",
-                color: "#A89E94",
+                color: "#94A3B8",
                 textDecoration: "none",
                 fontSize: "13px",
                 fontWeight: "600",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
               }}
             >
-              ← Dashboard
+              <ArrowLeft size={14} strokeWidth={2} />
+              Dashboard
             </Link>
             <Link
               href="/report"
@@ -178,9 +224,13 @@ export default function TransactionsPage() {
                 textDecoration: "none",
                 fontSize: "13px",
                 fontWeight: "600",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
               }}
             >
-              📊 Reports
+              <BarChart3 size={14} strokeWidth={2} />
+              Reports
             </Link>
           </div>
           <button
@@ -190,12 +240,16 @@ export default function TransactionsPage() {
               background: "transparent",
               border: "1px solid rgba(255,255,255,0.12)",
               borderRadius: "8px",
-              color: "#A89E94",
+              color: "#94A3B8",
               cursor: "pointer",
               fontSize: "13px",
               fontWeight: "500",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
             }}
           >
+            <LogOut size={14} strokeWidth={2} />
             Sign Out
           </button>
         </div>
@@ -217,7 +271,7 @@ export default function TransactionsPage() {
           >
             Transactions
           </h1>
-          <p style={{ color: "#7A6E63", fontSize: "13px" }}>
+          <p style={{ color: "#64748B", fontSize: "13px" }}>
             {loading
               ? "Loading…"
               : `${count} transaction${count !== 1 ? "s" : ""} found`}
@@ -227,7 +281,7 @@ export default function TransactionsPage() {
         {/* FILTERS */}
         <div
           style={{
-            background: "#2C2520",
+            background: "#1E293B",
             borderRadius: "14px",
             padding: "16px",
             border: "1px solid rgba(255,255,255,0.07)",
@@ -235,21 +289,18 @@ export default function TransactionsPage() {
           }}
         >
           <div className="filter-bar">
-            {/* Search */}
             <div style={{ position: "relative", flex: 1, minWidth: "180px" }}>
-              <span
+              <Search
+                size={14}
+                color="#475569"
                 style={{
                   position: "absolute",
                   left: "13px",
                   top: "50%",
                   transform: "translateY(-50%)",
-                  fontSize: "14px",
-                  color: "#5E5148",
                   pointerEvents: "none",
                 }}
-              >
-                🔍
-              </span>
+              />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -257,7 +308,7 @@ export default function TransactionsPage() {
                 style={{
                   ...selectStyle,
                   padding: "10px 14px 10px 36px",
-                  background: "#1F1A16",
+                  background: "#0F172A",
                 }}
               />
             </div>
@@ -268,7 +319,7 @@ export default function TransactionsPage() {
                 style={selectStyle}
               >
                 {categories.map((c) => (
-                  <option key={c} value={c} style={{ background: "#2C2520" }}>
+                  <option key={c} value={c} style={{ background: "#1E293B" }}>
                     {c}
                   </option>
                 ))}
@@ -281,7 +332,7 @@ export default function TransactionsPage() {
                 style={selectStyle}
               >
                 {wallets.map((w) => (
-                  <option key={w} value={w} style={{ background: "#2C2520" }}>
+                  <option key={w} value={w} style={{ background: "#1E293B" }}>
                     {w}
                   </option>
                 ))}
@@ -304,19 +355,23 @@ export default function TransactionsPage() {
                   fontSize: "13px",
                   fontWeight: "600",
                   whiteSpace: "nowrap",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
                 }}
               >
-                ✕ Clear
+                <X size={13} strokeWidth={2.5} />
+                Clear
               </button>
             )}
           </div>
         </div>
 
-        {/* ── DESKTOP TABLE ── */}
+        {/* DESKTOP TABLE */}
         <div
           className="tx-table-view"
           style={{
-            background: "#2C2520",
+            background: "#1E293B",
             borderRadius: "16px",
             border: "1px solid rgba(255,255,255,0.07)",
             overflow: "hidden",
@@ -328,7 +383,7 @@ export default function TransactionsPage() {
               gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1.5fr",
               padding: "12px 20px",
               borderBottom: "1px solid rgba(255,255,255,0.06)",
-              background: "#1F1A16",
+              background: "#0F172A",
             }}
           >
             {["Name", "Category", "Wallet", "Date", "Notes"].map((h) => (
@@ -337,7 +392,7 @@ export default function TransactionsPage() {
                 style={{
                   fontSize: "11px",
                   fontWeight: "700",
-                  color: "#5E5148",
+                  color: "#475569",
                   textTransform: "uppercase",
                   letterSpacing: "0.7px",
                 }}
@@ -347,43 +402,14 @@ export default function TransactionsPage() {
             ))}
           </div>
           {loading ? (
-            <div style={{ padding: "40px", textAlign: "center" }}>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  margin: "0 auto",
-                  border: "3px solid #2C2520",
-                  borderTop: "3px solid #6366F1",
-                  borderRadius: "50%",
-                  animation: "spin 0.8s linear infinite",
-                }}
-              />
-            </div>
+            <Spinner />
           ) : rows.length === 0 ? (
-            <div
-              style={{
-                padding: "60px 20px",
-                textAlign: "center",
-                color: "#5E5148",
-              }}
-            >
-              <div style={{ fontSize: "36px", marginBottom: "12px" }}>🔍</div>
-              <p
-                style={{
-                  fontSize: "15px",
-                  fontWeight: "600",
-                  color: "#7A6E63",
-                }}
-              >
-                No transactions found
-              </p>
-            </div>
+            <EmptyState />
           ) : (
             rows.map((tx, i) => {
               const cs = CAT_STYLE[tx.category] || {
                 bg: "rgba(100,116,139,0.15)",
-                text: "#A89E94",
+                text: "#94A3B8",
               };
               return (
                 <div
@@ -410,7 +436,7 @@ export default function TransactionsPage() {
                     style={{
                       fontSize: "14px",
                       fontWeight: "600",
-                      color: "#EDE4D5",
+                      color: "#E2E8F0",
                     }}
                   >
                     {tx.name}
@@ -430,22 +456,22 @@ export default function TransactionsPage() {
                       {tx.category}
                     </span>
                   </div>
-                  <span style={{ fontSize: "13px", color: "#7A6E63" }}>
+                  <span style={{ fontSize: "13px", color: "#64748B" }}>
                     {tx.wallet}
                   </span>
-                  <span style={{ fontSize: "13px", color: "#7A6E63" }}>
+                  <span style={{ fontSize: "13px", color: "#64748B" }}>
                     {fmtDate(tx.date)}
                   </span>
                   <span
                     style={{
                       fontSize: "13px",
-                      color: "#5E5148",
+                      color: "#475569",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {tx.notes || <span style={{ color: "#3D3028" }}>—</span>}
+                    {tx.notes || <span style={{ color: "#334155" }}>—</span>}
                   </span>
                 </div>
               );
@@ -453,55 +479,31 @@ export default function TransactionsPage() {
           )}
         </div>
 
-        {/* ── MOBILE CARDS ── */}
+        {/* MOBILE CARDS */}
         <div className="tx-cards-view">
           {loading ? (
-            <div style={{ padding: "40px", textAlign: "center" }}>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  margin: "0 auto",
-                  border: "3px solid #2C2520",
-                  borderTop: "3px solid #6366F1",
-                  borderRadius: "50%",
-                  animation: "spin 0.8s linear infinite",
-                }}
-              />
-            </div>
+            <Spinner />
           ) : rows.length === 0 ? (
             <div
               style={{
-                padding: "60px 20px",
-                textAlign: "center",
-                color: "#5E5148",
-                background: "#2C2520",
+                background: "#1E293B",
                 borderRadius: "16px",
                 border: "1px solid rgba(255,255,255,0.07)",
               }}
             >
-              <div style={{ fontSize: "36px", marginBottom: "12px" }}>🔍</div>
-              <p
-                style={{
-                  fontSize: "15px",
-                  fontWeight: "600",
-                  color: "#7A6E63",
-                }}
-              >
-                No transactions found
-              </p>
+              <EmptyState />
             </div>
           ) : (
             rows.map((tx) => {
               const cs = CAT_STYLE[tx.category] || {
                 bg: "rgba(100,116,139,0.15)",
-                text: "#A89E94",
+                text: "#94A3B8",
               };
               return (
                 <div
                   key={tx.id}
                   style={{
-                    background: "#2C2520",
+                    background: "#1E293B",
                     borderRadius: "14px",
                     padding: "16px",
                     border: "1px solid rgba(255,255,255,0.07)",
@@ -519,7 +521,7 @@ export default function TransactionsPage() {
                       style={{
                         fontSize: "15px",
                         fontWeight: "700",
-                        color: "#EDE4D5",
+                        color: "#E2E8F0",
                       }}
                     >
                       {tx.name}
@@ -527,7 +529,7 @@ export default function TransactionsPage() {
                     <span
                       style={{
                         fontSize: "12px",
-                        color: "#7A6E63",
+                        color: "#64748B",
                         flexShrink: 0,
                         marginLeft: "8px",
                       }}
@@ -555,11 +557,11 @@ export default function TransactionsPage() {
                     >
                       {tx.category}
                     </span>
-                    <span style={{ fontSize: "12px", color: "#7A6E63" }}>
+                    <span style={{ fontSize: "12px", color: "#64748B" }}>
                       · {tx.wallet}
                     </span>
                     {tx.notes && (
-                      <span style={{ fontSize: "12px", color: "#5E5148" }}>
+                      <span style={{ fontSize: "12px", color: "#475569" }}>
                         · {tx.notes}
                       </span>
                     )}
@@ -580,51 +582,36 @@ export default function TransactionsPage() {
               marginTop: "20px",
             }}
           >
-            <span style={{ color: "#7A6E63", fontSize: "13px" }}>
+            <span style={{ color: "#64748B", fontSize: "13px" }}>
               Page {page} of {totalPages}
             </span>
             <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                onClick={() => setPage((p) => p - 1)}
-                disabled={page === 1 || loading}
-                style={{
-                  padding: "10px 20px",
-                  background: page === 1 ? "#2C2520" : "rgba(99,102,241,0.15)",
-                  border: `1px solid ${
-                    page === 1
-                      ? "rgba(255,255,255,0.06)"
-                      : "rgba(99,102,241,0.3)"
-                  }`,
-                  borderRadius: "8px",
-                  color: page === 1 ? "#3D3028" : "#818CF8",
-                  cursor: page === 1 ? "not-allowed" : "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                }}
-              >
-                ← Prev
-              </button>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page === totalPages || loading}
-                style={{
-                  padding: "10px 20px",
-                  background:
-                    page === totalPages ? "#2C2520" : "rgba(99,102,241,0.15)",
-                  border: `1px solid ${
-                    page === totalPages
-                      ? "rgba(255,255,255,0.06)"
-                      : "rgba(99,102,241,0.3)"
-                  }`,
-                  borderRadius: "8px",
-                  color: page === totalPages ? "#3D3028" : "#818CF8",
-                  cursor: page === totalPages ? "not-allowed" : "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                }}
-              >
-                Next →
-              </button>
+              {[
+                ["← Prev", page - 1, page === 1],
+                ["Next →", page + 1, page === totalPages],
+              ].map(([label, target, disabled]) => (
+                <button
+                  key={label}
+                  onClick={() => setPage(target)}
+                  disabled={disabled || loading}
+                  style={{
+                    padding: "10px 20px",
+                    background: disabled ? "#1E293B" : "rgba(99,102,241,0.15)",
+                    border: `1px solid ${
+                      disabled
+                        ? "rgba(255,255,255,0.06)"
+                        : "rgba(99,102,241,0.3)"
+                    }`,
+                    borderRadius: "8px",
+                    color: disabled ? "#334155" : "#818CF8",
+                    cursor: disabled ? "not-allowed" : "pointer",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -633,16 +620,19 @@ export default function TransactionsPage() {
       {/* BOTTOM TAB BAR */}
       <nav className="bottom-tab-bar">
         <Link href="/dashboard" className="bottom-tab-link">
-          <span className="bottom-tab-icon">🏠</span>Dashboard
+          <LayoutDashboard size={22} strokeWidth={1.5} />
+          Dashboard
         </Link>
         <Link
           href="/transactions"
           className="bottom-tab-link bottom-tab-active"
         >
-          <span className="bottom-tab-icon">📋</span>Transactions
+          <Receipt size={22} strokeWidth={1.5} />
+          Transactions
         </Link>
         <Link href="/report" className="bottom-tab-link">
-          <span className="bottom-tab-icon">📊</span>Reports
+          <BarChart3 size={22} strokeWidth={1.5} />
+          Reports
         </Link>
       </nav>
     </div>

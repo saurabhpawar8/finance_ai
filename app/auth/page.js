@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Wallet } from "lucide-react";
 import { login, register } from "@/lib/api";
 
 export default function AuthPage() {
@@ -57,7 +58,7 @@ export default function AuthPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#1F1A16",
+        background: "#0F172A",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -66,7 +67,6 @@ export default function AuthPage() {
         overflow: "hidden",
       }}
     >
-      {/* Background glow */}
       <div
         style={{
           position: "fixed",
@@ -79,7 +79,7 @@ export default function AuthPage() {
 
       <div
         style={{
-          background: "#2C2520",
+          background: "#1E293B",
           borderRadius: "24px",
           padding: "40px",
           width: "100%",
@@ -102,29 +102,28 @@ export default function AuthPage() {
               style={{
                 width: "44px",
                 height: "44px",
-                background: "linear-gradient(135deg, #6366F1 0%, #818CF8 100%)",
+                background: "linear-gradient(135deg, #6366F1, #818CF8)",
                 borderRadius: "12px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: "22px",
                 boxShadow: "0 8px 16px rgba(99,102,241,0.3)",
               }}
             >
-              💰
+              <Wallet size={22} color="#fff" strokeWidth={2} />
             </div>
             <span
               style={{
                 fontSize: "24px",
                 fontWeight: "800",
-                color: "#F2E8D9",
+                color: "#F1F5F9",
                 letterSpacing: "-0.5px",
               }}
             >
               FinanceAI
             </span>
           </div>
-          <p style={{ color: "#7A6E63", marginTop: "10px", fontSize: "14px" }}>
+          <p style={{ color: "#64748B", marginTop: "10px", fontSize: "14px" }}>
             Track expenses with the power of AI
           </p>
         </div>
@@ -133,7 +132,7 @@ export default function AuthPage() {
         <div
           style={{
             display: "flex",
-            background: "#1F1A16",
+            background: "#0F172A",
             borderRadius: "12px",
             padding: "4px",
             marginBottom: "28px",
@@ -159,7 +158,7 @@ export default function AuthPage() {
                   tab === t
                     ? "linear-gradient(135deg, #6366F1, #818CF8)"
                     : "transparent",
-                color: tab === t ? "#fff" : "#7A6E63",
+                color: tab === t ? "#fff" : "#64748B",
                 boxShadow:
                   tab === t ? "0 4px 12px rgba(99,102,241,0.35)" : "none",
               }}
@@ -175,7 +174,7 @@ export default function AuthPage() {
             <label
               style={{
                 display: "block",
-                color: "#A89E94",
+                color: "#94A3B8",
                 fontSize: "13px",
                 fontWeight: "500",
                 marginBottom: "6px",
@@ -191,22 +190,20 @@ export default function AuthPage() {
               style={{
                 width: "100%",
                 padding: "12px 16px",
-                background: "#1F1A16",
+                background: "#0F172A",
                 border: "1px solid rgba(255,255,255,0.08)",
                 borderRadius: "10px",
-                color: "#F2E8D9",
+                color: "#F1F5F9",
                 fontSize: "15px",
                 outline: "none",
-                transition: "border 0.2s, box-shadow 0.2s",
               }}
             />
           </div>
-
           <div>
             <label
               style={{
                 display: "block",
-                color: "#A89E94",
+                color: "#94A3B8",
                 fontSize: "13px",
                 fontWeight: "500",
                 marginBottom: "6px",
@@ -223,13 +220,12 @@ export default function AuthPage() {
               style={{
                 width: "100%",
                 padding: "12px 16px",
-                background: "#1F1A16",
+                background: "#0F172A",
                 border: "1px solid rgba(255,255,255,0.08)",
                 borderRadius: "10px",
-                color: "#F2E8D9",
+                color: "#F1F5F9",
                 fontSize: "15px",
                 outline: "none",
-                transition: "border 0.2s, box-shadow 0.2s",
               }}
             />
           </div>
@@ -243,13 +239,11 @@ export default function AuthPage() {
                 border: "1px solid rgba(239,68,68,0.25)",
                 color: "#FCA5A5",
                 fontSize: "14px",
-                lineHeight: "1.5",
               }}
             >
               {error}
             </div>
           )}
-
           {success && (
             <div
               style={{
@@ -272,7 +266,7 @@ export default function AuthPage() {
               width: "100%",
               padding: "14px",
               background: loading
-                ? "#3D3028"
+                ? "#334155"
                 : "linear-gradient(135deg, #6366F1, #818CF8)",
               border: "none",
               borderRadius: "10px",
@@ -280,17 +274,15 @@ export default function AuthPage() {
               fontSize: "15px",
               fontWeight: "700",
               cursor: loading ? "not-allowed" : "pointer",
-              transition: "all 0.2s",
-              marginTop: "4px",
               boxShadow: loading ? "none" : "0 8px 24px rgba(99,102,241,0.35)",
-              letterSpacing: "0.2px",
+              marginTop: "4px",
             }}
           >
             {loading
               ? "Please wait…"
               : tab === "login"
-              ? "Sign In →"
-              : "Create Account →"}
+              ? "Sign In"
+              : "Create Account"}
           </button>
         </div>
       </div>
