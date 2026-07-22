@@ -91,12 +91,12 @@ export default function DashboardPage() {
   return (
     <div
       className="mobile-page-wrap"
-      style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
+      style={{ minHeight: "100vh", background: "#1F1A16", color: "#F2E8D9" }}
     >
       {/* ── HEADER ── */}
       <header
         style={{
-          background: "#1E293B",
+          background: "#2C2520",
           borderBottom: "1px solid rgba(255,255,255,0.07)",
           padding: "0 20px",
           height: "60px",
@@ -175,7 +175,7 @@ export default function DashboardPage() {
               background: "transparent",
               border: "1px solid rgba(255,255,255,0.12)",
               borderRadius: "8px",
-              color: "#94A3B8",
+              color: "#A89E94",
               cursor: "pointer",
               fontSize: "13px",
               fontWeight: "500",
@@ -195,7 +195,7 @@ export default function DashboardPage() {
           style={{
             fontSize: "12px",
             fontWeight: "600",
-            color: "#475569",
+            color: "#5E5148",
             textTransform: "uppercase",
             letterSpacing: "1px",
             marginBottom: "16px",
@@ -208,7 +208,7 @@ export default function DashboardPage() {
         <div className="cards-grid">
           <div
             style={{
-              background: "#1E293B",
+              background: "#2C2520",
               borderRadius: "16px",
               padding: "20px",
               border: "1px solid rgba(255,255,255,0.07)",
@@ -230,7 +230,7 @@ export default function DashboardPage() {
             <p
               style={{
                 fontSize: "11px",
-                color: "#64748B",
+                color: "#7A6E63",
                 fontWeight: "600",
                 textTransform: "uppercase",
                 letterSpacing: "0.8px",
@@ -250,14 +250,14 @@ export default function DashboardPage() {
             >
               {dataLoading ? "—" : fmt(summary?.total_expense)}
             </p>
-            <p style={{ fontSize: "12px", color: "#475569", marginTop: "6px" }}>
+            <p style={{ fontSize: "12px", color: "#5E5148", marginTop: "6px" }}>
               This month
             </p>
           </div>
 
           <div
             style={{
-              background: "#1E293B",
+              background: "#2C2520",
               borderRadius: "16px",
               padding: "20px",
               border: "1px solid rgba(255,255,255,0.07)",
@@ -279,7 +279,7 @@ export default function DashboardPage() {
             <p
               style={{
                 fontSize: "11px",
-                color: "#64748B",
+                color: "#7A6E63",
                 fontWeight: "600",
                 textTransform: "uppercase",
                 letterSpacing: "0.8px",
@@ -299,14 +299,14 @@ export default function DashboardPage() {
             >
               {dataLoading ? "—" : summary?.total_transactions ?? 0}
             </p>
-            <p style={{ fontSize: "12px", color: "#475569", marginTop: "6px" }}>
+            <p style={{ fontSize: "12px", color: "#5E5148", marginTop: "6px" }}>
               This month
             </p>
           </div>
 
           <div
             style={{
-              background: "#1E293B",
+              background: "#2C2520",
               borderRadius: "16px",
               padding: "20px",
               border: "1px solid rgba(255,255,255,0.07)",
@@ -328,7 +328,7 @@ export default function DashboardPage() {
             <p
               style={{
                 fontSize: "11px",
-                color: "#64748B",
+                color: "#7A6E63",
                 fontWeight: "600",
                 textTransform: "uppercase",
                 letterSpacing: "0.8px",
@@ -348,7 +348,7 @@ export default function DashboardPage() {
             >
               {dataLoading ? "—" : summary?.top_category || "—"}
             </p>
-            <p style={{ fontSize: "12px", color: "#475569", marginTop: "6px" }}>
+            <p style={{ fontSize: "12px", color: "#5E5148", marginTop: "6px" }}>
               {summary?.category_amount
                 ? `${fmt(summary.category_amount)} spent`
                 : "No data yet"}
@@ -360,7 +360,7 @@ export default function DashboardPage() {
         <div className="bottom-grid">
           <div
             style={{
-              background: "#1E293B",
+              background: "#2C2520",
               borderRadius: "16px",
               padding: "20px",
               border: "1px solid rgba(255,255,255,0.07)",
@@ -373,7 +373,7 @@ export default function DashboardPage() {
               style={{
                 fontSize: "11px",
                 fontWeight: "600",
-                color: "#64748B",
+                color: "#7A6E63",
                 textTransform: "uppercase",
                 letterSpacing: "0.8px",
                 marginBottom: "16px",
@@ -388,7 +388,7 @@ export default function DashboardPage() {
 
           <div
             style={{
-              background: "#1E293B",
+              background: "#2C2520",
               borderRadius: "16px",
               padding: "20px",
               border: "1px solid rgba(255,255,255,0.07)",
@@ -401,7 +401,7 @@ export default function DashboardPage() {
               style={{
                 fontSize: "11px",
                 fontWeight: "600",
-                color: "#64748B",
+                color: "#7A6E63",
                 textTransform: "uppercase",
                 letterSpacing: "0.8px",
                 marginBottom: "16px",
@@ -435,8 +435,8 @@ export default function DashboardPage() {
                     background:
                       msg.role === "user"
                         ? "linear-gradient(135deg, #6366F1, #818CF8)"
-                        : "#0F172A",
-                    color: msg.role === "user" ? "#fff" : "#CBD5E1",
+                        : "#1F1A16",
+                    color: msg.role === "user" ? "#fff" : "#D8CCBE",
                     fontSize: "14px",
                     lineHeight: "1.5",
                     border:
@@ -459,7 +459,7 @@ export default function DashboardPage() {
                     alignSelf: "flex-start",
                     padding: "12px 16px",
                     borderRadius: "16px 16px 16px 4px",
-                    background: "#0F172A",
+                    background: "#1F1A16",
                     border: "1px solid rgba(255,255,255,0.07)",
                     display: "flex",
                     gap: "4px",
@@ -473,7 +473,7 @@ export default function DashboardPage() {
                         width: "6px",
                         height: "6px",
                         borderRadius: "50%",
-                        background: "#475569",
+                        background: "#5E5148",
                         animation: `bounce 1.2s infinite ${i * 0.2}s`,
                       }}
                     />
@@ -523,10 +523,10 @@ export default function DashboardPage() {
                 style={{
                   flex: 1,
                   padding: "12px 16px",
-                  background: "#0F172A",
+                  background: "#1F1A16",
                   border: "1px solid rgba(255,255,255,0.08)",
                   borderRadius: "10px",
-                  color: "#F1F5F9",
+                  color: "#F2E8D9",
                   fontSize: "14px",
                   outline: "none",
                 }}
@@ -538,11 +538,11 @@ export default function DashboardPage() {
                   padding: "12px 20px",
                   background:
                     !input.trim() || chatLoading
-                      ? "#1E3A5F"
+                      ? "#302820"
                       : "linear-gradient(135deg, #6366F1, #818CF8)",
                   border: "none",
                   borderRadius: "10px",
-                  color: !input.trim() || chatLoading ? "#475569" : "#fff",
+                  color: !input.trim() || chatLoading ? "#5E5148" : "#fff",
                   fontSize: "20px",
                   cursor:
                     !input.trim() || chatLoading ? "not-allowed" : "pointer",

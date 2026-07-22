@@ -107,7 +107,7 @@ function HealthRing({ score }) {
         >
           {score}
         </span>
-        <span style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>
+        <span style={{ fontSize: "11px", color: "#7A6E63", marginTop: "2px" }}>
           /10
         </span>
         <span
@@ -137,13 +137,13 @@ function CategoryBar({ item, index, maxTotal }) {
           marginBottom: "6px",
         }}
       >
-        <span style={{ fontSize: "13px", color: "#CBD5E1", fontWeight: "500" }}>
+        <span style={{ fontSize: "13px", color: "#D8CCBE", fontWeight: "500" }}>
           {item.category_name}
         </span>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <span style={{ fontSize: "12px", color: "#64748B" }}>{pct}%</span>
+          <span style={{ fontSize: "12px", color: "#7A6E63" }}>{pct}%</span>
           <span
-            style={{ fontSize: "13px", color: "#F1F5F9", fontWeight: "600" }}
+            style={{ fontSize: "13px", color: "#F2E8D9", fontWeight: "600" }}
           >
             ₹{item.total.toLocaleString("en-IN")}
           </span>
@@ -175,10 +175,10 @@ function CategoryBar({ item, index, maxTotal }) {
 const selectStyle = {
   padding: "12px 36px 12px 14px",
   width: "100%",
-  background: "#0F172A",
+  background: "#1F1A16",
   border: "1px solid rgba(255,255,255,0.08)",
   borderRadius: "10px",
-  color: "#F1F5F9",
+  color: "#F2E8D9",
   fontSize: "14px",
   outline: "none",
   cursor: "pointer",
@@ -264,12 +264,12 @@ export default function ReportPage() {
   return (
     <div
       className="mobile-page-wrap"
-      style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
+      style={{ minHeight: "100vh", background: "#1F1A16", color: "#F2E8D9" }}
     >
       {/* HEADER */}
       <header
         style={{
-          background: "#1E293B",
+          background: "#2C2520",
           borderBottom: "1px solid rgba(255,255,255,0.07)",
           padding: "0 20px",
           height: "60px",
@@ -315,7 +315,7 @@ export default function ReportPage() {
                 background: "rgba(255,255,255,0.05)",
                 border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: "8px",
-                color: "#94A3B8",
+                color: "#A89E94",
                 textDecoration: "none",
                 fontSize: "13px",
                 fontWeight: "600",
@@ -331,7 +331,7 @@ export default function ReportPage() {
               background: "transparent",
               border: "1px solid rgba(255,255,255,0.12)",
               borderRadius: "8px",
-              color: "#94A3B8",
+              color: "#A89E94",
               cursor: "pointer",
               fontSize: "13px",
               fontWeight: "500",
@@ -358,7 +358,7 @@ export default function ReportPage() {
           >
             Reports
           </h1>
-          <p style={{ color: "#64748B", fontSize: "14px" }}>
+          <p style={{ color: "#7A6E63", fontSize: "14px" }}>
             Download your expenses or get an AI-powered analysis
           </p>
         </div>
@@ -366,7 +366,7 @@ export default function ReportPage() {
         {/* DOWNLOAD CARD */}
         <div
           style={{
-            background: "#1E293B",
+            background: "#2C2520",
             borderRadius: "16px",
             padding: "20px",
             border: "1px solid rgba(16,185,129,0.2)",
@@ -387,13 +387,13 @@ export default function ReportPage() {
                 style={{
                   fontSize: "14px",
                   fontWeight: "700",
-                  color: "#F1F5F9",
+                  color: "#F2E8D9",
                 }}
               >
                 Download Excel Report
               </p>
               <p
-                style={{ fontSize: "12px", color: "#64748B", marginTop: "2px" }}
+                style={{ fontSize: "12px", color: "#7A6E63", marginTop: "2px" }}
               >
                 Export your transactions as a spreadsheet
               </p>
@@ -411,7 +411,7 @@ export default function ReportPage() {
                 <option
                   key={r.value}
                   value={r.value}
-                  style={{ background: "#1E293B" }}
+                  style={{ background: "#2C2520" }}
                 >
                   {r.label}
                 </option>
@@ -423,11 +423,11 @@ export default function ReportPage() {
               style={{
                 padding: "13px",
                 background: downloading
-                  ? "#334155"
+                  ? "#3D3028"
                   : "linear-gradient(135deg, #10B981, #34D399)",
                 border: "none",
                 borderRadius: "10px",
-                color: downloading ? "#64748B" : "#fff",
+                color: downloading ? "#7A6E63" : "#fff",
                 fontSize: "14px",
                 fontWeight: "700",
                 cursor: downloading ? "not-allowed" : "pointer",
@@ -446,8 +446,8 @@ export default function ReportPage() {
                     style={{
                       width: "14px",
                       height: "14px",
-                      border: "2px solid #475569",
-                      borderTop: "2px solid #94A3B8",
+                      border: "2px solid #5E5148",
+                      borderTop: "2px solid #A89E94",
                       borderRadius: "50%",
                       animation: "spin 0.8s linear infinite",
                     }}
@@ -469,7 +469,7 @@ export default function ReportPage() {
         {/* AI REPORT CARD */}
         <div
           style={{
-            background: "#1E293B",
+            background: "#2C2520",
             borderRadius: "16px",
             padding: "20px",
             border: "1px solid rgba(255,255,255,0.07)",
@@ -490,13 +490,13 @@ export default function ReportPage() {
                 style={{
                   fontSize: "14px",
                   fontWeight: "700",
-                  color: "#F1F5F9",
+                  color: "#F2E8D9",
                 }}
               >
                 AI Financial Analysis
               </p>
               <p
-                style={{ fontSize: "12px", color: "#64748B", marginTop: "2px" }}
+                style={{ fontSize: "12px", color: "#7A6E63", marginTop: "2px" }}
               >
                 Detailed AI breakdown for any month
               </p>
@@ -514,7 +514,7 @@ export default function ReportPage() {
                 <option
                   key={m.value}
                   value={m.value}
-                  style={{ background: "#1E293B" }}
+                  style={{ background: "#2C2520" }}
                 >
                   {m.label}
                 </option>
@@ -526,7 +526,7 @@ export default function ReportPage() {
               style={selectStyle}
             >
               {YEARS.map((y) => (
-                <option key={y} value={y} style={{ background: "#1E293B" }}>
+                <option key={y} value={y} style={{ background: "#2C2520" }}>
                   {y}
                 </option>
               ))}
@@ -537,11 +537,11 @@ export default function ReportPage() {
               style={{
                 padding: "13px",
                 background: loading
-                  ? "#334155"
+                  ? "#3D3028"
                   : "linear-gradient(135deg, #6366F1, #818CF8)",
                 border: "none",
                 borderRadius: "10px",
-                color: loading ? "#64748B" : "#fff",
+                color: loading ? "#7A6E63" : "#fff",
                 fontSize: "14px",
                 fontWeight: "700",
                 cursor: loading ? "not-allowed" : "pointer",
@@ -580,7 +580,7 @@ export default function ReportPage() {
                 key={i}
                 style={{
                   height: h,
-                  background: "#1E293B",
+                  background: "#2C2520",
                   borderRadius: "16px",
                   opacity: 0.6,
                 }}
@@ -598,7 +598,7 @@ export default function ReportPage() {
             <div className="report-top-grid">
               <div
                 style={{
-                  background: "#1E293B",
+                  background: "#2C2520",
                   borderRadius: "16px",
                   padding: "24px",
                   border: "1px solid rgba(255,255,255,0.07)",
@@ -612,7 +612,7 @@ export default function ReportPage() {
                   <p
                     style={{
                       fontSize: "11px",
-                      color: "#64748B",
+                      color: "#7A6E63",
                       fontWeight: "600",
                       textTransform: "uppercase",
                       letterSpacing: "0.8px",
@@ -621,7 +621,7 @@ export default function ReportPage() {
                   >
                     Financial Health
                   </p>
-                  <p style={{ fontSize: "14px", color: "#94A3B8" }}>
+                  <p style={{ fontSize: "14px", color: "#A89E94" }}>
                     {selectedMonthLabel} {report.year}
                   </p>
                   <p
@@ -638,7 +638,7 @@ export default function ReportPage() {
               </div>
               <div
                 style={{
-                  background: "#1E293B",
+                  background: "#2C2520",
                   borderRadius: "16px",
                   padding: "24px",
                   border: "1px solid rgba(255,255,255,0.07)",
@@ -650,7 +650,7 @@ export default function ReportPage() {
                 <p
                   style={{
                     fontSize: "11px",
-                    color: "#64748B",
+                    color: "#7A6E63",
                     fontWeight: "600",
                     textTransform: "uppercase",
                     letterSpacing: "0.8px",
@@ -673,7 +673,7 @@ export default function ReportPage() {
                 <p
                   style={{
                     fontSize: "13px",
-                    color: "#475569",
+                    color: "#5E5148",
                     marginTop: "8px",
                   }}
                 >
@@ -686,7 +686,7 @@ export default function ReportPage() {
             {/* Breakdown */}
             <div
               style={{
-                background: "#1E293B",
+                background: "#2C2520",
                 borderRadius: "16px",
                 padding: "20px",
                 border: "1px solid rgba(255,255,255,0.07)",
@@ -695,7 +695,7 @@ export default function ReportPage() {
               <p
                 style={{
                   fontSize: "11px",
-                  color: "#64748B",
+                  color: "#7A6E63",
                   fontWeight: "600",
                   textTransform: "uppercase",
                   letterSpacing: "0.8px",
@@ -741,7 +741,7 @@ export default function ReportPage() {
                   <p
                     style={{
                       fontSize: "14px",
-                      color: "#CBD5E1",
+                      color: "#D8CCBE",
                       lineHeight: "1.7",
                     }}
                   >
@@ -754,7 +754,7 @@ export default function ReportPage() {
             {/* Trend */}
             <div
               style={{
-                background: "#1E293B",
+                background: "#2C2520",
                 borderRadius: "16px",
                 padding: "18px 20px",
                 border: "1px solid rgba(255,255,255,0.07)",
@@ -766,7 +766,7 @@ export default function ReportPage() {
                   <p
                     style={{
                       fontSize: "11px",
-                      color: "#64748B",
+                      color: "#7A6E63",
                       fontWeight: "700",
                       textTransform: "uppercase",
                       letterSpacing: "0.6px",
@@ -778,7 +778,7 @@ export default function ReportPage() {
                   <p
                     style={{
                       fontSize: "14px",
-                      color: "#CBD5E1",
+                      color: "#D8CCBE",
                       lineHeight: "1.7",
                     }}
                   >
@@ -791,7 +791,7 @@ export default function ReportPage() {
             {/* Patterns */}
             <div
               style={{
-                background: "#1E293B",
+                background: "#2C2520",
                 borderRadius: "16px",
                 padding: "18px 20px",
                 border: "1px solid rgba(255,255,255,0.07)",
@@ -803,7 +803,7 @@ export default function ReportPage() {
                   <p
                     style={{
                       fontSize: "11px",
-                      color: "#64748B",
+                      color: "#7A6E63",
                       fontWeight: "700",
                       textTransform: "uppercase",
                       letterSpacing: "0.6px",
@@ -815,7 +815,7 @@ export default function ReportPage() {
                   <p
                     style={{
                       fontSize: "14px",
-                      color: "#CBD5E1",
+                      color: "#D8CCBE",
                       lineHeight: "1.7",
                     }}
                   >
@@ -828,7 +828,7 @@ export default function ReportPage() {
             {/* Suggestions */}
             <div
               style={{
-                background: "#1E293B",
+                background: "#2C2520",
                 borderRadius: "16px",
                 padding: "20px",
                 border: "1px solid rgba(255,255,255,0.07)",
@@ -846,7 +846,7 @@ export default function ReportPage() {
                 <p
                   style={{
                     fontSize: "11px",
-                    color: "#64748B",
+                    color: "#7A6E63",
                     fontWeight: "700",
                     textTransform: "uppercase",
                     letterSpacing: "0.6px",
@@ -870,7 +870,7 @@ export default function ReportPage() {
                       gap: "12px",
                       alignItems: "flex-start",
                       padding: "14px",
-                      background: "#0F172A",
+                      background: "#1F1A16",
                       borderRadius: "12px",
                       border: "1px solid rgba(255,255,255,0.05)",
                     }}
@@ -895,7 +895,7 @@ export default function ReportPage() {
                     <p
                       style={{
                         fontSize: "14px",
-                        color: "#CBD5E1",
+                        color: "#D8CCBE",
                         lineHeight: "1.65",
                         margin: 0,
                       }}
@@ -914,7 +914,7 @@ export default function ReportPage() {
             style={{
               textAlign: "center",
               padding: "60px 20px",
-              color: "#475569",
+              color: "#5E5148",
             }}
           >
             <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
@@ -922,7 +922,7 @@ export default function ReportPage() {
               style={{
                 fontSize: "15px",
                 fontWeight: "600",
-                color: "#64748B",
+                color: "#7A6E63",
                 marginBottom: "6px",
               }}
             >

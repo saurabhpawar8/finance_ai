@@ -29,10 +29,10 @@ const fmtDate = (d) =>
 const selectStyle = {
   padding: "10px 36px 10px 14px",
   width: "100%",
-  background: "#0F172A",
+  background: "#1F1A16",
   border: "1px solid rgba(255,255,255,0.08)",
   borderRadius: "10px",
-  color: "#F1F5F9",
+  color: "#F2E8D9",
   fontSize: "14px",
   outline: "none",
   cursor: "pointer",
@@ -108,12 +108,12 @@ export default function TransactionsPage() {
   return (
     <div
       className="mobile-page-wrap"
-      style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
+      style={{ minHeight: "100vh", background: "#1F1A16", color: "#F2E8D9" }}
     >
       {/* HEADER */}
       <header
         style={{
-          background: "#1E293B",
+          background: "#2C2520",
           borderBottom: "1px solid rgba(255,255,255,0.07)",
           padding: "0 20px",
           height: "60px",
@@ -159,7 +159,7 @@ export default function TransactionsPage() {
                 background: "rgba(255,255,255,0.05)",
                 border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: "8px",
-                color: "#94A3B8",
+                color: "#A89E94",
                 textDecoration: "none",
                 fontSize: "13px",
                 fontWeight: "600",
@@ -190,7 +190,7 @@ export default function TransactionsPage() {
               background: "transparent",
               border: "1px solid rgba(255,255,255,0.12)",
               borderRadius: "8px",
-              color: "#94A3B8",
+              color: "#A89E94",
               cursor: "pointer",
               fontSize: "13px",
               fontWeight: "500",
@@ -217,7 +217,7 @@ export default function TransactionsPage() {
           >
             Transactions
           </h1>
-          <p style={{ color: "#64748B", fontSize: "13px" }}>
+          <p style={{ color: "#7A6E63", fontSize: "13px" }}>
             {loading
               ? "Loading…"
               : `${count} transaction${count !== 1 ? "s" : ""} found`}
@@ -227,7 +227,7 @@ export default function TransactionsPage() {
         {/* FILTERS */}
         <div
           style={{
-            background: "#1E293B",
+            background: "#2C2520",
             borderRadius: "14px",
             padding: "16px",
             border: "1px solid rgba(255,255,255,0.07)",
@@ -244,7 +244,7 @@ export default function TransactionsPage() {
                   top: "50%",
                   transform: "translateY(-50%)",
                   fontSize: "14px",
-                  color: "#475569",
+                  color: "#5E5148",
                   pointerEvents: "none",
                 }}
               >
@@ -257,7 +257,7 @@ export default function TransactionsPage() {
                 style={{
                   ...selectStyle,
                   padding: "10px 14px 10px 36px",
-                  background: "#0F172A",
+                  background: "#1F1A16",
                 }}
               />
             </div>
@@ -268,7 +268,7 @@ export default function TransactionsPage() {
                 style={selectStyle}
               >
                 {categories.map((c) => (
-                  <option key={c} value={c} style={{ background: "#1E293B" }}>
+                  <option key={c} value={c} style={{ background: "#2C2520" }}>
                     {c}
                   </option>
                 ))}
@@ -281,7 +281,7 @@ export default function TransactionsPage() {
                 style={selectStyle}
               >
                 {wallets.map((w) => (
-                  <option key={w} value={w} style={{ background: "#1E293B" }}>
+                  <option key={w} value={w} style={{ background: "#2C2520" }}>
                     {w}
                   </option>
                 ))}
@@ -316,7 +316,7 @@ export default function TransactionsPage() {
         <div
           className="tx-table-view"
           style={{
-            background: "#1E293B",
+            background: "#2C2520",
             borderRadius: "16px",
             border: "1px solid rgba(255,255,255,0.07)",
             overflow: "hidden",
@@ -328,7 +328,7 @@ export default function TransactionsPage() {
               gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1.5fr",
               padding: "12px 20px",
               borderBottom: "1px solid rgba(255,255,255,0.06)",
-              background: "#0F172A",
+              background: "#1F1A16",
             }}
           >
             {["Name", "Category", "Wallet", "Date", "Notes"].map((h) => (
@@ -337,7 +337,7 @@ export default function TransactionsPage() {
                 style={{
                   fontSize: "11px",
                   fontWeight: "700",
-                  color: "#475569",
+                  color: "#5E5148",
                   textTransform: "uppercase",
                   letterSpacing: "0.7px",
                 }}
@@ -353,7 +353,7 @@ export default function TransactionsPage() {
                   width: "28px",
                   height: "28px",
                   margin: "0 auto",
-                  border: "3px solid #1E293B",
+                  border: "3px solid #2C2520",
                   borderTop: "3px solid #6366F1",
                   borderRadius: "50%",
                   animation: "spin 0.8s linear infinite",
@@ -365,7 +365,7 @@ export default function TransactionsPage() {
               style={{
                 padding: "60px 20px",
                 textAlign: "center",
-                color: "#475569",
+                color: "#5E5148",
               }}
             >
               <div style={{ fontSize: "36px", marginBottom: "12px" }}>🔍</div>
@@ -373,7 +373,7 @@ export default function TransactionsPage() {
                 style={{
                   fontSize: "15px",
                   fontWeight: "600",
-                  color: "#64748B",
+                  color: "#7A6E63",
                 }}
               >
                 No transactions found
@@ -383,7 +383,7 @@ export default function TransactionsPage() {
             rows.map((tx, i) => {
               const cs = CAT_STYLE[tx.category] || {
                 bg: "rgba(100,116,139,0.15)",
-                text: "#94A3B8",
+                text: "#A89E94",
               };
               return (
                 <div
@@ -410,7 +410,7 @@ export default function TransactionsPage() {
                     style={{
                       fontSize: "14px",
                       fontWeight: "600",
-                      color: "#E2E8F0",
+                      color: "#EDE4D5",
                     }}
                   >
                     {tx.name}
@@ -430,22 +430,22 @@ export default function TransactionsPage() {
                       {tx.category}
                     </span>
                   </div>
-                  <span style={{ fontSize: "13px", color: "#64748B" }}>
+                  <span style={{ fontSize: "13px", color: "#7A6E63" }}>
                     {tx.wallet}
                   </span>
-                  <span style={{ fontSize: "13px", color: "#64748B" }}>
+                  <span style={{ fontSize: "13px", color: "#7A6E63" }}>
                     {fmtDate(tx.date)}
                   </span>
                   <span
                     style={{
                       fontSize: "13px",
-                      color: "#475569",
+                      color: "#5E5148",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {tx.notes || <span style={{ color: "#334155" }}>—</span>}
+                    {tx.notes || <span style={{ color: "#3D3028" }}>—</span>}
                   </span>
                 </div>
               );
@@ -462,7 +462,7 @@ export default function TransactionsPage() {
                   width: "28px",
                   height: "28px",
                   margin: "0 auto",
-                  border: "3px solid #1E293B",
+                  border: "3px solid #2C2520",
                   borderTop: "3px solid #6366F1",
                   borderRadius: "50%",
                   animation: "spin 0.8s linear infinite",
@@ -474,8 +474,8 @@ export default function TransactionsPage() {
               style={{
                 padding: "60px 20px",
                 textAlign: "center",
-                color: "#475569",
-                background: "#1E293B",
+                color: "#5E5148",
+                background: "#2C2520",
                 borderRadius: "16px",
                 border: "1px solid rgba(255,255,255,0.07)",
               }}
@@ -485,7 +485,7 @@ export default function TransactionsPage() {
                 style={{
                   fontSize: "15px",
                   fontWeight: "600",
-                  color: "#64748B",
+                  color: "#7A6E63",
                 }}
               >
                 No transactions found
@@ -495,13 +495,13 @@ export default function TransactionsPage() {
             rows.map((tx) => {
               const cs = CAT_STYLE[tx.category] || {
                 bg: "rgba(100,116,139,0.15)",
-                text: "#94A3B8",
+                text: "#A89E94",
               };
               return (
                 <div
                   key={tx.id}
                   style={{
-                    background: "#1E293B",
+                    background: "#2C2520",
                     borderRadius: "14px",
                     padding: "16px",
                     border: "1px solid rgba(255,255,255,0.07)",
@@ -519,7 +519,7 @@ export default function TransactionsPage() {
                       style={{
                         fontSize: "15px",
                         fontWeight: "700",
-                        color: "#E2E8F0",
+                        color: "#EDE4D5",
                       }}
                     >
                       {tx.name}
@@ -527,7 +527,7 @@ export default function TransactionsPage() {
                     <span
                       style={{
                         fontSize: "12px",
-                        color: "#64748B",
+                        color: "#7A6E63",
                         flexShrink: 0,
                         marginLeft: "8px",
                       }}
@@ -555,11 +555,11 @@ export default function TransactionsPage() {
                     >
                       {tx.category}
                     </span>
-                    <span style={{ fontSize: "12px", color: "#64748B" }}>
+                    <span style={{ fontSize: "12px", color: "#7A6E63" }}>
                       · {tx.wallet}
                     </span>
                     {tx.notes && (
-                      <span style={{ fontSize: "12px", color: "#475569" }}>
+                      <span style={{ fontSize: "12px", color: "#5E5148" }}>
                         · {tx.notes}
                       </span>
                     )}
@@ -580,7 +580,7 @@ export default function TransactionsPage() {
               marginTop: "20px",
             }}
           >
-            <span style={{ color: "#64748B", fontSize: "13px" }}>
+            <span style={{ color: "#7A6E63", fontSize: "13px" }}>
               Page {page} of {totalPages}
             </span>
             <div style={{ display: "flex", gap: "8px" }}>
@@ -589,14 +589,14 @@ export default function TransactionsPage() {
                 disabled={page === 1 || loading}
                 style={{
                   padding: "10px 20px",
-                  background: page === 1 ? "#1E293B" : "rgba(99,102,241,0.15)",
+                  background: page === 1 ? "#2C2520" : "rgba(99,102,241,0.15)",
                   border: `1px solid ${
                     page === 1
                       ? "rgba(255,255,255,0.06)"
                       : "rgba(99,102,241,0.3)"
                   }`,
                   borderRadius: "8px",
-                  color: page === 1 ? "#334155" : "#818CF8",
+                  color: page === 1 ? "#3D3028" : "#818CF8",
                   cursor: page === 1 ? "not-allowed" : "pointer",
                   fontSize: "14px",
                   fontWeight: "600",
@@ -610,14 +610,14 @@ export default function TransactionsPage() {
                 style={{
                   padding: "10px 20px",
                   background:
-                    page === totalPages ? "#1E293B" : "rgba(99,102,241,0.15)",
+                    page === totalPages ? "#2C2520" : "rgba(99,102,241,0.15)",
                   border: `1px solid ${
                     page === totalPages
                       ? "rgba(255,255,255,0.06)"
                       : "rgba(99,102,241,0.3)"
                   }`,
                   borderRadius: "8px",
-                  color: page === totalPages ? "#334155" : "#818CF8",
+                  color: page === totalPages ? "#3D3028" : "#818CF8",
                   cursor: page === totalPages ? "not-allowed" : "pointer",
                   fontSize: "14px",
                   fontWeight: "600",
