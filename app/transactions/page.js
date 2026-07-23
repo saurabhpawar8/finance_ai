@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -712,6 +712,10 @@ export default function TransactionsPage() {
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [hasPrev, setHasPrev] = useState(false);
+
+  // Skip initial run of filter + page effects (prevent triple API call on mount)
+  const filterMounted = useRef(false);
+  const pageMounted = useRef(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [wallet, setWallet] = useState("All");
@@ -748,10 +752,13 @@ export default function TransactionsPage() {
       if (res?.success)
         setWallets(["All", ...res.data.filter((w) => w && w !== "null")]);
     });
-    fetchData(1, "", "All", "All");
   }, []);
 
   useEffect(() => {
+    if (!filterMounted.current) {
+      filterMounted.current = true;
+      return;
+    }
     const t = setTimeout(() => {
       setPage(1);
       fetchData(1, search, category, wallet);
@@ -760,6 +767,9 @@ export default function TransactionsPage() {
   }, [search, category, wallet]);
 
   useEffect(() => {
+    if (!pageMounted.current) {
+      pageMounted.current = true;
+    }
     fetchData(page, search, category, wallet);
   }, [page]);
 
