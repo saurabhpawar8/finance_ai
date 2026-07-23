@@ -710,6 +710,8 @@ export default function TransactionsPage() {
   const [rows, setRows] = useState([]);
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [wallet, setWallet] = useState("All");
@@ -728,6 +730,8 @@ export default function TransactionsPage() {
       const res = await getTransactions(params);
       setRows(res?.results || []);
       setCount(res?.count || 0);
+      setHasNext(!!res?.next);
+      setHasPrev(!!res?.previous);
     } catch {}
     setLoading(false);
   };
@@ -765,7 +769,6 @@ export default function TransactionsPage() {
     setRows((prev) => prev.filter((r) => r.id !== id));
     setCount((c) => c - 1);
   };
-  const totalPages = Math.ceil(count / 10);
   const filtersActive = search || category !== "All" || wallet !== "All";
   const handleLogout = () => {
     removeTokens();
@@ -1219,7 +1222,7 @@ export default function TransactionsPage() {
         </div>
 
         {/* PAGINATION */}
-        {totalPages > 1 && (
+        {(hasPrev || hasNext) && (
           <div
             style={{
               display: "flex",
@@ -1229,12 +1232,12 @@ export default function TransactionsPage() {
             }}
           >
             <span style={{ color: "#64748B", fontSize: "13px" }}>
-              Page {page} of {totalPages}
+              Page {page} · {count} total
             </span>
             <div style={{ display: "flex", gap: "8px" }}>
               {[
-                ["← Prev", page - 1, page === 1],
-                ["Next →", page + 1, page === totalPages],
+                ["← Prev", page - 1, !hasPrev],
+                ["Next →", page + 1, !hasNext],
               ].map(([label, target, disabled]) => (
                 <button
                   key={label}
