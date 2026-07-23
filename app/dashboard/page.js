@@ -16,6 +16,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { getSummary, getPieSummary, sendChat, removeTokens } from "@/lib/api";
+import Toast, { showToast } from "@/components/Toast";
 
 const ExpensePieChart = dynamic(() => import("@/components/ExpensePieChart"), {
   ssr: false,
@@ -29,7 +30,6 @@ const EXAMPLES = [
   "Petrol 500",
   "Movie tickets 400",
 ];
-
 const STEPS = [
   {
     icon: MessageSquare,
@@ -38,7 +38,7 @@ const STEPS = [
     border: "rgba(99,102,241,0.2)",
     step: "1",
     title: "Tell me what you spent",
-    desc: 'Just type naturally — "Spent 200 at Zomato" or "Paid electricity bill 1200". No forms, no dropdowns.',
+    desc: 'Type naturally — "Spent 200 at Zomato". No forms, no dropdowns.',
   },
   {
     icon: PieChart,
@@ -47,7 +47,7 @@ const STEPS = [
     border: "rgba(16,185,129,0.2)",
     step: "2",
     title: "I categorize everything",
-    desc: "Every expense is automatically sorted into categories like Food, Transport, Shopping and shown as a live chart.",
+    desc: "Every expense is sorted into categories and shown as a live chart.",
   },
   {
     icon: Sparkles,
@@ -56,12 +56,36 @@ const STEPS = [
     border: "rgba(245,158,11,0.2)",
     step: "3",
     title: "Get AI insights",
-    desc: "Go to Reports to get a full AI analysis of your spending habits, trends and personalized suggestions.",
+    desc: "Go to Reports for a full AI analysis of your spending habits.",
   },
 ];
 
-// ── Defined OUTSIDE DashboardPage so React doesn't remount on every keystroke ──
+// ── Animated counter ──────────────────────────────────────
+function CountUp({ to, prefix = "", decimals = 0, duration = 1600 }) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (!to && to !== 0) return;
+    let start = null;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setVal(
+        decimals ? (eased * to).toFixed(decimals) : Math.floor(eased * to)
+      );
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [to, duration, decimals]);
+  return (
+    <>
+      {prefix}
+      {Number(val).toLocaleString("en-IN")}
+    </>
+  );
+}
 
+// ── Shared components (outside parent to avoid remount) ───
 function AppHeader({ onLogout }) {
   return (
     <header
@@ -202,7 +226,6 @@ function ChatBox({
           Record Expense
         </p>
       )}
-
       <div
         style={{
           flex: 1,
@@ -275,7 +298,6 @@ function ChatBox({
         )}
         <div ref={messagesEndRef} />
       </div>
-
       {messages.length <= 1 && (
         <div
           style={{
@@ -305,7 +327,6 @@ function ChatBox({
           ))}
         </div>
       )}
-
       <div style={{ display: "flex", gap: "10px" }}>
         <input
           value={input}
@@ -350,24 +371,41 @@ function ChatBox({
   );
 }
 
-const BottomTabs = () => (
-  <nav className="bottom-tab-bar">
-    <Link href="/dashboard" className="bottom-tab-link bottom-tab-active">
-      <LayoutDashboard size={22} strokeWidth={1.5} />
-      Dashboard
-    </Link>
-    <Link href="/transactions" className="bottom-tab-link">
-      <Receipt size={22} strokeWidth={1.5} />
-      Transactions
-    </Link>
-    <Link href="/report" className="bottom-tab-link">
-      <BarChart3 size={22} strokeWidth={1.5} />
-      Reports
-    </Link>
-  </nav>
-);
+function BottomTabs({ active }) {
+  return (
+    <nav className="bottom-tab-bar">
+      {[
+        { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+        { href: "/transactions", icon: Receipt, label: "Transactions" },
+        { href: "/report", icon: BarChart3, label: "Reports" },
+      ].map(({ href, icon: Icon, label }) => {
+        const isActive = active === label.toLowerCase();
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={`bottom-tab-link ${isActive ? "bottom-tab-active" : ""}`}
+          >
+            <div
+              className={isActive ? "tab-active-pill" : ""}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "3px",
+              }}
+            >
+              <Icon size={22} strokeWidth={1.5} />
+              {label}
+            </div>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
-// ── Main page ──────────────────────────────────────────────
+// ── Main ─────────────────────────────────────────────────
 export default function DashboardPage() {
   const router = useRouter();
   const [summary, setSummary] = useState(null);
@@ -419,18 +457,21 @@ export default function DashboardPage() {
         const res = await sendChat(msg);
         if (res?.success) {
           setMessages((prev) => [...prev, { role: "bot", text: res.message }]);
+          showToast("Expense recorded!", "success");
           loadData();
         } else {
           setMessages((prev) => [
             ...prev,
             { role: "bot", text: res?.message || "Something went wrong." },
           ]);
+          showToast(res?.message || "Something went wrong", "error");
         }
       } catch {
         setMessages((prev) => [
           ...prev,
           { role: "bot", text: "Could not connect. Is your backend running?" },
         ]);
+        showToast("Could not connect to server", "error");
       }
       setChatLoading(false);
     },
@@ -441,11 +482,9 @@ export default function DashboardPage() {
     removeTokens();
     router.push("/auth");
   }, [router]);
-
   const fmt = (n) => (n ? `₹${Number(n).toLocaleString("en-IN")}` : "₹0");
   const isFirstTime =
     !dataLoading && (!summary || summary.total_transactions === 0);
-
   const chatProps = {
     messages,
     chatLoading,
@@ -455,7 +494,7 @@ export default function DashboardPage() {
     messagesEndRef,
   };
 
-  // ── WELCOME (first-time) ──────────────────────────────────
+  // ── WELCOME ───────────────────────────────────────────
   if (isFirstTime) {
     return (
       <div
@@ -463,12 +502,10 @@ export default function DashboardPage() {
         style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
       >
         <AppHeader onLogout={handleLogout} />
-
         <main
           className="mobile-main"
           style={{ maxWidth: "860px", margin: "0 auto", padding: "40px 20px" }}
         >
-          {/* Hero */}
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
             <div
               style={{
@@ -511,8 +548,6 @@ export default function DashboardPage() {
               entry — just plain English.
             </p>
           </div>
-
-          {/* Steps */}
           <div className="cards-grid" style={{ marginBottom: "36px" }}>
             {STEPS.map(
               ({ icon: Icon, color, bg, border, step, title, desc }) => (
@@ -583,8 +618,6 @@ export default function DashboardPage() {
               )
             )}
           </div>
-
-          {/* Chat — full width */}
           <div style={{ marginBottom: "24px" }}>
             <div
               style={{
@@ -623,7 +656,6 @@ export default function DashboardPage() {
             </div>
             <ChatBox {...chatProps} fullWidth={true} />
           </div>
-
           <div style={{ textAlign: "center" }}>
             <Link
               href="/transactions"
@@ -641,20 +673,19 @@ export default function DashboardPage() {
             </Link>
           </div>
         </main>
-
-        <BottomTabs />
+        <BottomTabs active="dashboard" />
+        <Toast />
       </div>
     );
   }
 
-  // ── NORMAL DASHBOARD ─────────────────────────────────────
+  // ── NORMAL DASHBOARD ─────────────────────────────────
   return (
     <div
       className="mobile-page-wrap"
       style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
     >
       <AppHeader onLogout={handleLogout} />
-
       <main
         className="mobile-main"
         style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 20px" }}
@@ -672,83 +703,156 @@ export default function DashboardPage() {
           {summary?.month || "This Month"}
         </p>
 
+        {/* Summary cards with animated counters */}
         <div className="cards-grid">
-          {[
-            {
-              label: "Total Spent",
-              value: fmt(summary?.total_expense),
-              color: "#F87171",
-              glow: "rgba(239,68,68,0.08)",
-            },
-            {
-              label: "Transactions",
-              value: summary?.total_transactions ?? 0,
-              color: "#818CF8",
-              glow: "rgba(99,102,241,0.08)",
-            },
-            {
-              label: "Top Category",
-              value: summary?.top_category || "—",
-              color: "#34D399",
-              glow: "rgba(16,185,129,0.08)",
-              size: "18px",
-              sub: summary?.category_amount
-                ? `${fmt(summary.category_amount)} spent`
-                : "No data",
-            },
-          ].map((c, i) => (
+          <div
+            style={{
+              background: "#1E293B",
+              borderRadius: "16px",
+              padding: "20px",
+              border: "1px solid rgba(255,255,255,0.07)",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
             <div
-              key={i}
               style={{
-                background: "#1E293B",
-                borderRadius: "16px",
-                padding: "20px",
-                border: "1px solid rgba(255,255,255,0.07)",
-                position: "relative",
-                overflow: "hidden",
+                position: "absolute",
+                top: "-20px",
+                right: "-20px",
+                width: "80px",
+                height: "80px",
+                background: "rgba(239,68,68,0.08)",
+                borderRadius: "50%",
+              }}
+            />
+            <p
+              style={{
+                fontSize: "11px",
+                color: "#64748B",
+                fontWeight: "600",
+                textTransform: "uppercase",
+                letterSpacing: "0.8px",
+                marginBottom: "10px",
               }}
             >
-              <div
-                style={{
-                  position: "absolute",
-                  top: "-20px",
-                  right: "-20px",
-                  width: "80px",
-                  height: "80px",
-                  background: c.glow,
-                  borderRadius: "50%",
-                }}
-              />
-              <p
-                style={{
-                  fontSize: "11px",
-                  color: "#64748B",
-                  fontWeight: "600",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.8px",
-                  marginBottom: "10px",
-                }}
-              >
-                {c.label}
-              </p>
-              <p
-                style={{
-                  fontSize: c.size || "28px",
-                  fontWeight: "800",
-                  color: c.color,
-                  letterSpacing: "-1px",
-                  lineHeight: 1,
-                }}
-              >
-                {c.value}
-              </p>
-              <p
-                style={{ fontSize: "12px", color: "#475569", marginTop: "6px" }}
-              >
-                {c.sub || "This month"}
-              </p>
-            </div>
-          ))}
+              Total Spent
+            </p>
+            <p
+              style={{
+                fontSize: "28px",
+                fontWeight: "800",
+                color: "#F87171",
+                letterSpacing: "-1px",
+                lineHeight: 1,
+              }}
+            >
+              <CountUp to={summary?.total_expense || 0} prefix="₹" />
+            </p>
+            <p style={{ fontSize: "12px", color: "#475569", marginTop: "6px" }}>
+              This month
+            </p>
+          </div>
+          <div
+            style={{
+              background: "#1E293B",
+              borderRadius: "16px",
+              padding: "20px",
+              border: "1px solid rgba(255,255,255,0.07)",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: "-20px",
+                right: "-20px",
+                width: "80px",
+                height: "80px",
+                background: "rgba(99,102,241,0.08)",
+                borderRadius: "50%",
+              }}
+            />
+            <p
+              style={{
+                fontSize: "11px",
+                color: "#64748B",
+                fontWeight: "600",
+                textTransform: "uppercase",
+                letterSpacing: "0.8px",
+                marginBottom: "10px",
+              }}
+            >
+              Transactions
+            </p>
+            <p
+              style={{
+                fontSize: "28px",
+                fontWeight: "800",
+                color: "#818CF8",
+                letterSpacing: "-1px",
+                lineHeight: 1,
+              }}
+            >
+              <CountUp to={summary?.total_transactions || 0} />
+            </p>
+            <p style={{ fontSize: "12px", color: "#475569", marginTop: "6px" }}>
+              This month
+            </p>
+          </div>
+          <div
+            style={{
+              background: "#1E293B",
+              borderRadius: "16px",
+              padding: "20px",
+              border: "1px solid rgba(255,255,255,0.07)",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: "-20px",
+                right: "-20px",
+                width: "80px",
+                height: "80px",
+                background: "rgba(16,185,129,0.08)",
+                borderRadius: "50%",
+              }}
+            />
+            <p
+              style={{
+                fontSize: "11px",
+                color: "#64748B",
+                fontWeight: "600",
+                textTransform: "uppercase",
+                letterSpacing: "0.8px",
+                marginBottom: "10px",
+              }}
+            >
+              Top Category
+            </p>
+            <p
+              style={{
+                fontSize: "18px",
+                fontWeight: "800",
+                color: "#34D399",
+                letterSpacing: "-0.5px",
+                lineHeight: 1.2,
+              }}
+            >
+              {summary?.top_category || "—"}
+            </p>
+            <p style={{ fontSize: "12px", color: "#475569", marginTop: "6px" }}>
+              {summary?.category_amount
+                ? `₹${Number(summary.category_amount).toLocaleString(
+                    "en-IN"
+                  )} spent`
+                : "No data"}
+            </p>
+          </div>
         </div>
 
         <div className="bottom-grid">
@@ -782,8 +886,8 @@ export default function DashboardPage() {
           <ChatBox {...chatProps} fullWidth={false} />
         </div>
       </main>
-
-      <BottomTabs />
+      <BottomTabs active="dashboard" />
+      <Toast />
     </div>
   );
 }

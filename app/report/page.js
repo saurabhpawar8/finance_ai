@@ -17,6 +17,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { getReport, fetchMonthlyReport, removeTokens } from "@/lib/api";
+import Toast, { showToast } from "@/components/Toast";
 
 const MONTHS = [
   { label: "January", value: 1 },
@@ -172,6 +173,30 @@ function CategoryBar({ item, index, maxTotal }) {
   );
 }
 
+// Skeleton for report sections
+function ReportSkeleton() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div className="report-top-grid">
+        {[140, 140].map((h, i) => (
+          <div
+            key={i}
+            className="skeleton"
+            style={{ height: h, borderRadius: "16px" }}
+          />
+        ))}
+      </div>
+      {[200, 120, 100, 100].map((h, i) => (
+        <div
+          key={i}
+          className="skeleton"
+          style={{ height: h, borderRadius: "16px" }}
+        />
+      ))}
+    </div>
+  );
+}
+
 const selectStyle = {
   padding: "12px 36px 12px 14px",
   width: "100%",
@@ -251,7 +276,6 @@ export default function ReportPage() {
   const [error, setError] = useState("");
   const [range, setRange] = useState("this_month");
   const [downloading, setDownloading] = useState(false);
-  const [dlError, setDlError] = useState("");
 
   useEffect(() => {
     if (!localStorage.getItem("access_token")) router.push("/auth");
@@ -272,12 +296,12 @@ export default function ReportPage() {
   };
 
   const handleDownload = async () => {
-    setDlError("");
     setDownloading(true);
+    showToast("Preparing download…", "info");
     try {
       const res = await fetchMonthlyReport(range);
       if (!res || !res.ok) {
-        setDlError("Download failed. Please try again.");
+        showToast("Download failed", "error");
         return;
       }
       const buffer = await res.arrayBuffer();
@@ -298,8 +322,9 @@ export default function ReportPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      showToast("Downloaded successfully!", "success");
     } catch {
-      setDlError("Download failed. Please try again.");
+      showToast("Download failed. Please try again.", "error");
     }
     setDownloading(false);
   };
@@ -466,7 +491,7 @@ export default function ReportPage() {
               <p
                 style={{ fontSize: "12px", color: "#64748B", marginTop: "2px" }}
               >
-                Export your transactions as a spreadsheet
+                Export transactions as a spreadsheet
               </p>
             </div>
           </div>
@@ -532,11 +557,6 @@ export default function ReportPage() {
                 </>
               )}
             </button>
-            {dlError && (
-              <span style={{ fontSize: "13px", color: "#FCA5A5" }}>
-                {dlError}
-              </span>
-            )}
           </div>
         </div>
 
@@ -661,26 +681,8 @@ export default function ReportPage() {
           )}
         </div>
 
-        {/* LOADING */}
-        {loading && (
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-          >
-            {[180, 280, 160, 200].map((h, i) => (
-              <div
-                key={i}
-                style={{
-                  height: h,
-                  background: "#1E293B",
-                  borderRadius: "16px",
-                  opacity: 0.6,
-                }}
-              />
-            ))}
-          </div>
-        )}
+        {loading && <ReportSkeleton />}
 
-        {/* RESULTS */}
         {report && !loading && (
           <div
             style={{ display: "flex", flexDirection: "column", gap: "16px" }}
@@ -820,7 +822,6 @@ export default function ReportPage() {
                 {report.top_category}
               </p>
             </SectionCard>
-
             <SectionCard
               icon={TrendingUp}
               iconColor="#34D399"
@@ -836,7 +837,6 @@ export default function ReportPage() {
                 {report.spending_trend}
               </p>
             </SectionCard>
-
             <SectionCard
               icon={Activity}
               iconColor="#64748B"
@@ -977,20 +977,38 @@ export default function ReportPage() {
         )}
       </main>
 
+      {/* BOTTOM TABS */}
       <nav className="bottom-tab-bar">
-        <Link href="/dashboard" className="bottom-tab-link">
-          <LayoutDashboard size={22} strokeWidth={1.5} />
-          Dashboard
-        </Link>
-        <Link href="/transactions" className="bottom-tab-link">
-          <Receipt size={22} strokeWidth={1.5} />
-          Transactions
-        </Link>
-        <Link href="/report" className="bottom-tab-link bottom-tab-active">
-          <BarChart3 size={22} strokeWidth={1.5} />
-          Reports
-        </Link>
+        {[
+          { href: "/dashboard", Icon: LayoutDashboard, label: "Dashboard" },
+          { href: "/transactions", Icon: Receipt, label: "Transactions" },
+          { href: "/report", Icon: BarChart3, label: "Reports" },
+        ].map(({ href, Icon, label }) => {
+          const active = label === "Reports";
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`bottom-tab-link ${active ? "bottom-tab-active" : ""}`}
+            >
+              <div
+                className={active ? "tab-active-pill" : ""}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "3px",
+                }}
+              >
+                <Icon size={22} strokeWidth={1.5} />
+                {label}
+              </div>
+            </Link>
+          );
+        })}
       </nav>
+
+      <Toast />
     </div>
   );
 }

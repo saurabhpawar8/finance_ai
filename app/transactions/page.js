@@ -14,6 +14,13 @@ import {
   Pencil,
   Check,
   Trash2,
+  UtensilsCrossed,
+  Car,
+  ShoppingBag,
+  FileText,
+  Gamepad2,
+  Heart,
+  Grid3X3,
 } from "lucide-react";
 import {
   getTransactions,
@@ -23,16 +30,59 @@ import {
   deleteTransaction,
   removeTokens,
 } from "@/lib/api";
+import Toast, { showToast } from "@/components/Toast";
 
-const CAT_STYLE = {
-  "Food & Dining": { bg: "rgba(99,102,241,0.15)", text: "#818CF8" },
-  Transport: { bg: "rgba(16,185,129,0.15)", text: "#34D399" },
-  Shopping: { bg: "rgba(139,92,246,0.15)", text: "#A78BFA" },
-  "Bills & Utilities": { bg: "rgba(6,182,212,0.15)", text: "#22D3EE" },
-  Entertainment: { bg: "rgba(245,158,11,0.15)", text: "#FCD34D" },
-  Health: { bg: "rgba(239,68,68,0.15)", text: "#FCA5A5" },
-  General: { bg: "rgba(249,115,22,0.15)", text: "#FB923C" },
+// Category metadata with icons
+const CAT_META = {
+  "Food & Dining": {
+    bg: "rgba(99,102,241,0.15)",
+    text: "#818CF8",
+    Icon: UtensilsCrossed,
+  },
+  Transport: { bg: "rgba(16,185,129,0.15)", text: "#34D399", Icon: Car },
+  Shopping: { bg: "rgba(139,92,246,0.15)", text: "#A78BFA", Icon: ShoppingBag },
+  "Bills & Utilities": {
+    bg: "rgba(6,182,212,0.15)",
+    text: "#22D3EE",
+    Icon: FileText,
+  },
+  Entertainment: {
+    bg: "rgba(245,158,11,0.15)",
+    text: "#FCD34D",
+    Icon: Gamepad2,
+  },
+  Health: { bg: "rgba(239,68,68,0.15)", text: "#FCA5A5", Icon: Heart },
+  General: { bg: "rgba(249,115,22,0.15)", text: "#FB923C", Icon: Grid3X3 },
 };
+const DEFAULT_META = {
+  bg: "rgba(100,116,139,0.15)",
+  text: "#94A3B8",
+  Icon: Grid3X3,
+};
+
+// Highlight search match in text
+function Highlight({ text, query }) {
+  if (!query || !text) return <>{text}</>;
+  const idx = String(text).toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark
+        style={{
+          background: "rgba(245,158,11,0.25)",
+          color: "#FCD34D",
+          borderRadius: "2px",
+          padding: "0 2px",
+          fontWeight: "600",
+        }}
+      >
+        {text.slice(idx, idx + query.length)}
+      </mark>
+      {text.slice(idx + query.length)}
+    </>
+  );
+}
 
 const fmtDate = (d) =>
   new Date(d).toLocaleDateString("en-IN", {
@@ -59,7 +109,6 @@ const selectStyle = {
   backgroundRepeat: "no-repeat",
   backgroundPosition: "right 12px center",
 };
-
 const inputStyle = {
   width: "100%",
   padding: "11px 14px",
@@ -71,15 +120,123 @@ const inputStyle = {
   outline: "none",
 };
 
-// ── Edit Modal ──────────────────────────────────────────────
-function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
+// Category badge with icon
+function CatBadge({ category }) {
+  const m = CAT_META[category] || DEFAULT_META;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "4px",
+        padding: "4px 10px",
+        borderRadius: "20px",
+        background: m.bg,
+        color: m.text,
+        fontSize: "12px",
+        fontWeight: "600",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <m.Icon size={11} strokeWidth={2.5} />
+      {category}
+    </span>
+  );
+}
+
+// Skeleton row for table
+function TableSkeleton() {
+  return (
+    <div style={{ padding: "16px 20px" }}>
+      {[...Array(6)].map((_, i) => (
+        <div
+          key={i}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "2fr 1fr 2fr 1fr 1.2fr 32px",
+            gap: "0 20px",
+            gap: "16px",
+            marginBottom: "16px",
+            alignItems: "center",
+          }}
+        >
+          <div className="skeleton" style={{ height: "14px", width: "70%" }} />
+          <div className="skeleton" style={{ height: "14px", width: "60%" }} />
+          <div
+            className="skeleton"
+            style={{ height: "24px", width: "80%", borderRadius: "20px" }}
+          />
+          <div className="skeleton" style={{ height: "14px", width: "55%" }} />
+          <div className="skeleton" style={{ height: "14px", width: "65%" }} />
+          <div
+            className="skeleton"
+            style={{ height: "28px", width: "28px", borderRadius: "6px" }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CardSkeleton() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      {[...Array(5)].map((_, i) => (
+        <div
+          key={i}
+          style={{
+            background: "#1E293B",
+            borderRadius: "14px",
+            padding: "16px",
+            border: "1px solid rgba(255,255,255,0.07)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: "10px",
+            }}
+          >
+            <div
+              className="skeleton"
+              style={{ height: "16px", width: "40%" }}
+            />
+            <div
+              className="skeleton"
+              style={{ height: "16px", width: "20%" }}
+            />
+          </div>
+          <div
+            className="skeleton"
+            style={{ height: "22px", width: "25%", marginBottom: "10px" }}
+          />
+          <div style={{ display: "flex", gap: "8px" }}>
+            <div
+              className="skeleton"
+              style={{ height: "22px", width: "100px", borderRadius: "20px" }}
+            />
+            <div
+              className="skeleton"
+              style={{ height: "22px", width: "80px" }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Edit / Add modal
+function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
+  const isEdit = !!tx?.id;
   const [form, setForm] = useState({
-    name: tx.name,
-    date: tx.date,
-    amount: tx.amount ?? "",
-    category: tx.category,
-    wallet: tx.wallet,
-    notes: tx.notes,
+    name: tx?.name || "",
+    date: tx?.date || new Date().toISOString().slice(0, 10),
+    amount: tx?.amount ?? "",
+    category: tx?.category || categories.filter((c) => c !== "All")[0] || "",
+    wallet: tx?.wallet || wallets.filter((w) => w !== "All")[0] || "",
+    notes: tx?.notes || "",
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -96,14 +253,22 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
     setError("");
     setSaving(true);
     try {
-      const res = await updateTransaction(tx.id, {
+      const payload = {
         ...form,
         amount: form.amount === "" ? null : Number(form.amount),
-      });
-      if (res?.id) {
-        onSaved(res);
+      };
+      let res;
+      if (isEdit) {
+        res = await updateTransaction(tx.id, payload);
+        if (res?.id) {
+          showToast("Transaction updated", "success");
+          onSaved(res);
+          onClose();
+        } else setError("Update failed. Please try again.");
+      } else {
+        showToast("No add API yet — use chat on Dashboard", "info");
         onClose();
-      } else setError("Update failed. Please try again.");
+      }
     } catch {
       setError("Could not connect to server.");
     }
@@ -115,11 +280,12 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
     try {
       const res = await deleteTransaction(tx.id);
       if (res?.success) {
+        showToast("Transaction deleted", "success");
         onDeleted(tx.id);
         onClose();
-      } else setError("Delete failed. Please try again.");
+      } else setError("Delete failed.");
     } catch {
-      setError("Could not connect to server.");
+      setError("Could not connect.");
     }
     setDeleting(false);
   };
@@ -148,6 +314,8 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
           maxWidth: "460px",
           border: "1px solid rgba(255,255,255,0.1)",
           boxShadow: "0 32px 64px rgba(0,0,0,0.5)",
+          maxHeight: "90vh",
+          overflowY: "auto",
         }}
       >
         <div
@@ -160,18 +328,17 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
         >
           <div>
             <h2
-              style={{
-                fontSize: "17px",
-                fontWeight: "700",
-                color: "#F1F5F9",
-                letterSpacing: "-0.3px",
-              }}
+              style={{ fontSize: "17px", fontWeight: "700", color: "#F1F5F9" }}
             >
-              Edit Transaction
+              {isEdit ? "Edit Transaction" : "Add Transaction"}
             </h2>
-            <p style={{ fontSize: "13px", color: "#64748B", marginTop: "2px" }}>
-              ID #{tx.id}
-            </p>
+            {isEdit && (
+              <p
+                style={{ fontSize: "13px", color: "#64748B", marginTop: "2px" }}
+              >
+                ID #{tx.id}
+              </p>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -246,7 +413,6 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
               />
             </div>
           </div>
-
           <div>
             <label
               style={{
@@ -268,7 +434,6 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
               style={{ ...inputStyle, colorScheme: "dark" }}
             />
           </div>
-
           <div
             style={{
               display: "grid",
@@ -333,7 +498,6 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
               </select>
             </div>
           </div>
-
           <div>
             <label
               style={{
@@ -351,7 +515,7 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
             <textarea
               value={form.notes}
               onChange={(e) => set("notes", e.target.value)}
-              placeholder="Optional notes…"
+              placeholder="Optional…"
               rows={2}
               style={{
                 ...inputStyle,
@@ -377,7 +541,6 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
             </div>
           )}
 
-          {/* Confirm delete banner */}
           {confirmDelete && (
             <div
               style={{
@@ -393,9 +556,9 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
               }}
             >
               <p style={{ fontSize: "13px", color: "#FCA5A5", margin: 0 }}>
-                Delete this transaction permanently?
+                Delete permanently?
               </p>
-              <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: "8px" }}>
                 <button
                   onClick={() => setConfirmDelete(false)}
                   style={{
@@ -444,7 +607,7 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
                     </>
                   ) : (
                     <>
-                      <Trash2 size={12} strokeWidth={2.5} />
+                      <Trash2 size={12} />
                       Yes, Delete
                     </>
                   )}
@@ -453,28 +616,29 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
             </div>
           )}
 
-          {/* Action buttons */}
           <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
-            <button
-              onClick={() => {
-                setConfirmDelete(true);
-                setError("");
-              }}
-              disabled={confirmDelete}
-              style={{
-                padding: "12px 14px",
-                background: "transparent",
-                border: "1px solid rgba(239,68,68,0.3)",
-                borderRadius: "10px",
-                color: confirmDelete ? "#334155" : "#F87171",
-                cursor: confirmDelete ? "not-allowed" : "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Trash2 size={15} strokeWidth={2} />
-            </button>
+            {isEdit && (
+              <button
+                onClick={() => {
+                  setConfirmDelete(true);
+                  setError("");
+                }}
+                disabled={confirmDelete}
+                style={{
+                  padding: "12px 14px",
+                  background: "transparent",
+                  border: "1px solid rgba(239,68,68,0.3)",
+                  borderRadius: "10px",
+                  color: confirmDelete ? "#334155" : "#F87171",
+                  cursor: confirmDelete ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Trash2 size={15} strokeWidth={2} />
+              </button>
+            )}
             <button
               onClick={onClose}
               style={{
@@ -530,7 +694,7 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
               ) : (
                 <>
                   <Check size={15} strokeWidth={2.5} />
-                  Save Changes
+                  Save
                 </>
               )}
             </button>
@@ -541,7 +705,6 @@ function EditModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
   );
 }
 
-// ── Main Page ──────────────────────────────────────────────
 export default function TransactionsPage() {
   const router = useRouter();
   const [rows, setRows] = useState([]);
@@ -553,7 +716,7 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState(["All"]);
   const [wallets, setWallets] = useState(["All"]);
-  const [editingTx, setEditingTx] = useState(null);
+  const [modalTx, setModalTx] = useState(null); // null=closed, {}=add, tx=edit
 
   const fetchData = async (pg, q, cat, wal) => {
     setLoading(true);
@@ -596,8 +759,8 @@ export default function TransactionsPage() {
     fetchData(page, search, category, wallet);
   }, [page]);
 
-  const handleSaved = (updated) =>
-    setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  const handleSaved = (u) =>
+    setRows((prev) => prev.map((r) => (r.id === u.id ? u : r)));
   const handleDeleted = (id) => {
     setRows((prev) => prev.filter((r) => r.id !== id));
     setCount((c) => c - 1);
@@ -608,54 +771,6 @@ export default function TransactionsPage() {
     removeTokens();
     router.push("/auth");
   };
-
-  const EditBtn = ({ tx }) => (
-    <button
-      onClick={() => setEditingTx(tx)}
-      title="Edit"
-      style={{
-        width: "28px",
-        height: "28px",
-        borderRadius: "6px",
-        border: "1px solid rgba(255,255,255,0.08)",
-        background: "transparent",
-        color: "#475569",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "rgba(99,102,241,0.4)";
-        e.currentTarget.style.color = "#818CF8";
-        e.currentTarget.style.background = "rgba(99,102,241,0.08)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-        e.currentTarget.style.color = "#475569";
-        e.currentTarget.style.background = "transparent";
-      }}
-    >
-      <Pencil size={12} strokeWidth={2} />
-    </button>
-  );
-
-  const Spinner = () => (
-    <div style={{ padding: "40px", textAlign: "center" }}>
-      <div
-        style={{
-          width: "28px",
-          height: "28px",
-          margin: "0 auto",
-          border: "3px solid #1E293B",
-          borderTop: "3px solid #6366F1",
-          borderRadius: "50%",
-          animation: "spin 0.8s linear infinite",
-        }}
-      />
-    </div>
-  );
 
   const EmptyState = () => (
     <div style={{ padding: "60px 20px", textAlign: "center" }}>
@@ -673,9 +788,6 @@ export default function TransactionsPage() {
       </p>
     </div>
   );
-
-  // Desktop table columns: Name | Amount | Category | Wallet | Date | Edit
-  const COLS = "2fr 1fr 1.5fr 1fr 1fr 36px";
 
   return (
     <div
@@ -909,7 +1021,8 @@ export default function TransactionsPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: COLS,
+              gridTemplateColumns: "2fr 1fr 2fr 1fr 1.2fr 32px",
+              gap: "0 20px",
               padding: "12px 20px",
               borderBottom: "1px solid rgba(255,255,255,0.06)",
               background: "#0F172A",
@@ -925,6 +1038,7 @@ export default function TransactionsPage() {
                     color: "#475569",
                     textTransform: "uppercase",
                     letterSpacing: "0.7px",
+                    textAlign: i === 1 ? "right" : "left",
                   }}
                 >
                   {h}
@@ -933,86 +1047,89 @@ export default function TransactionsPage() {
             )}
           </div>
           {loading ? (
-            <Spinner />
+            <TableSkeleton />
           ) : rows.length === 0 ? (
             <EmptyState />
           ) : (
-            rows.map((tx, i) => {
-              const cs = CAT_STYLE[tx.category] || {
-                bg: "rgba(100,116,139,0.15)",
-                text: "#94A3B8",
-              };
-              return (
-                <div
-                  key={tx.id}
+            rows.map((tx, i) => (
+              <div
+                key={tx.id}
+                onClick={() => setModalTx(tx)}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "2fr 1fr 2fr 1fr 1.2fr 32px",
+                  gap: "0 20px",
+                  padding: "13px 20px",
+                  alignItems: "center",
+                  borderBottom:
+                    i < rows.length - 1
+                      ? "1px solid rgba(255,255,255,0.04)"
+                      : "none",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(99,102,241,0.04)";
+                  e.currentTarget.querySelector(".row-action").style.opacity =
+                    "1";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.querySelector(".row-action").style.opacity =
+                    "0";
+                }}
+              >
+                <span
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: COLS,
-                    padding: "13px 20px",
-                    alignItems: "center",
-                    borderBottom:
-                      i < rows.length - 1
-                        ? "1px solid rgba(255,255,255,0.04)"
-                        : "none",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#E2E8F0",
                   }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background =
-                      "rgba(255,255,255,0.02)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")
-                  }
                 >
-                  <span
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      color: "#E2E8F0",
-                    }}
-                  >
-                    {tx.name}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "700",
-                      color: "#F87171",
-                    }}
-                  >
-                    {fmtAmount(tx.amount)}
-                  </span>
-                  <div>
-                    <span
-                      style={{
-                        display: "inline-block",
-                        padding: "4px 10px",
-                        borderRadius: "20px",
-                        background: cs.bg,
-                        color: cs.text,
-                        fontSize: "12px",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {tx.category}
-                    </span>
-                  </div>
-                  <span style={{ fontSize: "13px", color: "#64748B" }}>
-                    {tx.wallet}
-                  </span>
-                  <span style={{ fontSize: "13px", color: "#64748B" }}>
-                    {fmtDate(tx.date)}
-                  </span>
-                  <EditBtn tx={tx} />
+                  <Highlight text={tx.name} query={search} />
+                </span>
+                <span
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    color: "#F87171",
+                    textAlign: "right",
+                  }}
+                >
+                  {fmtAmount(tx.amount)}
+                </span>
+                <CatBadge category={tx.category} />
+                <span style={{ fontSize: "13px", color: "#64748B" }}>
+                  {tx.wallet}
+                </span>
+                <span style={{ fontSize: "13px", color: "#64748B" }}>
+                  {fmtDate(tx.date)}
+                </span>
+                <div
+                  className="row-action"
+                  style={{
+                    opacity: 0,
+                    transition: "opacity 0.15s",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "6px",
+                    background: "rgba(99,102,241,0.1)",
+                    border: "1px solid rgba(99,102,241,0.2)",
+                  }}
+                >
+                  <Pencil size={12} color="#818CF8" strokeWidth={2} />
                 </div>
-              );
-            })
+              </div>
+            ))
           )}
         </div>
 
         {/* MOBILE CARDS */}
         <div className="tx-cards-view">
           {loading ? (
-            <Spinner />
+            <CardSkeleton />
           ) : rows.length === 0 ? (
             <div
               style={{
@@ -1024,89 +1141,80 @@ export default function TransactionsPage() {
               <EmptyState />
             </div>
           ) : (
-            rows.map((tx) => {
-              const cs = CAT_STYLE[tx.category] || {
-                bg: "rgba(100,116,139,0.15)",
-                text: "#94A3B8",
-              };
-              return (
+            rows.map((tx) => (
+              <div
+                key={tx.id}
+                onClick={() => setModalTx(tx)}
+                style={{
+                  background: "#1E293B",
+                  borderRadius: "14px",
+                  padding: "16px",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  cursor: "pointer",
+                  transition: "border-color 0.15s",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.borderColor = "rgba(99,102,241,0.3)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)")
+                }
+              >
                 <div
-                  key={tx.id}
                   style={{
-                    background: "#1E293B",
-                    borderRadius: "14px",
-                    padding: "16px",
-                    border: "1px solid rgba(255,255,255,0.07)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    marginBottom: "6px",
                   }}
                 >
-                  {/* Row 1: Name + Edit */}
-                  <div
+                  <span
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      marginBottom: "8px",
+                      fontSize: "15px",
+                      fontWeight: "700",
+                      color: "#E2E8F0",
                     }}
                   >
-                    <span
-                      style={{
-                        fontSize: "15px",
-                        fontWeight: "700",
-                        color: "#E2E8F0",
-                      }}
-                    >
-                      {tx.name}
-                    </span>
-                    <EditBtn tx={tx} />
-                  </div>
-                  {/* Row 2: Amount prominent */}
-                  <p
-                    style={{
-                      fontSize: "20px",
-                      fontWeight: "800",
-                      color: "#F87171",
-                      letterSpacing: "-0.5px",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    {fmtAmount(tx.amount)}
-                  </p>
-                  {/* Row 3: Meta */}
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span
-                      style={{
-                        padding: "3px 10px",
-                        borderRadius: "20px",
-                        background: cs.bg,
-                        color: cs.text,
-                        fontSize: "12px",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {tx.category}
-                    </span>
-                    <span style={{ fontSize: "12px", color: "#64748B" }}>
-                      · {tx.wallet}
-                    </span>
-                    <span style={{ fontSize: "12px", color: "#64748B" }}>
-                      · {fmtDate(tx.date)}
-                    </span>
-                    {tx.notes && (
-                      <span style={{ fontSize: "12px", color: "#475569" }}>
-                        · {tx.notes}
-                      </span>
-                    )}
-                  </div>
+                    <Highlight text={tx.name} query={search} />
+                  </span>
+                  <span style={{ fontSize: "12px", color: "#475569" }}>
+                    tap to edit
+                  </span>
                 </div>
-              );
-            })
+                <p
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "800",
+                    color: "#F87171",
+                    letterSpacing: "-0.5px",
+                    marginBottom: "10px",
+                  }}
+                >
+                  {fmtAmount(tx.amount)}
+                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <CatBadge category={tx.category} />
+                  <span style={{ fontSize: "12px", color: "#64748B" }}>
+                    · {tx.wallet}
+                  </span>
+                  <span style={{ fontSize: "12px", color: "#64748B" }}>
+                    · {fmtDate(tx.date)}
+                  </span>
+                  {tx.notes && (
+                    <span style={{ fontSize: "12px", color: "#475569" }}>
+                      · {tx.notes}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))
           )}
         </div>
 
@@ -1155,36 +1263,50 @@ export default function TransactionsPage() {
         )}
       </main>
 
-      {/* BOTTOM TAB BAR */}
+      {/* BOTTOM TABS */}
       <nav className="bottom-tab-bar">
-        <Link href="/dashboard" className="bottom-tab-link">
-          <LayoutDashboard size={22} strokeWidth={1.5} />
-          Dashboard
-        </Link>
-        <Link
-          href="/transactions"
-          className="bottom-tab-link bottom-tab-active"
-        >
-          <Receipt size={22} strokeWidth={1.5} />
-          Transactions
-        </Link>
-        <Link href="/report" className="bottom-tab-link">
-          <BarChart3 size={22} strokeWidth={1.5} />
-          Reports
-        </Link>
+        {[
+          { href: "/dashboard", Icon: LayoutDashboard, label: "Dashboard" },
+          { href: "/transactions", Icon: Receipt, label: "Transactions" },
+          { href: "/report", Icon: BarChart3, label: "Reports" },
+        ].map(({ href, Icon, label }) => {
+          const active = label === "Transactions";
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`bottom-tab-link ${active ? "bottom-tab-active" : ""}`}
+            >
+              <div
+                className={active ? "tab-active-pill" : ""}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "3px",
+                }}
+              >
+                <Icon size={22} strokeWidth={1.5} />
+                {label}
+              </div>
+            </Link>
+          );
+        })}
       </nav>
 
-      {/* EDIT MODAL */}
-      {editingTx && (
-        <EditModal
-          tx={editingTx}
+      {/* MODAL */}
+      {modalTx !== null && (
+        <TxModal
+          tx={modalTx}
           categories={categories}
           wallets={wallets}
-          onClose={() => setEditingTx(null)}
+          onClose={() => setModalTx(null)}
           onSaved={handleSaved}
           onDeleted={handleDeleted}
         />
       )}
+
+      <Toast />
     </div>
   );
 }
