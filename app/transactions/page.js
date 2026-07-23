@@ -1224,65 +1224,41 @@ export default function TransactionsPage() {
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              gap: "12px",
-              marginTop: "24px",
+              justifyContent: "space-between",
+              marginTop: "20px",
             }}
           >
-            <button
-              onClick={() => setPage((p) => p - 1)}
-              disabled={page === 1 || loading}
-              style={{
-                flex: 1,
-                maxWidth: "130px",
-                padding: "11px 0",
-                background: page === 1 ? "#1E293B" : "rgba(99,102,241,0.15)",
-                border: `1px solid ${
-                  page === 1 ? "rgba(255,255,255,0.06)" : "rgba(99,102,241,0.3)"
-                }`,
-                borderRadius: "10px",
-                color: page === 1 ? "#475569" : "#818CF8",
-                cursor: page === 1 ? "not-allowed" : "pointer",
-                fontSize: "14px",
-                fontWeight: "600",
-              }}
-            >
-              ← Prev
-            </button>
-            <span
-              style={{
-                color: "#64748B",
-                fontSize: "13px",
-                whiteSpace: "nowrap",
-                minWidth: "70px",
-                textAlign: "center",
-              }}
-            >
-              {page} of {totalPages}
+            <span style={{ color: "#64748B", fontSize: "13px" }}>
+              Page {page} of {totalPages}
             </span>
-            <button
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page === totalPages || loading}
-              style={{
-                flex: 1,
-                maxWidth: "130px",
-                padding: "11px 0",
-                background:
-                  page === totalPages ? "#1E293B" : "rgba(99,102,241,0.15)",
-                border: `1px solid ${
-                  page === totalPages
-                    ? "rgba(255,255,255,0.06)"
-                    : "rgba(99,102,241,0.3)"
-                }`,
-                borderRadius: "10px",
-                color: page === totalPages ? "#475569" : "#818CF8",
-                cursor: page === totalPages ? "not-allowed" : "pointer",
-                fontSize: "14px",
-                fontWeight: "600",
-              }}
-            >
-              Next →
-            </button>
+            <div style={{ display: "flex", gap: "8px" }}>
+              {[
+                ["← Prev", page - 1, page === 1],
+                ["Next →", page + 1, page === totalPages],
+              ].map(([label, target, disabled]) => (
+                <button
+                  key={label}
+                  onClick={() => setPage(target)}
+                  disabled={disabled || loading}
+                  style={{
+                    padding: "10px 20px",
+                    background: disabled ? "#1E293B" : "rgba(99,102,241,0.15)",
+                    border: `1px solid ${
+                      disabled
+                        ? "rgba(255,255,255,0.06)"
+                        : "rgba(99,102,241,0.3)"
+                    }`,
+                    borderRadius: "8px",
+                    color: disabled ? "#475569" : "#818CF8",
+                    cursor: disabled ? "not-allowed" : "pointer",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {/* Spacer — keeps pagination above the fixed tab bar on mobile */}
