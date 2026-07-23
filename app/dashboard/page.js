@@ -60,84 +60,10 @@ const STEPS = [
   },
 ];
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const [summary, setSummary] = useState(null);
-  const [pieData, setPieData] = useState([]);
-  const [dataLoading, setDataLoading] = useState(true);
-  const [messages, setMessages] = useState([
-    {
-      role: "bot",
-      text: 'Hi! Just tell me what you spent and I\'ll track it for you.\n\nTry: "Spent 200 at Zomato"',
-    },
-  ]);
-  const [input, setInput] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-  const messagesEndRef = useRef(null);
+// ── Defined OUTSIDE DashboardPage so React doesn't remount on every keystroke ──
 
-  const loadData = useCallback(async () => {
-    try {
-      const [sumRes, pieRes] = await Promise.all([
-        getSummary(),
-        getPieSummary(),
-      ]);
-      if (sumRes?.success) setSummary(sumRes.data);
-      if (pieRes?.success) setPieData(pieRes.data);
-    } catch {}
-    setDataLoading(false);
-  }, []);
-
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      router.push("/auth");
-      return;
-    }
-    loadData();
-  }, [loadData, router]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, chatLoading]);
-
-  const handleSend = async (text) => {
-    const msg = (text || input).trim();
-    if (!msg || chatLoading) return;
-    setInput("");
-    setMessages((prev) => [...prev, { role: "user", text: msg }]);
-    setChatLoading(true);
-    try {
-      const res = await sendChat(msg);
-      if (res?.success) {
-        setMessages((prev) => [...prev, { role: "bot", text: res.message }]);
-        loadData();
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          { role: "bot", text: res?.message || "Something went wrong." },
-        ]);
-      }
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: "bot", text: "Could not connect. Is your backend running?" },
-      ]);
-    }
-    setChatLoading(false);
-  };
-
-  const handleLogout = () => {
-    removeTokens();
-    router.push("/auth");
-  };
-  const fmt = (n) => (n ? `₹${Number(n).toLocaleString("en-IN")}` : "₹0");
-
-  // First-time: no transactions yet
-  const isFirstTime =
-    !dataLoading && (!summary || summary.total_transactions === 0);
-
-  // ── Shared header ──
-  const Header = () => (
+function AppHeader({ onLogout }) {
+  return (
     <header
       style={{
         background: "#1E293B",
@@ -218,7 +144,7 @@ export default function DashboardPage() {
           </Link>
         </div>
         <button
-          onClick={handleLogout}
+          onClick={onLogout}
           style={{
             padding: "7px 14px",
             background: "transparent",
@@ -239,9 +165,18 @@ export default function DashboardPage() {
       </div>
     </header>
   );
+}
 
-  // ── Shared chat box ──
-  const ChatBox = ({ fullWidth }) => (
+function ChatBox({
+  messages,
+  chatLoading,
+  input,
+  setInput,
+  onSend,
+  messagesEndRef,
+  fullWidth,
+}) {
+  return (
     <div
       style={{
         background: "#1E293B",
@@ -341,7 +276,6 @@ export default function DashboardPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Example chips — show until user sends first message */}
       {messages.length <= 1 && (
         <div
           style={{
@@ -354,7 +288,7 @@ export default function DashboardPage() {
           {EXAMPLES.slice(0, fullWidth ? 6 : 4).map((s, i) => (
             <button
               key={i}
-              onClick={() => handleSend(s)}
+              onClick={() => onSend(s)}
               style={{
                 padding: "6px 12px",
                 background: "rgba(99,102,241,0.1)",
@@ -376,7 +310,7 @@ export default function DashboardPage() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          onKeyDown={(e) => e.key === "Enter" && onSend()}
           placeholder="e.g. Spent 200 at Zomato…"
           disabled={chatLoading}
           style={{
@@ -391,7 +325,7 @@ export default function DashboardPage() {
           }}
         />
         <button
-          onClick={() => handleSend()}
+          onClick={() => onSend()}
           disabled={chatLoading || !input.trim()}
           style={{
             padding: "12px 16px",
@@ -414,17 +348,121 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
 
-  // ════════════════════════════════════════
-  // FIRST-TIME WELCOME EXPERIENCE
-  // ════════════════════════════════════════
+const BottomTabs = () => (
+  <nav className="bottom-tab-bar">
+    <Link href="/dashboard" className="bottom-tab-link bottom-tab-active">
+      <LayoutDashboard size={22} strokeWidth={1.5} />
+      Dashboard
+    </Link>
+    <Link href="/transactions" className="bottom-tab-link">
+      <Receipt size={22} strokeWidth={1.5} />
+      Transactions
+    </Link>
+    <Link href="/report" className="bottom-tab-link">
+      <BarChart3 size={22} strokeWidth={1.5} />
+      Reports
+    </Link>
+  </nav>
+);
+
+// ── Main page ──────────────────────────────────────────────
+export default function DashboardPage() {
+  const router = useRouter();
+  const [summary, setSummary] = useState(null);
+  const [pieData, setPieData] = useState([]);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [messages, setMessages] = useState([
+    {
+      role: "bot",
+      text: 'Hi! Just tell me what you spent and I\'ll track it.\n\nTry: "Spent 200 at Zomato"',
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const loadData = useCallback(async () => {
+    try {
+      const [sumRes, pieRes] = await Promise.all([
+        getSummary(),
+        getPieSummary(),
+      ]);
+      if (sumRes?.success) setSummary(sumRes.data);
+      if (pieRes?.success) setPieData(pieRes.data);
+    } catch {}
+    setDataLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      router.push("/auth");
+      return;
+    }
+    loadData();
+  }, [loadData, router]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, chatLoading]);
+
+  const handleSend = useCallback(
+    async (text) => {
+      const msg = (text || input).trim();
+      if (!msg || chatLoading) return;
+      setInput("");
+      setMessages((prev) => [...prev, { role: "user", text: msg }]);
+      setChatLoading(true);
+      try {
+        const res = await sendChat(msg);
+        if (res?.success) {
+          setMessages((prev) => [...prev, { role: "bot", text: res.message }]);
+          loadData();
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            { role: "bot", text: res?.message || "Something went wrong." },
+          ]);
+        }
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          { role: "bot", text: "Could not connect. Is your backend running?" },
+        ]);
+      }
+      setChatLoading(false);
+    },
+    [input, chatLoading, loadData]
+  );
+
+  const handleLogout = useCallback(() => {
+    removeTokens();
+    router.push("/auth");
+  }, [router]);
+
+  const fmt = (n) => (n ? `₹${Number(n).toLocaleString("en-IN")}` : "₹0");
+  const isFirstTime =
+    !dataLoading && (!summary || summary.total_transactions === 0);
+
+  const chatProps = {
+    messages,
+    chatLoading,
+    input,
+    setInput,
+    onSend: handleSend,
+    messagesEndRef,
+  };
+
+  // ── WELCOME (first-time) ──────────────────────────────────
   if (isFirstTime) {
     return (
       <div
         className="mobile-page-wrap"
         style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
       >
-        <Header />
+        <AppHeader onLogout={handleLogout} />
 
         <main
           className="mobile-main"
@@ -474,7 +512,7 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* How it works */}
+          {/* Steps */}
           <div className="cards-grid" style={{ marginBottom: "36px" }}>
             {STEPS.map(
               ({ icon: Icon, color, bg, border, step, title, desc }) => (
@@ -546,7 +584,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Chat — full width, front and center */}
+          {/* Chat — full width */}
           <div style={{ marginBottom: "24px" }}>
             <div
               style={{
@@ -583,10 +621,9 @@ export default function DashboardPage() {
                 }}
               />
             </div>
-            <ChatBox fullWidth />
+            <ChatBox {...chatProps} fullWidth={true} />
           </div>
 
-          {/* Skip hint */}
           <div style={{ textAlign: "center" }}>
             <Link
               href="/transactions"
@@ -605,33 +642,18 @@ export default function DashboardPage() {
           </div>
         </main>
 
-        <nav className="bottom-tab-bar">
-          <Link href="/dashboard" className="bottom-tab-link bottom-tab-active">
-            <LayoutDashboard size={22} strokeWidth={1.5} />
-            Dashboard
-          </Link>
-          <Link href="/transactions" className="bottom-tab-link">
-            <Receipt size={22} strokeWidth={1.5} />
-            Transactions
-          </Link>
-          <Link href="/report" className="bottom-tab-link">
-            <BarChart3 size={22} strokeWidth={1.5} />
-            Reports
-          </Link>
-        </nav>
+        <BottomTabs />
       </div>
     );
   }
 
-  // ════════════════════════════════════════
-  // NORMAL DASHBOARD (returning user)
-  // ════════════════════════════════════════
+  // ── NORMAL DASHBOARD ─────────────────────────────────────
   return (
     <div
       className="mobile-page-wrap"
       style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
     >
-      <Header />
+      <AppHeader onLogout={handleLogout} />
 
       <main
         className="mobile-main"
@@ -650,7 +672,6 @@ export default function DashboardPage() {
           {summary?.month || "This Month"}
         </p>
 
-        {/* SUMMARY CARDS */}
         <div className="cards-grid">
           {[
             {
@@ -730,7 +751,6 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* PIE + CHAT */}
         <div className="bottom-grid">
           <div
             style={{
@@ -759,24 +779,11 @@ export default function DashboardPage() {
               <ExpensePieChart data={pieData} />
             </div>
           </div>
-          <ChatBox fullWidth={false} />
+          <ChatBox {...chatProps} fullWidth={false} />
         </div>
       </main>
 
-      <nav className="bottom-tab-bar">
-        <Link href="/dashboard" className="bottom-tab-link bottom-tab-active">
-          <LayoutDashboard size={22} strokeWidth={1.5} />
-          Dashboard
-        </Link>
-        <Link href="/transactions" className="bottom-tab-link">
-          <Receipt size={22} strokeWidth={1.5} />
-          Transactions
-        </Link>
-        <Link href="/report" className="bottom-tab-link">
-          <BarChart3 size={22} strokeWidth={1.5} />
-          Reports
-        </Link>
-      </nav>
+      <BottomTabs />
     </div>
   );
 }
