@@ -1241,7 +1241,7 @@ export default function TransactionsPage() {
                   page === 1 ? "rgba(255,255,255,0.06)" : "rgba(99,102,241,0.3)"
                 }`,
                 borderRadius: "10px",
-                color: page === 1 ? "#334155" : "#818CF8",
+                color: page === 1 ? "#475569" : "#818CF8",
                 cursor: page === 1 ? "not-allowed" : "pointer",
                 fontSize: "14px",
                 fontWeight: "600",
@@ -1275,7 +1275,7 @@ export default function TransactionsPage() {
                     : "rgba(99,102,241,0.3)"
                 }`,
                 borderRadius: "10px",
-                color: page === totalPages ? "#334155" : "#818CF8",
+                color: page === totalPages ? "#475569" : "#818CF8",
                 cursor: page === totalPages ? "not-allowed" : "pointer",
                 fontSize: "14px",
                 fontWeight: "600",
@@ -1285,6 +1285,8 @@ export default function TransactionsPage() {
             </button>
           </div>
         )}
+        {/* Spacer — keeps pagination above the fixed tab bar on mobile */}
+        <div style={{ height: "80px" }} />
       </main>
 
       {/* BOTTOM TABS */}
