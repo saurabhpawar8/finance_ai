@@ -10,6 +10,10 @@ import {
   BarChart3,
   LogOut,
   Send,
+  MessageSquare,
+  PieChart,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import { getSummary, getPieSummary, sendChat, removeTokens } from "@/lib/api";
 
@@ -17,11 +21,43 @@ const ExpensePieChart = dynamic(() => import("@/components/ExpensePieChart"), {
   ssr: false,
 });
 
-const SUGGESTIONS = [
+const EXAMPLES = [
   "Spent 200 at Zomato",
-  "Paid 1200 for electricity bill",
+  "Paid 1200 electricity bill",
   "Bought groceries for 800",
+  "Netflix subscription 649",
+  "Petrol 500",
   "Movie tickets 400",
+];
+
+const STEPS = [
+  {
+    icon: MessageSquare,
+    color: "#818CF8",
+    bg: "rgba(99,102,241,0.12)",
+    border: "rgba(99,102,241,0.2)",
+    step: "1",
+    title: "Tell me what you spent",
+    desc: 'Just type naturally — "Spent 200 at Zomato" or "Paid electricity bill 1200". No forms, no dropdowns.',
+  },
+  {
+    icon: PieChart,
+    color: "#34D399",
+    bg: "rgba(16,185,129,0.12)",
+    border: "rgba(16,185,129,0.2)",
+    step: "2",
+    title: "I categorize everything",
+    desc: "Every expense is automatically sorted into categories like Food, Transport, Shopping and shown as a live chart.",
+  },
+  {
+    icon: Sparkles,
+    color: "#F59E0B",
+    bg: "rgba(245,158,11,0.12)",
+    border: "rgba(245,158,11,0.2)",
+    step: "3",
+    title: "Get AI insights",
+    desc: "Go to Reports to get a full AI analysis of your spending habits, trends and personalized suggestions.",
+  },
 ];
 
 export default function DashboardPage() {
@@ -32,7 +68,7 @@ export default function DashboardPage() {
   const [messages, setMessages] = useState([
     {
       role: "bot",
-      text: 'Hello! Tell me about your expenses in plain English.\nE.g. "Spent 500 at Swiggy" or "Paid 1200 for electricity"',
+      text: 'Hi! Just tell me what you spent and I\'ll track it for you.\n\nTry: "Spent 200 at Zomato"',
     },
   ]);
   const [input, setInput] = useState("");
@@ -96,114 +132,507 @@ export default function DashboardPage() {
   };
   const fmt = (n) => (n ? `₹${Number(n).toLocaleString("en-IN")}` : "₹0");
 
-  const NavLink = ({ href, icon: Icon, label, color, bg, border }) => (
-    <Link
-      href={href}
+  // First-time: no transactions yet
+  const isFirstTime =
+    !dataLoading && (!summary || summary.total_transactions === 0);
+
+  // ── Shared header ──
+  const Header = () => (
+    <header
       style={{
-        padding: "7px 14px",
-        background: bg,
-        border: `1px solid ${border}`,
-        borderRadius: "8px",
-        color,
-        textDecoration: "none",
-        fontSize: "13px",
-        fontWeight: "600",
+        background: "#1E293B",
+        borderBottom: "1px solid rgba(255,255,255,0.07)",
+        padding: "0 20px",
+        height: "60px",
         display: "flex",
         alignItems: "center",
-        gap: "6px",
+        justifyContent: "space-between",
+        position: "sticky",
+        top: 0,
+        zIndex: 10,
       }}
     >
-      <Icon size={14} strokeWidth={2} />
-      {label}
-    </Link>
-  );
-
-  return (
-    <div
-      className="mobile-page-wrap"
-      style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
-    >
-      {/* HEADER */}
-      <header
-        style={{
-          background: "#1E293B",
-          borderBottom: "1px solid rgba(255,255,255,0.07)",
-          padding: "0 20px",
-          height: "60px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div
-            style={{
-              width: "34px",
-              height: "34px",
-              background: "linear-gradient(135deg, #6366F1, #818CF8)",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Wallet size={18} color="#fff" strokeWidth={2} />
-          </div>
-          <span
-            style={{
-              fontSize: "17px",
-              fontWeight: "800",
-              letterSpacing: "-0.4px",
-            }}
-          >
-            FinanceAI
-          </span>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div
+          style={{
+            width: "34px",
+            height: "34px",
+            background: "linear-gradient(135deg, #6366F1, #818CF8)",
+            borderRadius: "8px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Wallet size={18} color="#fff" strokeWidth={2} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div className="hide-mobile" style={{ gap: "10px" }}>
-            <NavLink
-              href="/transactions"
-              icon={Receipt}
-              label="Transactions"
-              color="#34D399"
-              bg="rgba(16,185,129,0.12)"
-              border="rgba(16,185,129,0.25)"
-            />
-            <NavLink
-              href="/report"
-              icon={BarChart3}
-              label="Reports"
-              color="#818CF8"
-              bg="rgba(99,102,241,0.12)"
-              border="rgba(99,102,241,0.25)"
-            />
-          </div>
-          <button
-            onClick={handleLogout}
+        <span
+          style={{
+            fontSize: "17px",
+            fontWeight: "800",
+            letterSpacing: "-0.4px",
+          }}
+        >
+          FinanceAI
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div className="hide-mobile" style={{ gap: "10px" }}>
+          <Link
+            href="/transactions"
             style={{
               padding: "7px 14px",
-              background: "transparent",
-              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(16,185,129,0.12)",
+              border: "1px solid rgba(16,185,129,0.25)",
               borderRadius: "8px",
-              color: "#94A3B8",
-              cursor: "pointer",
+              color: "#34D399",
+              textDecoration: "none",
               fontSize: "13px",
-              fontWeight: "500",
+              fontWeight: "600",
               display: "flex",
               alignItems: "center",
               gap: "6px",
             }}
           >
-            <LogOut size={14} strokeWidth={2} />
-            Sign Out
-          </button>
+            <Receipt size={14} strokeWidth={2} />
+            Transactions
+          </Link>
+          <Link
+            href="/report"
+            style={{
+              padding: "7px 14px",
+              background: "rgba(99,102,241,0.12)",
+              border: "1px solid rgba(99,102,241,0.25)",
+              borderRadius: "8px",
+              color: "#818CF8",
+              textDecoration: "none",
+              fontSize: "13px",
+              fontWeight: "600",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <BarChart3 size={14} strokeWidth={2} />
+            Reports
+          </Link>
         </div>
-      </header>
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: "7px 14px",
+            background: "transparent",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: "8px",
+            color: "#94A3B8",
+            cursor: "pointer",
+            fontSize: "13px",
+            fontWeight: "500",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+          }}
+        >
+          <LogOut size={14} strokeWidth={2} />
+          Sign Out
+        </button>
+      </div>
+    </header>
+  );
 
-      {/* MAIN */}
+  // ── Shared chat box ──
+  const ChatBox = ({ fullWidth }) => (
+    <div
+      style={{
+        background: "#1E293B",
+        borderRadius: "16px",
+        padding: "20px",
+        border: "1px solid rgba(255,255,255,0.07)",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: fullWidth ? "320px" : "380px",
+      }}
+    >
+      {!fullWidth && (
+        <p
+          style={{
+            fontSize: "11px",
+            fontWeight: "600",
+            color: "#64748B",
+            textTransform: "uppercase",
+            letterSpacing: "0.8px",
+            marginBottom: "16px",
+          }}
+        >
+          Record Expense
+        </p>
+      )}
+
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          marginBottom: "16px",
+          paddingRight: "4px",
+        }}
+      >
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            style={{
+              alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+              maxWidth: "85%",
+              padding: "11px 15px",
+              borderRadius:
+                msg.role === "user"
+                  ? "16px 16px 4px 16px"
+                  : "16px 16px 16px 4px",
+              background:
+                msg.role === "user"
+                  ? "linear-gradient(135deg, #6366F1, #818CF8)"
+                  : "#0F172A",
+              color: msg.role === "user" ? "#fff" : "#CBD5E1",
+              fontSize: "14px",
+              lineHeight: "1.5",
+              border:
+                msg.role === "bot"
+                  ? "1px solid rgba(255,255,255,0.07)"
+                  : "none",
+              whiteSpace: "pre-wrap",
+              boxShadow:
+                msg.role === "user"
+                  ? "0 4px 12px rgba(99,102,241,0.3)"
+                  : "none",
+            }}
+          >
+            {msg.text}
+          </div>
+        ))}
+        {chatLoading && (
+          <div
+            style={{
+              alignSelf: "flex-start",
+              padding: "12px 16px",
+              borderRadius: "16px 16px 16px 4px",
+              background: "#0F172A",
+              border: "1px solid rgba(255,255,255,0.07)",
+              display: "flex",
+              gap: "4px",
+              alignItems: "center",
+            }}
+          >
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: "#475569",
+                  animation: `bounce 1.2s infinite ${i * 0.2}s`,
+                }}
+              />
+            ))}
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Example chips — show until user sends first message */}
+      {messages.length <= 1 && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "8px",
+            marginBottom: "12px",
+          }}
+        >
+          {EXAMPLES.slice(0, fullWidth ? 6 : 4).map((s, i) => (
+            <button
+              key={i}
+              onClick={() => handleSend(s)}
+              style={{
+                padding: "6px 12px",
+                background: "rgba(99,102,241,0.1)",
+                border: "1px solid rgba(99,102,241,0.25)",
+                borderRadius: "20px",
+                color: "#818CF8",
+                fontSize: "12px",
+                cursor: "pointer",
+                fontWeight: "500",
+              }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: "10px" }}>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          placeholder="e.g. Spent 200 at Zomato…"
+          disabled={chatLoading}
+          style={{
+            flex: 1,
+            padding: "12px 16px",
+            background: "#0F172A",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "10px",
+            color: "#F1F5F9",
+            fontSize: "14px",
+            outline: "none",
+          }}
+        />
+        <button
+          onClick={() => handleSend()}
+          disabled={chatLoading || !input.trim()}
+          style={{
+            padding: "12px 16px",
+            background:
+              !input.trim() || chatLoading
+                ? "#1E3A5F"
+                : "linear-gradient(135deg, #6366F1, #818CF8)",
+            border: "none",
+            borderRadius: "10px",
+            color: !input.trim() || chatLoading ? "#475569" : "#fff",
+            cursor: !input.trim() || chatLoading ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <Send size={16} strokeWidth={2} />
+        </button>
+      </div>
+    </div>
+  );
+
+  // ════════════════════════════════════════
+  // FIRST-TIME WELCOME EXPERIENCE
+  // ════════════════════════════════════════
+  if (isFirstTime) {
+    return (
+      <div
+        className="mobile-page-wrap"
+        style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
+      >
+        <Header />
+
+        <main
+          className="mobile-main"
+          style={{ maxWidth: "860px", margin: "0 auto", padding: "40px 20px" }}
+        >
+          {/* Hero */}
+          <div style={{ textAlign: "center", marginBottom: "48px" }}>
+            <div
+              style={{
+                display: "inline-flex",
+                width: "56px",
+                height: "56px",
+                background: "linear-gradient(135deg, #6366F1, #818CF8)",
+                borderRadius: "16px",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: "20px",
+                boxShadow: "0 12px 32px rgba(99,102,241,0.35)",
+              }}
+            >
+              <Wallet size={28} color="#fff" strokeWidth={2} />
+            </div>
+            <h1
+              style={{
+                fontSize: "32px",
+                fontWeight: "800",
+                letterSpacing: "-1px",
+                marginBottom: "12px",
+                background: "linear-gradient(135deg, #F1F5F9, #818CF8)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Welcome to FinanceAI
+            </h1>
+            <p
+              style={{
+                fontSize: "16px",
+                color: "#64748B",
+                maxWidth: "420px",
+                margin: "0 auto",
+                lineHeight: "1.6",
+              }}
+            >
+              Track every expense just by chatting. No spreadsheets, no manual
+              entry — just plain English.
+            </p>
+          </div>
+
+          {/* How it works */}
+          <div className="cards-grid" style={{ marginBottom: "36px" }}>
+            {STEPS.map(
+              ({ icon: Icon, color, bg, border, step, title, desc }) => (
+                <div
+                  key={step}
+                  style={{
+                    background: "#1E293B",
+                    borderRadius: "16px",
+                    padding: "22px",
+                    border: `1px solid ${border}`,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        background: bg,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon size={18} color={color} strokeWidth={1.8} />
+                    </div>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        color,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.8px",
+                      }}
+                    >
+                      Step {step}
+                    </span>
+                  </div>
+                  <p
+                    style={{
+                      fontSize: "15px",
+                      fontWeight: "700",
+                      color: "#F1F5F9",
+                      marginBottom: "8px",
+                      letterSpacing: "-0.2px",
+                    }}
+                  >
+                    {title}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      color: "#64748B",
+                      lineHeight: "1.6",
+                    }}
+                  >
+                    {desc}
+                  </p>
+                </div>
+              )
+            )}
+          </div>
+
+          {/* Chat — full width, front and center */}
+          <div style={{ marginBottom: "24px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "12px",
+              }}
+            >
+              <div
+                style={{
+                  height: "1px",
+                  flex: 1,
+                  background: "rgba(255,255,255,0.06)",
+                }}
+              />
+              <p
+                style={{
+                  fontSize: "12px",
+                  color: "#475569",
+                  fontWeight: "600",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.8px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Start here — record your first expense
+              </p>
+              <div
+                style={{
+                  height: "1px",
+                  flex: 1,
+                  background: "rgba(255,255,255,0.06)",
+                }}
+              />
+            </div>
+            <ChatBox fullWidth />
+          </div>
+
+          {/* Skip hint */}
+          <div style={{ textAlign: "center" }}>
+            <Link
+              href="/transactions"
+              style={{
+                fontSize: "13px",
+                color: "#475569",
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              Already have data? View transactions{" "}
+              <ArrowRight size={13} strokeWidth={2} />
+            </Link>
+          </div>
+        </main>
+
+        <nav className="bottom-tab-bar">
+          <Link href="/dashboard" className="bottom-tab-link bottom-tab-active">
+            <LayoutDashboard size={22} strokeWidth={1.5} />
+            Dashboard
+          </Link>
+          <Link href="/transactions" className="bottom-tab-link">
+            <Receipt size={22} strokeWidth={1.5} />
+            Transactions
+          </Link>
+          <Link href="/report" className="bottom-tab-link">
+            <BarChart3 size={22} strokeWidth={1.5} />
+            Reports
+          </Link>
+        </nav>
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════
+  // NORMAL DASHBOARD (returning user)
+  // ════════════════════════════════════════
+  return (
+    <div
+      className="mobile-page-wrap"
+      style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
+    >
+      <Header />
+
       <main
         className="mobile-main"
         style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 20px" }}
@@ -218,7 +647,7 @@ export default function DashboardPage() {
             marginBottom: "16px",
           }}
         >
-          {dataLoading ? "Loading…" : summary?.month || "This Month"}
+          {summary?.month || "This Month"}
         </p>
 
         {/* SUMMARY CARDS */}
@@ -226,25 +655,25 @@ export default function DashboardPage() {
           {[
             {
               label: "Total Spent",
-              value: dataLoading ? "—" : fmt(summary?.total_expense),
+              value: fmt(summary?.total_expense),
               color: "#F87171",
               glow: "rgba(239,68,68,0.08)",
             },
             {
               label: "Transactions",
-              value: dataLoading ? "—" : summary?.total_transactions ?? 0,
+              value: summary?.total_transactions ?? 0,
               color: "#818CF8",
               glow: "rgba(99,102,241,0.08)",
             },
             {
               label: "Top Category",
-              value: dataLoading ? "—" : summary?.top_category || "—",
+              value: summary?.top_category || "—",
               color: "#34D399",
               glow: "rgba(16,185,129,0.08)",
               size: "18px",
               sub: summary?.category_amount
                 ? `${fmt(summary.category_amount)} spent`
-                : "No data yet",
+                : "No data",
             },
           ].map((c, i) => (
             <div
@@ -330,180 +759,10 @@ export default function DashboardPage() {
               <ExpensePieChart data={pieData} />
             </div>
           </div>
-
-          <div
-            style={{
-              background: "#1E293B",
-              borderRadius: "16px",
-              padding: "20px",
-              border: "1px solid rgba(255,255,255,0.07)",
-              display: "flex",
-              flexDirection: "column",
-              minHeight: "380px",
-            }}
-          >
-            <p
-              style={{
-                fontSize: "11px",
-                fontWeight: "600",
-                color: "#64748B",
-                textTransform: "uppercase",
-                letterSpacing: "0.8px",
-                marginBottom: "16px",
-              }}
-            >
-              Record Expense
-            </p>
-
-            <div
-              style={{
-                flex: 1,
-                overflowY: "auto",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                marginBottom: "16px",
-                paddingRight: "4px",
-              }}
-            >
-              {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  style={{
-                    alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-                    maxWidth: "85%",
-                    padding: "11px 15px",
-                    borderRadius:
-                      msg.role === "user"
-                        ? "16px 16px 4px 16px"
-                        : "16px 16px 16px 4px",
-                    background:
-                      msg.role === "user"
-                        ? "linear-gradient(135deg, #6366F1, #818CF8)"
-                        : "#0F172A",
-                    color: msg.role === "user" ? "#fff" : "#CBD5E1",
-                    fontSize: "14px",
-                    lineHeight: "1.5",
-                    border:
-                      msg.role === "bot"
-                        ? "1px solid rgba(255,255,255,0.07)"
-                        : "none",
-                    whiteSpace: "pre-wrap",
-                    boxShadow:
-                      msg.role === "user"
-                        ? "0 4px 12px rgba(99,102,241,0.3)"
-                        : "none",
-                  }}
-                >
-                  {msg.text}
-                </div>
-              ))}
-              {chatLoading && (
-                <div
-                  style={{
-                    alignSelf: "flex-start",
-                    padding: "12px 16px",
-                    borderRadius: "16px 16px 16px 4px",
-                    background: "#0F172A",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    display: "flex",
-                    gap: "4px",
-                    alignItems: "center",
-                  }}
-                >
-                  {[0, 1, 2].map((i) => (
-                    <div
-                      key={i}
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        borderRadius: "50%",
-                        background: "#475569",
-                        animation: `bounce 1.2s infinite ${i * 0.2}s`,
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {messages.length <= 1 && (
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "8px",
-                  marginBottom: "12px",
-                }}
-              >
-                {SUGGESTIONS.map((s, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSend(s)}
-                    style={{
-                      padding: "6px 12px",
-                      background: "rgba(99,102,241,0.1)",
-                      border: "1px solid rgba(99,102,241,0.25)",
-                      borderRadius: "20px",
-                      color: "#818CF8",
-                      fontSize: "12px",
-                      cursor: "pointer",
-                      fontWeight: "500",
-                    }}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div style={{ display: "flex", gap: "10px" }}>
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder="e.g. Spent 200 at Zomato…"
-                disabled={chatLoading}
-                style={{
-                  flex: 1,
-                  padding: "12px 16px",
-                  background: "#0F172A",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: "10px",
-                  color: "#F1F5F9",
-                  fontSize: "14px",
-                  outline: "none",
-                }}
-              />
-              <button
-                onClick={() => handleSend()}
-                disabled={chatLoading || !input.trim()}
-                style={{
-                  padding: "12px 16px",
-                  background:
-                    !input.trim() || chatLoading
-                      ? "#1E3A5F"
-                      : "linear-gradient(135deg, #6366F1, #818CF8)",
-                  border: "none",
-                  borderRadius: "10px",
-                  color: !input.trim() || chatLoading ? "#475569" : "#fff",
-                  cursor:
-                    !input.trim() || chatLoading ? "not-allowed" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <Send size={16} strokeWidth={2} />
-              </button>
-            </div>
-          </div>
+          <ChatBox fullWidth={false} />
         </div>
       </main>
 
-      {/* BOTTOM TAB BAR */}
       <nav className="bottom-tab-bar">
         <Link href="/dashboard" className="bottom-tab-link bottom-tab-active">
           <LayoutDashboard size={22} strokeWidth={1.5} />
