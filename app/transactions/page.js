@@ -93,6 +93,44 @@ const fmtDate = (d) =>
 const fmtAmount = (a) =>
   a != null ? `₹${Number(a).toLocaleString("en-IN")}` : "—";
 
+// Returns "Today", "Yesterday", "Monday", "19 Jul" etc.
+const getDateLabel = (dateStr) => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const txDate = new Date(y, m - 1, d);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yester = new Date(today);
+  yester.setDate(today.getDate() - 1);
+  const weekAgo = new Date(today);
+  weekAgo.setDate(today.getDate() - 6);
+
+  if (txDate.getTime() === today.getTime()) return "Today";
+  if (txDate.getTime() === yester.getTime()) return "Yesterday";
+  if (txDate >= weekAgo)
+    return txDate.toLocaleDateString("en-IN", { weekday: "long" });
+  if (txDate.getFullYear() === today.getFullYear())
+    return txDate.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+    });
+  return txDate.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+// Groups rows by date label, preserving API order
+const groupTransactions = (rows) => {
+  const map = new Map();
+  rows.forEach((tx) => {
+    const label = getDateLabel(tx.date);
+    if (!map.has(label)) map.set(label, []);
+    map.get(label).push(tx);
+  });
+  return Array.from(map.entries()).map(([label, items]) => ({ label, items }));
+};
+
 const selectStyle = {
   padding: "10px 36px 10px 14px",
   width: "100%",
@@ -1064,76 +1102,117 @@ export default function TransactionsPage() {
           ) : rows.length === 0 ? (
             <EmptyState />
           ) : (
-            rows.map((tx, i) => (
-              <div
-                key={tx.id}
-                onClick={() => setModalTx(tx)}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "2fr 1fr 2fr 1fr 1.2fr 32px",
-                  gap: "0 20px",
-                  padding: "13px 20px",
-                  alignItems: "center",
-                  borderBottom:
-                    i < rows.length - 1
-                      ? "1px solid rgba(255,255,255,0.04)"
-                      : "none",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(99,102,241,0.04)";
-                  e.currentTarget.querySelector(".row-action").style.opacity =
-                    "1";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.querySelector(".row-action").style.opacity =
-                    "0";
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "#E2E8F0",
-                  }}
-                >
-                  <Highlight text={tx.name} query={search} />
-                </span>
-                <span
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "700",
-                    color: "#F87171",
-                    textAlign: "right",
-                  }}
-                >
-                  {fmtAmount(tx.amount)}
-                </span>
-                <CatBadge category={tx.category} />
-                <span style={{ fontSize: "13px", color: "#64748B" }}>
-                  {tx.wallet}
-                </span>
-                <span style={{ fontSize: "13px", color: "#64748B" }}>
-                  {fmtDate(tx.date)}
-                </span>
+            groupTransactions(rows).map(({ label, items }) => (
+              <div key={label}>
+                {/* Date group header */}
                 <div
-                  className="row-action"
                   style={{
-                    opacity: 0,
-                    transition: "opacity 0.15s",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "6px",
-                    background: "rgba(99,102,241,0.1)",
-                    border: "1px solid rgba(99,102,241,0.2)",
+                    gap: "12px",
+                    padding: "8px 20px",
+                    background: "rgba(255,255,255,0.02)",
+                    borderBottom: "1px solid rgba(255,255,255,0.04)",
                   }}
                 >
-                  <Pencil size={12} color="#818CF8" strokeWidth={2} />
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: "700",
+                      color: "#475569",
+                      textTransform: "uppercase",
+                      letterSpacing: "1px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {label}
+                  </span>
+                  <div
+                    style={{
+                      flex: 1,
+                      height: "1px",
+                      background: "rgba(255,255,255,0.04)",
+                    }}
+                  />
+                  <span style={{ fontSize: "11px", color: "#334155" }}>
+                    {items.length}
+                  </span>
                 </div>
+                {items.map((tx, i) => (
+                  <div
+                    key={tx.id}
+                    onClick={() => setModalTx(tx)}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "2fr 1fr 2fr 1fr 1.2fr 32px",
+                      gap: "0 20px",
+                      padding: "13px 20px",
+                      alignItems: "center",
+                      borderBottom:
+                        i < items.length - 1
+                          ? "1px solid rgba(255,255,255,0.04)"
+                          : "none",
+                      cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background =
+                        "rgba(99,102,241,0.04)";
+                      e.currentTarget.querySelector(
+                        ".row-action"
+                      ).style.opacity = "1";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.querySelector(
+                        ".row-action"
+                      ).style.opacity = "0";
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: "600",
+                        color: "#E2E8F0",
+                      }}
+                    >
+                      <Highlight text={tx.name} query={search} />
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: "700",
+                        color: "#F87171",
+                        textAlign: "right",
+                      }}
+                    >
+                      {fmtAmount(tx.amount)}
+                    </span>
+                    <CatBadge category={tx.category} />
+                    <span style={{ fontSize: "13px", color: "#64748B" }}>
+                      {tx.wallet}
+                    </span>
+                    <span style={{ fontSize: "13px", color: "#64748B" }}>
+                      {fmtDate(tx.date)}
+                    </span>
+                    <div
+                      className="row-action"
+                      style={{
+                        opacity: 0,
+                        transition: "opacity 0.15s",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "6px",
+                        background: "rgba(99,102,241,0.1)",
+                        border: "1px solid rgba(99,102,241,0.2)",
+                      }}
+                    >
+                      <Pencil size={12} color="#818CF8" strokeWidth={2} />
+                    </div>
+                  </div>
+                ))}
               </div>
             ))
           )}
@@ -1154,77 +1233,126 @@ export default function TransactionsPage() {
               <EmptyState />
             </div>
           ) : (
-            rows.map((tx) => (
-              <div
-                key={tx.id}
-                onClick={() => setModalTx(tx)}
-                style={{
-                  background: "#1E293B",
-                  borderRadius: "14px",
-                  padding: "16px",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  cursor: "pointer",
-                  transition: "border-color 0.15s",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.borderColor = "rgba(99,102,241,0.3)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)")
-                }
-              >
+            groupTransactions(rows).map(({ label, items }) => (
+              <div key={label}>
+                {/* Date group label */}
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    marginBottom: "6px",
+                    alignItems: "center",
+                    gap: "10px",
+                    marginTop: "8px",
+                    marginBottom: "10px",
                   }}
                 >
                   <span
                     style={{
-                      fontSize: "15px",
+                      fontSize: "11px",
                       fontWeight: "700",
-                      color: "#E2E8F0",
+                      color: "#475569",
+                      textTransform: "uppercase",
+                      letterSpacing: "1px",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    <Highlight text={tx.name} query={search} />
+                    {label}
                   </span>
-                  <span style={{ fontSize: "12px", color: "#475569" }}>
-                    tap to edit
+                  <div
+                    style={{
+                      flex: 1,
+                      height: "1px",
+                      background: "rgba(255,255,255,0.06)",
+                    }}
+                  />
+                  <span style={{ fontSize: "11px", color: "#334155" }}>
+                    {items.length}
                   </span>
                 </div>
-                <p
-                  style={{
-                    fontSize: "20px",
-                    fontWeight: "800",
-                    color: "#F87171",
-                    letterSpacing: "-0.5px",
-                    marginBottom: "10px",
-                  }}
-                >
-                  {fmtAmount(tx.amount)}
-                </p>
+                {/* Cards */}
                 <div
                   style={{
                     display: "flex",
-                    gap: "8px",
-                    alignItems: "center",
-                    flexWrap: "wrap",
+                    flexDirection: "column",
+                    gap: "10px",
                   }}
                 >
-                  <CatBadge category={tx.category} />
-                  <span style={{ fontSize: "12px", color: "#64748B" }}>
-                    · {tx.wallet}
-                  </span>
-                  <span style={{ fontSize: "12px", color: "#64748B" }}>
-                    · {fmtDate(tx.date)}
-                  </span>
-                  {tx.notes && (
-                    <span style={{ fontSize: "12px", color: "#475569" }}>
-                      · {tx.notes}
-                    </span>
-                  )}
+                  {items.map((tx) => {
+                    const m = CAT_META[tx.category] || DEFAULT_META;
+                    return (
+                      <div
+                        key={tx.id}
+                        onClick={() => setModalTx(tx)}
+                        style={{
+                          background: "#1E293B",
+                          borderRadius: "14px",
+                          padding: "16px",
+                          borderLeft: `3px solid ${m.text}`,
+                          border: `1px solid rgba(255,255,255,0.07)`,
+                          borderLeftWidth: "3px",
+                          borderLeftColor: m.text,
+                          cursor: "pointer",
+                          transition: "border-color 0.15s",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.borderColor =
+                            "rgba(99,102,241,0.3)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.borderColor =
+                            "rgba(255,255,255,0.07)")
+                        }
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "flex-start",
+                            marginBottom: "6px",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "15px",
+                              fontWeight: "700",
+                              color: "#E2E8F0",
+                            }}
+                          >
+                            <Highlight text={tx.name} query={search} />
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              fontWeight: "800",
+                              color: "#F87171",
+                              letterSpacing: "-0.5px",
+                            }}
+                          >
+                            {fmtAmount(tx.amount)}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <CatBadge category={tx.category} />
+                          <span style={{ fontSize: "12px", color: "#64748B" }}>
+                            · {tx.wallet}
+                          </span>
+                          {tx.notes && (
+                            <span
+                              style={{ fontSize: "12px", color: "#475569" }}
+                            >
+                              · {tx.notes}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))
