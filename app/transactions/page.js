@@ -765,7 +765,8 @@ export default function TransactionsPage() {
   const fetchData = async (pg, q, cat, wal) => {
     setLoading(true);
     try {
-      const params = { page: pg };
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+      const params = { page: pg, page_size: isMobile ? 10 : 20 };
       if (q) params.search = q;
       if (cat && cat !== "All") params.category = cat;
       if (wal && wal !== "All") params.wallet = wal;
