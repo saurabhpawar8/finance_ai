@@ -58,12 +58,11 @@ const scoreLabel = (s) =>
   s >= 8 ? "Excellent" : s >= 6 ? "Good" : s >= 4 ? "Average" : "Poor";
 const scoreDesc = (s) => {
   if (s <= 3)
-    return "Spending concentrated in discretionary categories like entertainment and shopping.";
-  if (s <= 6)
-    return "Mixed spending with some unnecessary expenses, room for improvement.";
-  if (s <= 9)
-    return "Balanced spending with essentials prioritized, doing well.";
-  return "Very disciplined spending with minimal discretionary expenses.";
+    return "High spending imbalance focused on a single non-essential area.";
+  if (s <= 6) return "Unstructured spending across both needs and wants.";
+  if (s <= 8)
+    return "Primary focus on necessities with controlled personal spending.";
+  return "Well distributed, essentials prioritized, discretionary controlled.";
 };
 
 const SCORE_RANGES = [
