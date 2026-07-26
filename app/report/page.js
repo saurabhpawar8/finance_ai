@@ -55,7 +55,23 @@ const COLORS = [
 const scoreColor = (s) =>
   s >= 8 ? "#34D399" : s >= 6 ? "#10B981" : s >= 4 ? "#F59E0B" : "#F87171";
 const scoreLabel = (s) =>
-  s >= 8 ? "Excellent" : s >= 6 ? "Good" : s >= 4 ? "Fair" : "Needs Work";
+  s >= 8 ? "Excellent" : s >= 6 ? "Good" : s >= 4 ? "Average" : "Poor";
+const scoreDesc = (s) => {
+  if (s <= 3)
+    return "Spending concentrated in discretionary categories like entertainment and shopping.";
+  if (s <= 6)
+    return "Mixed spending with some unnecessary expenses, room for improvement.";
+  if (s <= 9)
+    return "Balanced spending with essentials prioritized, doing well.";
+  return "Very disciplined spending with minimal discretionary expenses.";
+};
+
+const SCORE_RANGES = [
+  { label: "Poor", range: "0–3", min: 0, max: 3, color: "#F87171" },
+  { label: "Average", range: "4–6", min: 4, max: 6, color: "#F59E0B" },
+  { label: "Good", range: "7–9", min: 7, max: 9, color: "#10B981" },
+  { label: "Excellent", range: "10", min: 10, max: 10, color: "#34D399" },
+];
 
 function HealthRing({ score }) {
   const color = scoreColor(score),
@@ -695,11 +711,78 @@ export default function ReportPage() {
                   padding: "24px",
                   border: "1px solid rgba(255,255,255,0.07)",
                   display: "flex",
-                  alignItems: "center",
+                  flexDirection: "column",
                   gap: "20px",
                 }}
               >
-                <HealthRing score={report.health_score} />
+                {/* Ring + score */}
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "20px" }}
+                >
+                  <HealthRing score={report.health_score} />
+                  <div>
+                    <p
+                      style={{
+                        fontSize: "11px",
+                        color: "#64748B",
+                        fontWeight: "600",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.8px",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      Financial Health
+                    </p>
+                    <p style={{ fontSize: "14px", color: "#94A3B8" }}>
+                      {selectedMonthLabel} {report.year}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "15px",
+                        color: scoreColor(report.health_score),
+                        fontWeight: "700",
+                        marginTop: "4px",
+                      }}
+                    >
+                      {scoreLabel(report.health_score)} — {report.health_score}
+                      /10
+                    </p>
+                  </div>
+                </div>
+
+                {/* What this score means */}
+                <div
+                  style={{
+                    padding: "12px 14px",
+                    background: "#0F172A",
+                    borderRadius: "10px",
+                    borderLeft: `3px solid ${scoreColor(report.health_score)}`,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      color: "#64748B",
+                      fontWeight: "600",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.6px",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    What this means
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      color: "#CBD5E1",
+                      lineHeight: "1.6",
+                    }}
+                  >
+                    {scoreDesc(report.health_score)}
+                  </p>
+                </div>
+
+                {/* Range scale */}
                 <div>
                   <p
                     style={{
@@ -707,25 +790,96 @@ export default function ReportPage() {
                       color: "#64748B",
                       fontWeight: "600",
                       textTransform: "uppercase",
-                      letterSpacing: "0.8px",
-                      marginBottom: "8px",
+                      letterSpacing: "0.6px",
+                      marginBottom: "10px",
                     }}
                   >
-                    Financial Health
+                    Score Guide
                   </p>
-                  <p style={{ fontSize: "14px", color: "#94A3B8" }}>
-                    {selectedMonthLabel} {report.year}
-                  </p>
-                  <p
+                  <div
                     style={{
-                      fontSize: "13px",
-                      color: scoreColor(report.health_score),
-                      fontWeight: "600",
-                      marginTop: "4px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "6px",
                     }}
                   >
-                    {scoreLabel(report.health_score)} — {report.health_score}/10
-                  </p>
+                    {SCORE_RANGES.map((r) => {
+                      const isActive =
+                        report.health_score >= r.min &&
+                        report.health_score <= r.max;
+                      return (
+                        <div
+                          key={r.label}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            padding: "8px 12px",
+                            borderRadius: "8px",
+                            background: isActive
+                              ? `rgba(${
+                                  r.color === "#F87171"
+                                    ? "248,113,113"
+                                    : r.color === "#F59E0B"
+                                    ? "245,158,11"
+                                    : r.color === "#10B981"
+                                    ? "16,185,129"
+                                    : "52,211,153"
+                                },0.1)`
+                              : "transparent",
+                            border: `1px solid ${
+                              isActive ? r.color + "40" : "transparent"
+                            }`,
+                            transition: "all 0.2s",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "8px",
+                              height: "8px",
+                              borderRadius: "50%",
+                              background: r.color,
+                              flexShrink: 0,
+                            }}
+                          />
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              fontWeight: isActive ? "700" : "500",
+                              color: isActive ? r.color : "#475569",
+                              flex: 1,
+                            }}
+                          >
+                            {r.label}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              color: isActive ? r.color : "#334155",
+                              fontWeight: "600",
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {r.range}
+                          </span>
+                          {isActive && (
+                            <span
+                              style={{
+                                fontSize: "10px",
+                                background: r.color,
+                                color: "#0F172A",
+                                borderRadius: "4px",
+                                padding: "1px 6px",
+                                fontWeight: "700",
+                              }}
+                            >
+                              YOU
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
               <div
