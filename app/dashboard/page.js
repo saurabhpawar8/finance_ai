@@ -15,7 +15,13 @@ import {
   Sparkles,
   ArrowRight,
 } from "lucide-react";
-import { getSummary, getPieSummary, sendChat, removeTokens } from "@/lib/api";
+import {
+  getSummary,
+  getPieSummary,
+  sendChat,
+  removeTokens,
+  getHeatmap,
+} from "@/lib/api";
 import Toast, { showToast } from "@/components/Toast";
 
 const ExpensePieChart = dynamic(() => import("@/components/ExpensePieChart"), {
@@ -82,6 +88,230 @@ function CountUp({ to, prefix = "", decimals = 0, duration = 1600 }) {
       {prefix}
       {Number(val).toLocaleString("en-IN")}
     </>
+  );
+}
+
+// ── Spending Heatmap ─────────────────────────────────────
+function SpendingHeatmap({ data }) {
+  const [tooltip, setTooltip] = useState(null);
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1; // Monday-first
+
+  const dataMap = {};
+  (data || []).forEach((d) => {
+    dataMap[d.date_only] = d.total;
+  });
+  const maxTotal = Math.max(...(data || []).map((d) => d.total), 1);
+
+  const cells = [];
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+      d
+    ).padStart(2, "0")}`;
+    cells.push({ day: d, date: dateStr, total: dataMap[dateStr] || 0 });
+  }
+
+  const getColor = (total) => {
+    if (!total) return "rgba(255,255,255,0.05)";
+    const t = Math.min(total / maxTotal, 1);
+    if (t < 0.25) return `rgba(251,146,60,0.35)`;
+    if (t < 0.5) return `rgba(239,100,68,0.55)`;
+    if (t < 0.75) return `rgba(239,68,68,0.75)`;
+    return `rgba(239,68,68,0.95)`;
+  };
+
+  const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const today = now.getDate();
+  const monthLabel = now.toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
+
+  return (
+    <div
+      style={{
+        background: "#1E293B",
+        borderRadius: "16px",
+        padding: "20px",
+        border: "1px solid rgba(255,255,255,0.07)",
+        marginTop: "0",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "16px",
+        }}
+      >
+        <p
+          style={{
+            fontSize: "11px",
+            fontWeight: "600",
+            color: "#64748B",
+            textTransform: "uppercase",
+            letterSpacing: "0.8px",
+          }}
+        >
+          Spending Calendar
+        </p>
+        <span style={{ fontSize: "12px", color: "#475569" }}>{monthLabel}</span>
+      </div>
+
+      {/* Day headers */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gap: "4px",
+          marginBottom: "4px",
+        }}
+      >
+        {DAYS.map((d) => (
+          <div
+            key={d}
+            style={{
+              fontSize: "10px",
+              color: "#475569",
+              textAlign: "center",
+              fontWeight: "600",
+            }}
+          >
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Day cells */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gap: "4px",
+        }}
+      >
+        {cells.map((cell, i) => (
+          <div
+            key={i}
+            onMouseEnter={() => cell && setTooltip(cell)}
+            onMouseLeave={() => setTooltip(null)}
+            style={{
+              aspectRatio: "1",
+              borderRadius: "5px",
+              background: cell ? getColor(cell.total) : "transparent",
+              border:
+                cell?.day === today
+                  ? "1.5px solid rgba(99,102,241,0.7)"
+                  : "1px solid transparent",
+              cursor: cell ? "default" : "auto",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "transform 0.1s",
+            }}
+            onMouseDown={(e) =>
+              (e.currentTarget.style.transform = "scale(1.2)")
+            }
+            onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
+          >
+            {cell && (
+              <span
+                style={{
+                  fontSize: "9px",
+                  color: cell.total > 0 ? "rgba(255,255,255,0.75)" : "#334155",
+                  fontWeight: "600",
+                  lineHeight: 1,
+                }}
+              >
+                {cell.day}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Tooltip */}
+      <div style={{ minHeight: "36px", marginTop: "10px" }}>
+        {tooltip ? (
+          <div
+            style={{
+              padding: "8px 14px",
+              background: "#0F172A",
+              borderRadius: "8px",
+              border: "1px solid rgba(255,255,255,0.08)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span style={{ fontSize: "13px", color: "#94A3B8" }}>
+              {new Date(tooltip.date + "T00:00:00").toLocaleDateString(
+                "en-IN",
+                { weekday: "short", day: "numeric", month: "short" }
+              )}
+            </span>
+            <span
+              style={{
+                fontSize: "13px",
+                fontWeight: "700",
+                color: tooltip.total > 0 ? "#F87171" : "#475569",
+              }}
+            >
+              {tooltip.total > 0
+                ? `₹${Number(tooltip.total).toLocaleString("en-IN")}`
+                : "No spending"}
+            </span>
+          </div>
+        ) : (
+          <div
+            style={{
+              padding: "8px 14px",
+              background: "transparent",
+              borderRadius: "8px",
+              border: "1px solid transparent",
+            }}
+          />
+        )}
+      </div>
+
+      {/* Legend */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: "6px",
+          marginTop: "8px",
+        }}
+      >
+        <span style={{ fontSize: "10px", color: "#475569" }}>Less</span>
+        {[
+          "rgba(255,255,255,0.05)",
+          "rgba(251,146,60,0.35)",
+          "rgba(239,100,68,0.55)",
+          "rgba(239,68,68,0.75)",
+          "rgba(239,68,68,0.95)",
+        ].map((c, i) => (
+          <div
+            key={i}
+            style={{
+              width: "11px",
+              height: "11px",
+              borderRadius: "3px",
+              background: c,
+            }}
+          />
+        ))}
+        <span style={{ fontSize: "10px", color: "#475569" }}>More</span>
+      </div>
+    </div>
   );
 }
 
@@ -410,6 +640,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [summary, setSummary] = useState(null);
   const [pieData, setPieData] = useState([]);
+  const [heatmapData, setHeatmapData] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [messages, setMessages] = useState([
     {
@@ -423,12 +654,14 @@ export default function DashboardPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const [sumRes, pieRes] = await Promise.all([
+      const [sumRes, pieRes, heatRes] = await Promise.all([
         getSummary(),
         getPieSummary(),
+        getHeatmap(),
       ]);
       if (sumRes?.success) setSummary(sumRes.data);
       if (pieRes?.success) setPieData(pieRes.data);
+      if (heatRes?.success) setHeatmapData(heatRes.data);
     } catch {}
     setDataLoading(false);
   }, []);
@@ -884,6 +1117,11 @@ export default function DashboardPage() {
             </div>
           </div>
           <ChatBox {...chatProps} fullWidth={false} />
+        </div>
+
+        {/* Heatmap */}
+        <div style={{ marginTop: "16px" }}>
+          <SpendingHeatmap data={heatmapData} />
         </div>
       </main>
       <BottomTabs active="dashboard" />
