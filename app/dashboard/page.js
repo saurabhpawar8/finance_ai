@@ -94,7 +94,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
     priority: 2,
     text: `Averaging ₹${Math.round(dailyAvg).toLocaleString(
       "en-IN"
-    )} per day projected ₹${projected.toLocaleString(
+    )} per day — projected ₹${projected.toLocaleString(
       "en-IN"
     )} by ${monthName} end`,
   });
@@ -108,7 +108,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
       icon: Zap,
       color: "#818CF8",
       priority: 3,
-      text: `${summary.top_category} accounts for ${pct}% of your spending your biggest category this month`,
+      text: `${summary.top_category} accounts for ${pct}% of your spending — your biggest category this month`,
     });
   }
 
@@ -124,7 +124,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
         icon: TrendingDown,
         color: "#34D399",
         priority: 0,
-        text: `No spending for ${daysSince} days straight you're on a great streak!`,
+        text: `No spending for ${daysSince} days straight — you're on a great streak!`,
       });
     }
 
@@ -143,7 +143,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
         icon: AlertCircle,
         color: "#F87171",
         priority: 1,
-        text: `Biggest day was ${dateLabel} ₹${Number(
+        text: `Biggest day was ${dateLabel} — ₹${Number(
           maxDay.total
         ).toLocaleString("en-IN")} spent in a single day`,
       });
@@ -157,7 +157,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
       icon: Activity,
       color: "#06B6D4",
       priority: 4,
-      text: `Spending across ${pieData.length} categories ${
+      text: `Spending across ${pieData.length} categories — ${
         smallest.category_name
       } is your lowest at ₹${Number(smallest.total).toLocaleString("en-IN")}`,
     });
@@ -178,7 +178,9 @@ function SpendingInsights({ summary, pieData, heatmapData }) {
         borderRadius: "16px",
         padding: "20px",
         border: "1px solid rgba(255,255,255,0.07)",
-        marginBottom: "16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
       }}
     >
       <p
@@ -188,12 +190,18 @@ function SpendingInsights({ summary, pieData, heatmapData }) {
           color: "#64748B",
           textTransform: "uppercase",
           letterSpacing: "0.8px",
-          marginBottom: "14px",
         }}
       >
         Spending Insights
       </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          flex: 1,
+        }}
+      >
         {insights.map((insight, i) => (
           <div
             key={i}
@@ -1252,18 +1260,17 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Spending Insights */}
-        <SpendingInsights
-          summary={summary}
-          pieData={pieData}
-          heatmapData={heatmapData}
-        />
-
-        {/* Heatmap */}
-        <div style={{ marginBottom: "16px" }}>
-          <SpendingHeatmap data={heatmapData} />
+        {/* Row 2: Chat (primary) | Insights (secondary) */}
+        <div className="bottom-grid" style={{ marginBottom: "16px" }}>
+          <ChatBox {...chatProps} fullWidth={false} />
+          <SpendingInsights
+            summary={summary}
+            pieData={pieData}
+            heatmapData={heatmapData}
+          />
         </div>
 
+        {/* Row 3: Pie Chart | Heatmap */}
         <div className="bottom-grid">
           <div
             style={{
@@ -1273,7 +1280,7 @@ export default function DashboardPage() {
               border: "1px solid rgba(255,255,255,0.07)",
               display: "flex",
               flexDirection: "column",
-              minHeight: "380px",
+              minHeight: "340px",
             }}
           >
             <p
@@ -1292,7 +1299,7 @@ export default function DashboardPage() {
               <ExpensePieChart data={pieData} />
             </div>
           </div>
-          <ChatBox {...chatProps} fullWidth={false} />
+          <SpendingHeatmap data={heatmapData} />
         </div>
       </main>
       <BottomTabs active="dashboard" />
