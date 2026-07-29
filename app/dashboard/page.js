@@ -49,7 +49,7 @@ const STEPS = [
     border: "rgba(99,102,241,0.2)",
     step: "1",
     title: "Tell me what you spent",
-    desc: 'Type naturally — "Spent 200 at Zomato". No forms, no dropdowns.',
+    desc: 'Type naturally "Spent 200 at Zomato". No forms, no dropdowns.',
   },
   {
     icon: PieChart,
@@ -94,7 +94,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
     priority: 2,
     text: `Averaging ₹${Math.round(dailyAvg).toLocaleString(
       "en-IN"
-    )} per day — projected ₹${projected.toLocaleString(
+    )} per day, projected ₹${projected.toLocaleString(
       "en-IN"
     )} by ${monthName} end`,
   });
@@ -108,7 +108,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
       icon: Zap,
       color: "#818CF8",
       priority: 3,
-      text: `${summary.top_category} accounts for ${pct}% of your spending — your biggest category this month`,
+      text: `${summary.top_category} accounts for ${pct}% of your spending, your biggest category this month`,
     });
   }
 
@@ -124,7 +124,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
         icon: TrendingDown,
         color: "#34D399",
         priority: 0,
-        text: `No spending for ${daysSince} days straight — you're on a great streak!`,
+        text: `No spending for ${daysSince} days straight, you're on a great streak!`,
       });
     }
 
@@ -143,7 +143,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
         icon: AlertCircle,
         color: "#F87171",
         priority: 1,
-        text: `Biggest day was ${dateLabel} — ₹${Number(
+        text: `Biggest day was ${dateLabel}, ₹${Number(
           maxDay.total
         ).toLocaleString("en-IN")} spent in a single day`,
       });
@@ -157,7 +157,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
       icon: Activity,
       color: "#06B6D4",
       priority: 4,
-      text: `Spending across ${pieData.length} categories — ${
+      text: `Spending across ${pieData.length} categories ${
         smallest.category_name
       } is your lowest at ₹${Number(smallest.total).toLocaleString("en-IN")}`,
     });
