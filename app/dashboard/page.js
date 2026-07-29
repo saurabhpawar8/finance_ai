@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
+  Wallet,
   LayoutDashboard,
   Receipt,
   BarChart3,
@@ -13,6 +14,11 @@ import {
   PieChart,
   Sparkles,
   ArrowRight,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  Activity,
+  Zap,
 } from "lucide-react";
 import {
   getSummary,
@@ -64,6 +70,165 @@ const STEPS = [
     desc: "Go to Reports for a full AI analysis of your spending habits.",
   },
 ];
+
+// ── Insight generator ────────────────────────────────────
+const generateInsights = (summary, pieData, heatmapData) => {
+  if (!summary || !summary.total_expense) return [];
+
+  const now = new Date();
+  const dayOfMonth = now.getDate();
+  const daysInMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0
+  ).getDate();
+  const dailyAvg = summary.total_expense / dayOfMonth;
+  const projected = Math.round(dailyAvg * daysInMonth);
+  const monthName = summary.month?.split(" ")[0] || "month end";
+  const results = [];
+
+  // Daily average + projection
+  results.push({
+    icon: TrendingUp,
+    color: "#F59E0B",
+    priority: 2,
+    text: `Averaging ₹${Math.round(dailyAvg).toLocaleString(
+      "en-IN"
+    )} per day projected ₹${projected.toLocaleString(
+      "en-IN"
+    )} by ${monthName} end`,
+  });
+
+  // Top category %
+  if (summary.top_category && summary.category_amount) {
+    const pct = Math.round(
+      (summary.category_amount / summary.total_expense) * 100
+    );
+    results.push({
+      icon: Zap,
+      color: "#818CF8",
+      priority: 3,
+      text: `${summary.top_category} accounts for ${pct}% of your spending your biggest category this month`,
+    });
+  }
+
+  // Days since last spending
+  if (heatmapData?.length > 0) {
+    const sorted = [...heatmapData].sort(
+      (a, b) => new Date(b.date_only) - new Date(a.date_only)
+    );
+    const lastDate = new Date(sorted[0].date_only + "T00:00:00");
+    const daysSince = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
+    if (daysSince >= 2) {
+      results.push({
+        icon: TrendingDown,
+        color: "#34D399",
+        priority: 0,
+        text: `No spending for ${daysSince} days straight you're on a great streak!`,
+      });
+    }
+
+    // Biggest spending day
+    const maxDay = heatmapData.reduce(
+      (max, d) => (d.total > max.total ? d : max),
+      heatmapData[0]
+    );
+    if (maxDay?.total > 0) {
+      const [y, m, d] = maxDay.date_only.split("-").map(Number);
+      const dateLabel = new Date(y, m - 1, d).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+      });
+      results.push({
+        icon: AlertCircle,
+        color: "#F87171",
+        priority: 1,
+        text: `Biggest day was ${dateLabel} ₹${Number(
+          maxDay.total
+        ).toLocaleString("en-IN")} spent in a single day`,
+      });
+    }
+  }
+
+  // Category diversity
+  if (pieData?.length > 1) {
+    const smallest = [...pieData].sort((a, b) => a.total - b.total)[0];
+    results.push({
+      icon: Activity,
+      color: "#06B6D4",
+      priority: 4,
+      text: `Spending across ${pieData.length} categories ${
+        smallest.category_name
+      } is your lowest at ₹${Number(smallest.total).toLocaleString("en-IN")}`,
+    });
+  }
+
+  return results.sort((a, b) => a.priority - b.priority).slice(0, 3);
+};
+
+// ── Spending Insights card ────────────────────────────────
+function SpendingInsights({ summary, pieData, heatmapData }) {
+  const insights = generateInsights(summary, pieData, heatmapData);
+  if (!insights.length) return null;
+
+  return (
+    <div
+      style={{
+        background: "#1E293B",
+        borderRadius: "16px",
+        padding: "20px",
+        border: "1px solid rgba(255,255,255,0.07)",
+        marginBottom: "16px",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "11px",
+          fontWeight: "600",
+          color: "#64748B",
+          textTransform: "uppercase",
+          letterSpacing: "0.8px",
+          marginBottom: "14px",
+        }}
+      >
+        Spending Insights
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        {insights.map((insight, i) => (
+          <div
+            key={i}
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+              padding: "12px 14px",
+              background: "#0F172A",
+              borderRadius: "10px",
+              borderLeft: `3px solid ${insight.color}`,
+            }}
+          >
+            <insight.icon
+              size={15}
+              color={insight.color}
+              strokeWidth={2}
+              style={{ flexShrink: 0, marginTop: "2px" }}
+            />
+            <p
+              style={{
+                fontSize: "13px",
+                color: "#CBD5E1",
+                lineHeight: "1.6",
+                margin: 0,
+              }}
+            >
+              {insight.text}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // ── Animated counter ──────────────────────────────────────
 function CountUp({ to, prefix = "", decimals = 0, duration = 1600 }) {
@@ -332,16 +497,19 @@ function AppHeader({ onLogout }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <img
-          src="/icons/icon-192.png"
-          alt="FinanceAI"
+        <div
           style={{
             width: "34px",
             height: "34px",
+            background: "linear-gradient(135deg, #6366F1, #818CF8)",
             borderRadius: "8px",
-            objectFit: "cover",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
-        />
+        >
+          <Wallet size={18} color="#fff" strokeWidth={2} />
+        </div>
         <span
           style={{
             fontSize: "17px",
@@ -736,17 +904,21 @@ export default function DashboardPage() {
           style={{ maxWidth: "860px", margin: "0 auto", padding: "40px 20px" }}
         >
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <img
-              src="/icons/icon-192.png"
-              alt="FinanceAI"
+            <div
               style={{
+                display: "inline-flex",
                 width: "56px",
                 height: "56px",
+                background: "linear-gradient(135deg, #6366F1, #818CF8)",
                 borderRadius: "16px",
-                objectFit: "cover",
+                alignItems: "center",
+                justifyContent: "center",
                 marginBottom: "20px",
+                boxShadow: "0 12px 32px rgba(99,102,241,0.35)",
               }}
-            />
+            >
+              <Wallet size={28} color="#fff" strokeWidth={2} />
+            </div>
             <h1
               style={{
                 fontSize: "32px",
@@ -770,7 +942,7 @@ export default function DashboardPage() {
               }}
             >
               Track every expense just by chatting. No spreadsheets, no manual
-              entry just plain English.
+              entry — just plain English.
             </p>
           </div>
           <div className="cards-grid" style={{ marginBottom: "36px" }}>
@@ -1080,6 +1252,18 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Spending Insights */}
+        <SpendingInsights
+          summary={summary}
+          pieData={pieData}
+          heatmapData={heatmapData}
+        />
+
+        {/* Heatmap */}
+        <div style={{ marginBottom: "16px" }}>
+          <SpendingHeatmap data={heatmapData} />
+        </div>
+
         <div className="bottom-grid">
           <div
             style={{
@@ -1109,11 +1293,6 @@ export default function DashboardPage() {
             </div>
           </div>
           <ChatBox {...chatProps} fullWidth={false} />
-        </div>
-
-        {/* Heatmap */}
-        <div style={{ marginTop: "16px" }}>
-          <SpendingHeatmap data={heatmapData} />
         </div>
       </main>
       <BottomTabs active="dashboard" />
