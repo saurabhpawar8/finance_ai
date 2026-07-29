@@ -8,7 +8,10 @@ export const metadata = {
     icon: "/favicon.ico",
     apple: "/icons/icon-192.png",
   },
-  themeColor: "#6366F1",
+};
+
+export const viewport = {
+  themeColor: '#6366F1',
 };
 
 export default function RootLayout({ children }) {
