@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Wallet } from "lucide-react";
 import { login, register } from "@/lib/api";
 
 export default function AuthPage() {
@@ -98,20 +97,16 @@ export default function AuthPage() {
               gap: "12px",
             }}
           >
-            <div
+            <img
+              src="/icons/icon-192.png"
+              alt="FinanceAI"
               style={{
                 width: "44px",
                 height: "44px",
-                background: "linear-gradient(135deg, #6366F1, #818CF8)",
                 borderRadius: "12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 8px 16px rgba(99,102,241,0.3)",
+                objectFit: "cover",
               }}
-            >
-              <Wallet size={22} color="#fff" strokeWidth={2} />
-            </div>
+            />
             <span
               style={{
                 fontSize: "24px",

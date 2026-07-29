@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
-  Wallet,
   LayoutDashboard,
   Receipt,
   BarChart3,
@@ -333,19 +332,16 @@ function AppHeader({ onLogout }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <div
+        <img
+          src="/icons/icon-192.png"
+          alt="FinanceAI"
           style={{
             width: "34px",
             height: "34px",
-            background: "linear-gradient(135deg, #6366F1, #818CF8)",
             borderRadius: "8px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            objectFit: "cover",
           }}
-        >
-          <Wallet size={18} color="#fff" strokeWidth={2} />
-        </div>
+        />
         <span
           style={{
             fontSize: "17px",
@@ -740,21 +736,17 @@ export default function DashboardPage() {
           style={{ maxWidth: "860px", margin: "0 auto", padding: "40px 20px" }}
         >
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <div
+            <img
+              src="/icons/icon-192.png"
+              alt="FinanceAI"
               style={{
-                display: "inline-flex",
                 width: "56px",
                 height: "56px",
-                background: "linear-gradient(135deg, #6366F1, #818CF8)",
                 borderRadius: "16px",
-                alignItems: "center",
-                justifyContent: "center",
+                objectFit: "cover",
                 marginBottom: "20px",
-                boxShadow: "0 12px 32px rgba(99,102,241,0.35)",
               }}
-            >
-              <Wallet size={28} color="#fff" strokeWidth={2} />
-            </div>
+            />
             <h1
               style={{
                 fontSize: "32px",
@@ -778,7 +770,7 @@ export default function DashboardPage() {
               }}
             >
               Track every expense just by chatting. No spreadsheets, no manual
-              entry — just plain English.
+              entry just plain English.
             </p>
           </div>
           <div className="cards-grid" style={{ marginBottom: "36px" }}>

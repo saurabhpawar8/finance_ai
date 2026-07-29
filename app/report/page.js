@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Wallet,
   LayoutDashboard,
   Receipt,
   BarChart3,
@@ -374,19 +373,16 @@ export default function ReportPage() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div
+          <img
+            src="/icons/icon-192.png"
+            alt="FinanceAI"
             style={{
               width: "34px",
               height: "34px",
-              background: "linear-gradient(135deg, #6366F1, #818CF8)",
               borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              objectFit: "cover",
             }}
-          >
-            <Wallet size={18} color="#fff" strokeWidth={2} />
-          </div>
+          />
           <span
             style={{
               fontSize: "17px",
