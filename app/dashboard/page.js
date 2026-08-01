@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
-  Wallet,
   LayoutDashboard,
   Receipt,
   BarChart3,
@@ -21,6 +20,8 @@ import {
   Zap,
   ChevronLeft,
   ChevronRight,
+  Sun,
+  Moon,
 } from "lucide-react";
 import {
   getSummary,
@@ -30,6 +31,7 @@ import {
   getHeatmap,
 } from "@/lib/api";
 import Toast, { showToast } from "@/components/Toast";
+import { useTheme } from "@/lib/ThemeContext";
 
 const ExpensePieChart = dynamic(() => import("@/components/ExpensePieChart"), {
   ssr: false,
@@ -46,18 +48,18 @@ const EXAMPLES = [
 const STEPS = [
   {
     icon: MessageSquare,
-    color: "#818CF8",
-    bg: "rgba(99,102,241,0.12)",
-    border: "rgba(99,102,241,0.2)",
+    color: "var(--accent-dim)",
+    bg: "var(--accent-bg)",
+    border: "var(--accent-border)",
     step: "1",
     title: "Tell me what you spent",
     desc: 'Type naturally - "Spent 200 at Zomato". No forms, no dropdowns.',
   },
   {
     icon: PieChart,
-    color: "#34D399",
-    bg: "rgba(16,185,129,0.12)",
-    border: "rgba(16,185,129,0.2)",
+    color: "var(--green-dim)",
+    bg: "var(--green-bg)",
+    border: "var(--green-border)",
     step: "2",
     title: "I categorize everything",
     desc: "Every expense is sorted into categories and shown as a live chart.",
@@ -108,7 +110,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
     );
     results.push({
       icon: Zap,
-      color: "#818CF8",
+      color: "var(--accent-dim)",
       priority: 3,
       text: `${summary.top_category} accounts for ${pct}% of your spending - your biggest category this month`,
     });
@@ -124,7 +126,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
     if (daysSince >= 2) {
       results.push({
         icon: TrendingDown,
-        color: "#34D399",
+        color: "var(--green-dim)",
         priority: 0,
         text: `No spending for ${daysSince} days straight - you're on a great streak!`,
       });
@@ -176,7 +178,7 @@ function SpendingInsights({ summary, pieData, heatmapData }) {
   return (
     <div
       style={{
-        background: "#1E293B",
+        background: "var(--bg-surface)",
         borderRadius: "16px",
         padding: "20px",
         border: "1px solid rgba(255,255,255,0.07)",
@@ -189,7 +191,7 @@ function SpendingInsights({ summary, pieData, heatmapData }) {
         style={{
           fontSize: "11px",
           fontWeight: "600",
-          color: "#64748B",
+          color: "var(--text-3)",
           textTransform: "uppercase",
           letterSpacing: "0.8px",
         }}
@@ -212,7 +214,7 @@ function SpendingInsights({ summary, pieData, heatmapData }) {
               alignItems: "flex-start",
               gap: "12px",
               padding: "12px 14px",
-              background: "#0F172A",
+              background: "var(--bg-inset)",
               borderRadius: "10px",
               borderLeft: `3px solid ${insight.color}`,
             }}
@@ -226,7 +228,7 @@ function SpendingInsights({ summary, pieData, heatmapData }) {
             <p
               style={{
                 fontSize: "13px",
-                color: "#CBD5E1",
+                color: "var(--text-2)",
                 lineHeight: "1.6",
                 margin: 0,
               }}
@@ -266,15 +268,15 @@ function CountUp({ to, prefix = "", decimals = 0, duration = 1600 }) {
 }
 
 // ── Spending Heatmap ─────────────────────────────────────
-function SpendingHeatmap({ data }) {
+function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
   const [tooltip, setTooltip] = useState(null);
 
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
+  const year = selectedYear || now.getFullYear();
+  const month = selectedMonth ? selectedMonth - 1 : now.getMonth(); // 0-indexed
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
-  const startOffset = firstDay === 0 ? 6 : firstDay - 1; // Monday-first
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
 
   const dataMap = {};
   (data || []).forEach((d) => {
@@ -292,7 +294,7 @@ function SpendingHeatmap({ data }) {
   }
 
   const getColor = (total) => {
-    if (!total) return "rgba(255,255,255,0.05)";
+    if (!total) return "var(--border-subtle)";
     const t = Math.min(total / maxTotal, 1);
     if (t < 0.25) return `rgba(251,146,60,0.35)`;
     if (t < 0.5) return `rgba(239,100,68,0.55)`;
@@ -301,8 +303,10 @@ function SpendingHeatmap({ data }) {
   };
 
   const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const today = now.getDate();
-  const monthLabel = now.toLocaleDateString("en-IN", {
+  // Only highlight today if viewing the current month
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+  const todayDay = isCurrentMonth ? now.getDate() : -1;
+  const monthLabel = new Date(year, month, 1).toLocaleDateString("en-IN", {
     month: "long",
     year: "numeric",
   });
@@ -310,7 +314,7 @@ function SpendingHeatmap({ data }) {
   return (
     <div
       style={{
-        background: "#1E293B",
+        background: "var(--bg-surface)",
         borderRadius: "16px",
         padding: "20px",
         border: "1px solid rgba(255,255,255,0.07)",
@@ -329,14 +333,16 @@ function SpendingHeatmap({ data }) {
           style={{
             fontSize: "11px",
             fontWeight: "600",
-            color: "#64748B",
+            color: "var(--text-3)",
             textTransform: "uppercase",
             letterSpacing: "0.8px",
           }}
         >
           Spending Calendar
         </p>
-        <span style={{ fontSize: "12px", color: "#475569" }}>{monthLabel}</span>
+        <span style={{ fontSize: "12px", color: "var(--text-3)" }}>
+          {monthLabel}
+        </span>
       </div>
 
       {/* Day headers */}
@@ -353,7 +359,7 @@ function SpendingHeatmap({ data }) {
             key={d}
             style={{
               fontSize: "10px",
-              color: "#475569",
+              color: "var(--text-3)",
               textAlign: "center",
               fontWeight: "600",
             }}
@@ -381,7 +387,7 @@ function SpendingHeatmap({ data }) {
               borderRadius: "5px",
               background: cell ? getColor(cell.total) : "transparent",
               border:
-                cell?.day === today
+                cell?.day === todayDay
                   ? "1.5px solid rgba(99,102,241,0.7)"
                   : "1px solid transparent",
               cursor: cell ? "default" : "auto",
@@ -417,7 +423,7 @@ function SpendingHeatmap({ data }) {
           <div
             style={{
               padding: "8px 14px",
-              background: "#0F172A",
+              background: "var(--bg-inset)",
               borderRadius: "8px",
               border: "1px solid rgba(255,255,255,0.08)",
               display: "flex",
@@ -425,7 +431,7 @@ function SpendingHeatmap({ data }) {
               alignItems: "center",
             }}
           >
-            <span style={{ fontSize: "13px", color: "#94A3B8" }}>
+            <span style={{ fontSize: "13px", color: "var(--text-2)" }}>
               {new Date(tooltip.date + "T00:00:00").toLocaleDateString(
                 "en-IN",
                 { weekday: "short", day: "numeric", month: "short" }
@@ -465,9 +471,9 @@ function SpendingHeatmap({ data }) {
           marginTop: "8px",
         }}
       >
-        <span style={{ fontSize: "10px", color: "#475569" }}>Less</span>
+        <span style={{ fontSize: "10px", color: "var(--text-3)" }}>Less</span>
         {[
-          "rgba(255,255,255,0.05)",
+          "var(--border-subtle)",
           "rgba(251,146,60,0.35)",
           "rgba(239,100,68,0.55)",
           "rgba(239,68,68,0.75)",
@@ -483,18 +489,18 @@ function SpendingHeatmap({ data }) {
             }}
           />
         ))}
-        <span style={{ fontSize: "10px", color: "#475569" }}>More</span>
+        <span style={{ fontSize: "10px", color: "var(--text-3)" }}>More</span>
       </div>
     </div>
   );
 }
 
 // ── Shared components (outside parent to avoid remount) ───
-function AppHeader({ onLogout }) {
+function AppHeader({ onLogout, theme, toggleTheme }) {
   return (
     <header
       style={{
-        background: "#1E293B",
+        background: "var(--bg-surface)",
         borderBottom: "1px solid rgba(255,255,255,0.07)",
         padding: "0 20px",
         height: "60px",
@@ -533,10 +539,10 @@ function AppHeader({ onLogout }) {
             href="/transactions"
             style={{
               padding: "7px 14px",
-              background: "rgba(16,185,129,0.12)",
+              background: "var(--green-bg)",
               border: "1px solid rgba(16,185,129,0.25)",
               borderRadius: "8px",
-              color: "#34D399",
+              color: "var(--green-dim)",
               textDecoration: "none",
               fontSize: "13px",
               fontWeight: "600",
@@ -552,10 +558,10 @@ function AppHeader({ onLogout }) {
             href="/report"
             style={{
               padding: "7px 14px",
-              background: "rgba(99,102,241,0.12)",
+              background: "var(--accent-bg)",
               border: "1px solid rgba(99,102,241,0.25)",
               borderRadius: "8px",
-              color: "#818CF8",
+              color: "var(--accent-dim)",
               textDecoration: "none",
               fontSize: "13px",
               fontWeight: "600",
@@ -575,7 +581,7 @@ function AppHeader({ onLogout }) {
             background: "transparent",
             border: "1px solid rgba(255,255,255,0.12)",
             borderRadius: "8px",
-            color: "#94A3B8",
+            color: "var(--text-2)",
             cursor: "pointer",
             fontSize: "13px",
             fontWeight: "500",
@@ -586,6 +592,31 @@ function AppHeader({ onLogout }) {
         >
           <LogOut size={14} strokeWidth={2} />
           Sign Out
+        </button>
+        <button
+          onClick={toggleTheme}
+          title="Toggle theme"
+          style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "8px",
+            background: "var(--bg-inset)",
+            border: "1px solid var(--border)",
+            color: "var(--text-2)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 100ms ease",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-1)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-2)")}
+        >
+          {theme === "dark" ? (
+            <Sun size={15} strokeWidth={2} />
+          ) : (
+            <Moon size={15} strokeWidth={2} />
+          )}
         </button>
       </div>
     </header>
@@ -604,7 +635,7 @@ function ChatBox({
   return (
     <div
       style={{
-        background: "#1E293B",
+        background: "var(--bg-surface)",
         borderRadius: "16px",
         padding: "20px",
         border: "1px solid rgba(255,255,255,0.07)",
@@ -618,7 +649,7 @@ function ChatBox({
           style={{
             fontSize: "11px",
             fontWeight: "600",
-            color: "#64748B",
+            color: "var(--text-3)",
             textTransform: "uppercase",
             letterSpacing: "0.8px",
             marginBottom: "16px",
@@ -650,9 +681,7 @@ function ChatBox({
                   ? "16px 16px 4px 16px"
                   : "16px 16px 16px 4px",
               background:
-                msg.role === "user"
-                  ? "linear-gradient(135deg, #6366F1, #818CF8)"
-                  : "#0F172A",
+                msg.role === "user" ? "var(--accent-gradient)" : "#0F172A",
               color: msg.role === "user" ? "#fff" : "#CBD5E1",
               fontSize: "14px",
               lineHeight: "1.5",
@@ -676,7 +705,7 @@ function ChatBox({
               alignSelf: "flex-start",
               padding: "12px 16px",
               borderRadius: "16px 16px 16px 4px",
-              background: "#0F172A",
+              background: "var(--bg-inset)",
               border: "1px solid rgba(255,255,255,0.07)",
               display: "flex",
               gap: "4px",
@@ -714,10 +743,10 @@ function ChatBox({
               onClick={() => onSend(s)}
               style={{
                 padding: "6px 12px",
-                background: "rgba(99,102,241,0.1)",
+                background: "var(--accent-bg)",
                 border: "1px solid rgba(99,102,241,0.25)",
                 borderRadius: "20px",
-                color: "#818CF8",
+                color: "var(--accent-dim)",
                 fontSize: "12px",
                 cursor: "pointer",
                 fontWeight: "500",
@@ -738,10 +767,10 @@ function ChatBox({
           style={{
             flex: 1,
             padding: "12px 16px",
-            background: "#0F172A",
+            background: "var(--bg-inset)",
             border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: "10px",
-            color: "#F1F5F9",
+            color: "var(--text-1)",
             fontSize: "14px",
             outline: "none",
           }}
@@ -753,8 +782,8 @@ function ChatBox({
             padding: "12px 16px",
             background:
               !input.trim() || chatLoading
-                ? "#1E3A5F"
-                : "linear-gradient(135deg, #6366F1, #818CF8)",
+                ? "var(--disabled-bg)"
+                : "var(--accent-gradient)",
             border: "none",
             borderRadius: "10px",
             color: !input.trim() || chatLoading ? "#475569" : "#fff",
@@ -898,6 +927,7 @@ export default function DashboardPage() {
     removeTokens();
     router.push("/auth");
   }, [router]);
+  const { theme, toggleTheme } = useTheme();
 
   const MONTHS = [
     "Jan",
@@ -966,9 +996,17 @@ export default function DashboardPage() {
     return (
       <div
         className="mobile-page-wrap"
-        style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
+        style={{
+          minHeight: "100vh",
+          background: "var(--bg-inset)",
+          color: "var(--text-1)",
+        }}
       >
-        <AppHeader onLogout={handleLogout} />
+        <AppHeader
+          onLogout={handleLogout}
+          theme={theme}
+          toggleTheme={toggleTheme}
+        />
         <main
           className="mobile-main"
           style={{ maxWidth: "860px", margin: "0 auto", padding: "40px 20px" }}
@@ -1001,7 +1039,7 @@ export default function DashboardPage() {
             <p
               style={{
                 fontSize: "16px",
-                color: "#64748B",
+                color: "var(--text-3)",
                 maxWidth: "420px",
                 margin: "0 auto",
                 lineHeight: "1.6",
@@ -1017,7 +1055,7 @@ export default function DashboardPage() {
                 <div
                   key={step}
                   style={{
-                    background: "#1E293B",
+                    background: "var(--bg-surface)",
                     borderRadius: "16px",
                     padding: "22px",
                     border: `1px solid ${border}`,
@@ -1061,7 +1099,7 @@ export default function DashboardPage() {
                     style={{
                       fontSize: "15px",
                       fontWeight: "700",
-                      color: "#F1F5F9",
+                      color: "var(--text-1)",
                       marginBottom: "8px",
                       letterSpacing: "-0.2px",
                     }}
@@ -1071,7 +1109,7 @@ export default function DashboardPage() {
                   <p
                     style={{
                       fontSize: "13px",
-                      color: "#64748B",
+                      color: "var(--text-3)",
                       lineHeight: "1.6",
                     }}
                   >
@@ -1091,16 +1129,12 @@ export default function DashboardPage() {
               }}
             >
               <div
-                style={{
-                  height: "1px",
-                  flex: 1,
-                  background: "rgba(255,255,255,0.06)",
-                }}
+                style={{ height: "1px", flex: 1, background: "var(--border)" }}
               />
               <p
                 style={{
                   fontSize: "12px",
-                  color: "#475569",
+                  color: "var(--text-3)",
                   fontWeight: "600",
                   textTransform: "uppercase",
                   letterSpacing: "0.8px",
@@ -1110,11 +1144,7 @@ export default function DashboardPage() {
                 Start here - record your first expense
               </p>
               <div
-                style={{
-                  height: "1px",
-                  flex: 1,
-                  background: "rgba(255,255,255,0.06)",
-                }}
+                style={{ height: "1px", flex: 1, background: "var(--border)" }}
               />
             </div>
             <ChatBox {...chatProps} fullWidth={true} />
@@ -1124,7 +1154,7 @@ export default function DashboardPage() {
               href="/transactions"
               style={{
                 fontSize: "13px",
-                color: "#475569",
+                color: "var(--text-3)",
                 textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",
@@ -1146,9 +1176,17 @@ export default function DashboardPage() {
   return (
     <div
       className="mobile-page-wrap"
-      style={{ minHeight: "100vh", background: "#0F172A", color: "#F1F5F9" }}
+      style={{
+        minHeight: "100vh",
+        background: "var(--bg-inset)",
+        color: "var(--text-1)",
+      }}
     >
-      <AppHeader onLogout={handleLogout} />
+      <AppHeader
+        onLogout={handleLogout}
+        theme={theme}
+        toggleTheme={toggleTheme}
+      />
       <main
         className="mobile-main"
         style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 20px" }}
@@ -1166,7 +1204,7 @@ export default function DashboardPage() {
             style={{
               display: "inline-flex",
               alignItems: "center",
-              background: "#1E293B",
+              background: "var(--bg-surface)",
               borderRadius: "10px",
               border: "1px solid rgba(255,255,255,0.08)",
               overflow: "hidden",
@@ -1179,7 +1217,7 @@ export default function DashboardPage() {
                 background: "transparent",
                 border: "none",
                 borderRight: "1px solid rgba(255,255,255,0.08)",
-                color: "#64748B",
+                color: "var(--text-3)",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -1195,7 +1233,7 @@ export default function DashboardPage() {
                 padding: "9px 20px",
                 fontSize: "14px",
                 fontWeight: "600",
-                color: "#F1F5F9",
+                color: "var(--text-1)",
                 minWidth: "110px",
                 textAlign: "center",
                 letterSpacing: "-0.2px",
@@ -1237,7 +1275,7 @@ export default function DashboardPage() {
               }}
               style={{
                 fontSize: "12px",
-                color: "#818CF8",
+                color: "var(--accent-dim)",
                 fontWeight: "600",
                 background: "transparent",
                 border: "none",
@@ -1262,7 +1300,7 @@ export default function DashboardPage() {
               alignItems: "center",
               justifyContent: "center",
               padding: "80px 20px",
-              color: "#475569",
+              color: "var(--text-3)",
               textAlign: "center",
             }}
           >
@@ -1271,7 +1309,7 @@ export default function DashboardPage() {
               style={{
                 fontSize: "16px",
                 fontWeight: "600",
-                color: "#64748B",
+                color: "var(--text-3)",
                 marginBottom: "8px",
               }}
             >
@@ -1280,7 +1318,7 @@ export default function DashboardPage() {
             <p
               style={{
                 fontSize: "14px",
-                color: "#475569",
+                color: "var(--text-3)",
                 marginBottom: "20px",
               }}
             >
@@ -1293,10 +1331,10 @@ export default function DashboardPage() {
               }}
               style={{
                 padding: "10px 20px",
-                background: "rgba(99,102,241,0.15)",
+                background: "var(--accent-bg)",
                 border: "1px solid rgba(99,102,241,0.3)",
                 borderRadius: "10px",
-                color: "#818CF8",
+                color: "var(--accent-dim)",
                 cursor: "pointer",
                 fontSize: "14px",
                 fontWeight: "600",
@@ -1310,12 +1348,10 @@ export default function DashboardPage() {
             <div className="cards-grid">
               <div
                 style={{
-                  background: "#1E293B",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  position: "relative",
-                  overflow: "hidden",
+                  background: "var(--bg-surface)",
+                  borderRadius: "12px",
+                  padding: "20px 24px",
+                  border: "1px solid var(--border)",
                 }}
               >
                 <div
@@ -1325,14 +1361,14 @@ export default function DashboardPage() {
                     right: "-20px",
                     width: "80px",
                     height: "80px",
-                    background: "rgba(239,68,68,0.08)",
+                    background: "var(--red-bg)",
                     borderRadius: "50%",
                   }}
                 />
                 <p
                   style={{
                     fontSize: "11px",
-                    color: "#64748B",
+                    color: "var(--text-3)",
                     fontWeight: "600",
                     textTransform: "uppercase",
                     letterSpacing: "0.8px",
@@ -1343,11 +1379,12 @@ export default function DashboardPage() {
                 </p>
                 <p
                   style={{
-                    fontSize: "28px",
+                    fontSize: "36px",
                     fontWeight: "800",
                     color: "#F87171",
-                    letterSpacing: "-1px",
+                    letterSpacing: "-1.5px",
                     lineHeight: 1,
+                    fontVariantNumeric: "tabular-nums",
                   }}
                 >
                   <CountUp to={summary?.total_expense || 0} prefix="₹" />
@@ -1355,7 +1392,7 @@ export default function DashboardPage() {
                 <p
                   style={{
                     fontSize: "12px",
-                    color: "#475569",
+                    color: "var(--text-3)",
                     marginTop: "6px",
                   }}
                 >
@@ -1364,12 +1401,10 @@ export default function DashboardPage() {
               </div>
               <div
                 style={{
-                  background: "#1E293B",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  position: "relative",
-                  overflow: "hidden",
+                  background: "var(--bg-surface)",
+                  borderRadius: "12px",
+                  padding: "20px 24px",
+                  border: "1px solid var(--border)",
                 }}
               >
                 <div
@@ -1379,14 +1414,14 @@ export default function DashboardPage() {
                     right: "-20px",
                     width: "80px",
                     height: "80px",
-                    background: "rgba(99,102,241,0.08)",
+                    background: "var(--accent-bg)",
                     borderRadius: "50%",
                   }}
                 />
                 <p
                   style={{
                     fontSize: "11px",
-                    color: "#64748B",
+                    color: "var(--text-3)",
                     fontWeight: "600",
                     textTransform: "uppercase",
                     letterSpacing: "0.8px",
@@ -1397,11 +1432,12 @@ export default function DashboardPage() {
                 </p>
                 <p
                   style={{
-                    fontSize: "28px",
+                    fontSize: "36px",
                     fontWeight: "800",
-                    color: "#818CF8",
-                    letterSpacing: "-1px",
+                    color: "var(--accent-dim)",
+                    letterSpacing: "-1.5px",
                     lineHeight: 1,
+                    fontVariantNumeric: "tabular-nums",
                   }}
                 >
                   <CountUp to={summary?.total_transactions || 0} />
@@ -1409,7 +1445,7 @@ export default function DashboardPage() {
                 <p
                   style={{
                     fontSize: "12px",
-                    color: "#475569",
+                    color: "var(--text-3)",
                     marginTop: "6px",
                   }}
                 >
@@ -1418,12 +1454,10 @@ export default function DashboardPage() {
               </div>
               <div
                 style={{
-                  background: "#1E293B",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  position: "relative",
-                  overflow: "hidden",
+                  background: "var(--bg-surface)",
+                  borderRadius: "12px",
+                  padding: "20px 24px",
+                  border: "1px solid var(--border)",
                 }}
               >
                 <div
@@ -1433,14 +1467,14 @@ export default function DashboardPage() {
                     right: "-20px",
                     width: "80px",
                     height: "80px",
-                    background: "rgba(16,185,129,0.08)",
+                    background: "var(--green-bg)",
                     borderRadius: "50%",
                   }}
                 />
                 <p
                   style={{
                     fontSize: "11px",
-                    color: "#64748B",
+                    color: "var(--text-3)",
                     fontWeight: "600",
                     textTransform: "uppercase",
                     letterSpacing: "0.8px",
@@ -1453,7 +1487,7 @@ export default function DashboardPage() {
                   style={{
                     fontSize: "18px",
                     fontWeight: "800",
-                    color: "#34D399",
+                    color: "var(--green-dim)",
                     letterSpacing: "-0.5px",
                     lineHeight: 1.2,
                   }}
@@ -1463,7 +1497,7 @@ export default function DashboardPage() {
                 <p
                   style={{
                     fontSize: "12px",
-                    color: "#475569",
+                    color: "var(--text-3)",
                     marginTop: "6px",
                   }}
                 >
@@ -1490,7 +1524,7 @@ export default function DashboardPage() {
             <div className="bottom-grid">
               <div
                 style={{
-                  background: "#1E293B",
+                  background: "var(--bg-surface)",
                   borderRadius: "16px",
                   padding: "20px",
                   border: "1px solid rgba(255,255,255,0.07)",
@@ -1503,7 +1537,7 @@ export default function DashboardPage() {
                   style={{
                     fontSize: "11px",
                     fontWeight: "600",
-                    color: "#64748B",
+                    color: "var(--text-3)",
                     textTransform: "uppercase",
                     letterSpacing: "0.8px",
                     marginBottom: "16px",
@@ -1515,7 +1549,11 @@ export default function DashboardPage() {
                   <ExpensePieChart data={pieData} />
                 </div>
               </div>
-              <SpendingHeatmap data={heatmapData} />
+              <SpendingHeatmap
+                data={heatmapData}
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+              />
             </div>
           </>
         )}

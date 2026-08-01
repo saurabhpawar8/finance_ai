@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
+import { useTheme } from "@/lib/ThemeContext";
 import { useRouter } from "next/navigation";
-import { Wallet } from "lucide-react";
+import { Sun, Moon } from "lucide-react";
 import { login, register } from "@/lib/api";
 
 export default function AuthPage() {
@@ -9,6 +10,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { theme, toggleTheme } = useTheme();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const router = useRouter();
@@ -72,7 +74,7 @@ export default function AuthPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#0F172A",
+        background: "var(--bg-inset)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -81,6 +83,31 @@ export default function AuthPage() {
         overflow: "hidden",
       }}
     >
+      <button
+        onClick={toggleTheme}
+        style={{
+          position: "fixed",
+          top: "16px",
+          right: "16px",
+          width: "36px",
+          height: "36px",
+          borderRadius: "8px",
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border)",
+          color: "var(--text-2)",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 10,
+        }}
+      >
+        {theme === "dark" ? (
+          <Sun size={16} strokeWidth={2} />
+        ) : (
+          <Moon size={16} strokeWidth={2} />
+        )}
+      </button>
       <div
         style={{
           position: "fixed",
@@ -93,7 +120,7 @@ export default function AuthPage() {
 
       <div
         style={{
-          background: "#1E293B",
+          background: "var(--bg-surface)",
           borderRadius: "24px",
           padding: "40px",
           width: "100%",
@@ -126,14 +153,20 @@ export default function AuthPage() {
               style={{
                 fontSize: "24px",
                 fontWeight: "800",
-                color: "#F1F5F9",
+                color: "var(--text-1)",
                 letterSpacing: "-0.5px",
               }}
             >
               FinanceAI
             </span>
           </div>
-          <p style={{ color: "#64748B", marginTop: "10px", fontSize: "14px" }}>
+          <p
+            style={{
+              color: "var(--text-3)",
+              marginTop: "10px",
+              fontSize: "14px",
+            }}
+          >
             Track expenses with the power of AI
           </p>
         </div>
@@ -142,7 +175,7 @@ export default function AuthPage() {
         <div
           style={{
             display: "flex",
-            background: "#0F172A",
+            background: "var(--bg-inset)",
             borderRadius: "12px",
             padding: "4px",
             marginBottom: "28px",
@@ -165,9 +198,7 @@ export default function AuthPage() {
                 fontWeight: "600",
                 transition: "all 0.2s",
                 background:
-                  tab === t
-                    ? "linear-gradient(135deg, #6366F1, #818CF8)"
-                    : "transparent",
+                  tab === t ? "var(--accent-gradient)" : "transparent",
                 color: tab === t ? "#fff" : "#64748B",
                 boxShadow:
                   tab === t ? "0 4px 12px rgba(99,102,241,0.35)" : "none",
@@ -184,7 +215,7 @@ export default function AuthPage() {
             <label
               style={{
                 display: "block",
-                color: "#94A3B8",
+                color: "var(--text-2)",
                 fontSize: "13px",
                 fontWeight: "500",
                 marginBottom: "6px",
@@ -200,10 +231,10 @@ export default function AuthPage() {
               style={{
                 width: "100%",
                 padding: "12px 16px",
-                background: "#0F172A",
+                background: "var(--bg-inset)",
                 border: "1px solid rgba(255,255,255,0.08)",
                 borderRadius: "10px",
-                color: "#F1F5F9",
+                color: "var(--text-1)",
                 fontSize: "15px",
                 outline: "none",
               }}
@@ -213,7 +244,7 @@ export default function AuthPage() {
             <label
               style={{
                 display: "block",
-                color: "#94A3B8",
+                color: "var(--text-2)",
                 fontSize: "13px",
                 fontWeight: "500",
                 marginBottom: "6px",
@@ -230,10 +261,10 @@ export default function AuthPage() {
               style={{
                 width: "100%",
                 padding: "12px 16px",
-                background: "#0F172A",
+                background: "var(--bg-inset)",
                 border: "1px solid rgba(255,255,255,0.08)",
                 borderRadius: "10px",
-                color: "#F1F5F9",
+                color: "var(--text-1)",
                 fontSize: "15px",
                 outline: "none",
               }}
@@ -245,7 +276,7 @@ export default function AuthPage() {
               style={{
                 padding: "12px 16px",
                 borderRadius: "10px",
-                background: "rgba(239,68,68,0.12)",
+                background: "var(--red-bg)",
                 border: "1px solid rgba(239,68,68,0.25)",
                 color: "#FCA5A5",
                 fontSize: "14px",
@@ -259,7 +290,7 @@ export default function AuthPage() {
               style={{
                 padding: "12px 16px",
                 borderRadius: "10px",
-                background: "rgba(16,185,129,0.12)",
+                background: "var(--green-bg)",
                 border: "1px solid rgba(16,185,129,0.25)",
                 color: "#6EE7B7",
                 fontSize: "14px",
@@ -275,9 +306,7 @@ export default function AuthPage() {
             style={{
               width: "100%",
               padding: "14px",
-              background: loading
-                ? "#334155"
-                : "linear-gradient(135deg, #6366F1, #818CF8)",
+              background: loading ? "#334155" : "var(--accent-gradient)",
               border: "none",
               borderRadius: "10px",
               color: "#fff",

@@ -1,23 +1,30 @@
 import "./globals.css";
+import { ThemeProvider } from "@/lib/ThemeContext";
 
 export const metadata = {
-  title: "FinanceAI – Smart Expense Tracker",
-  description: "Track your expenses using natural language and AI",
+  title: "FinanceAI - Smart Expense Tracker",
+  description: "Track expenses with the power of AI",
   manifest: "/manifest.json",
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/icons/icon-192.png",
-  },
+  icons: { icon: "/favicon.ico", apple: "/icons/icon-192.png" },
 };
 
-export const viewport = {
-  themeColor: '#6366F1',
-};
+export const viewport = { themeColor: "#6366F1" };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark">
       <head>
+        {/* Prevent theme flash on load */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+          try {
+            const t = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+          } catch(e) {}
+        `,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -29,7 +36,9 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }
