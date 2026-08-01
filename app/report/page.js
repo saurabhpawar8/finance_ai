@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
+  Wallet,
   LayoutDashboard,
   Receipt,
   BarChart3,
@@ -57,11 +58,12 @@ const scoreLabel = (s) =>
   s >= 8 ? "Excellent" : s >= 6 ? "Good" : s >= 4 ? "Average" : "Poor";
 const scoreDesc = (s) => {
   if (s <= 3)
-    return "High spending imbalance focused on a single non-essential area.";
-  if (s <= 6) return "Unstructured spending across both needs and wants.";
-  if (s <= 8)
-    return "Primary focus on necessities with controlled personal spending.";
-  return "Well distributed, essentials prioritized, discretionary controlled.";
+    return "Spending concentrated in discretionary categories like entertainment and shopping.";
+  if (s <= 6)
+    return "Mixed spending with some unnecessary expenses - room for improvement.";
+  if (s <= 9)
+    return "Balanced spending with essentials prioritized - doing well.";
+  return "Very disciplined spending with minimal discretionary expenses.";
 };
 
 const SCORE_RANGES = [
@@ -739,7 +741,7 @@ export default function ReportPage() {
                         marginTop: "4px",
                       }}
                     >
-                      {scoreLabel(report.health_score)} — {report.health_score}
+                      {scoreLabel(report.health_score)} - {report.health_score}
                       /10
                     </p>
                   </div>

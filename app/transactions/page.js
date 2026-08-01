@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
+  Wallet,
   LayoutDashboard,
   Receipt,
   BarChart3,
@@ -90,7 +91,7 @@ const fmtDate = (d) =>
     year: "numeric",
   });
 const fmtAmount = (a) =>
-  a != null ? `₹${Number(a).toLocaleString("en-IN")}` : "—";
+  a != null ? `₹${Number(a).toLocaleString("en-IN")}` : "-";
 
 // Returns "Today", "Yesterday", "Monday", "19 Jul" etc.
 const getDateLabel = (dateStr) => {
@@ -303,7 +304,7 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
           onClose();
         } else setError("Update failed. Please try again.");
       } else {
-        showToast("No add API yet — use chat on Dashboard", "info");
+        showToast("No add API yet - use chat on Dashboard", "info");
         onClose();
       }
     } catch {
@@ -765,7 +766,7 @@ export default function TransactionsPage() {
     setLoading(true);
     try {
       const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-      const params = { page: pg, page_size: isMobile ? 10 : 20 };
+      const params = { page: pg, page_size: isMobile ? 8 : 20 };
       if (q) params.search = q;
       if (cat && cat !== "All") params.category = cat;
       if (wal && wal !== "All") params.wallet = wal;
@@ -1399,7 +1400,7 @@ export default function TransactionsPage() {
             </div>
           </div>
         )}
-        {/* Spacer — keeps pagination above the fixed tab bar on mobile */}
+        {/* Spacer - keeps pagination above the fixed tab bar on mobile */}
         <div style={{ height: "80px" }} />
       </main>
 

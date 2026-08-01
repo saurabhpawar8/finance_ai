@@ -19,6 +19,8 @@ import {
   AlertCircle,
   Activity,
   Zap,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   getSummary,
@@ -49,7 +51,7 @@ const STEPS = [
     border: "rgba(99,102,241,0.2)",
     step: "1",
     title: "Tell me what you spent",
-    desc: 'Type naturally "Spent 200 at Zomato". No forms, no dropdowns.',
+    desc: 'Type naturally - "Spent 200 at Zomato". No forms, no dropdowns.',
   },
   {
     icon: PieChart,
@@ -94,7 +96,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
     priority: 2,
     text: `Averaging ₹${Math.round(dailyAvg).toLocaleString(
       "en-IN"
-    )} per day, projected ₹${projected.toLocaleString(
+    )} per day - projected ₹${projected.toLocaleString(
       "en-IN"
     )} by ${monthName} end`,
   });
@@ -108,7 +110,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
       icon: Zap,
       color: "#818CF8",
       priority: 3,
-      text: `${summary.top_category} accounts for ${pct}% of your spending, your biggest category this month`,
+      text: `${summary.top_category} accounts for ${pct}% of your spending - your biggest category this month`,
     });
   }
 
@@ -124,7 +126,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
         icon: TrendingDown,
         color: "#34D399",
         priority: 0,
-        text: `No spending for ${daysSince} days straight, you're on a great streak!`,
+        text: `No spending for ${daysSince} days straight - you're on a great streak!`,
       });
     }
 
@@ -143,7 +145,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
         icon: AlertCircle,
         color: "#F87171",
         priority: 1,
-        text: `Biggest day was ${dateLabel}, ₹${Number(
+        text: `Biggest day was ${dateLabel} - ₹${Number(
           maxDay.total
         ).toLocaleString("en-IN")} spent in a single day`,
       });
@@ -157,7 +159,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
       icon: Activity,
       color: "#06B6D4",
       priority: 4,
-      text: `Spending across ${pieData.length} categories ${
+      text: `Spending across ${pieData.length} categories - ${
         smallest.category_name
       } is your lowest at ₹${Number(smallest.total).toLocaleString("en-IN")}`,
     });
@@ -505,19 +507,16 @@ function AppHeader({ onLogout }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <div
+        <img
+          src="/icons/icon-192.png"
+          alt="FinanceAI"
           style={{
             width: "34px",
             height: "34px",
-            background: "linear-gradient(135deg, #6366F1, #818CF8)",
             borderRadius: "8px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            objectFit: "cover",
           }}
-        >
-          <Wallet size={18} color="#fff" strokeWidth={2} />
-        </div>
+        />
         <span
           style={{
             fontSize: "17px",
@@ -810,6 +809,9 @@ function BottomTabs({ active }) {
 // ── Main ─────────────────────────────────────────────────
 export default function DashboardPage() {
   const router = useRouter();
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [summary, setSummary] = useState(null);
   const [pieData, setPieData] = useState([]);
   const [heatmapData, setHeatmapData] = useState([]);
@@ -824,12 +826,12 @@ export default function DashboardPage() {
   const [chatLoading, setChatLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (month, year) => {
     try {
       const [sumRes, pieRes, heatRes] = await Promise.all([
-        getSummary(),
-        getPieSummary(),
-        getHeatmap(),
+        getSummary(month, year),
+        getPieSummary(month, year),
+        getHeatmap(month, year),
       ]);
       if (sumRes?.success) setSummary(sumRes.data);
       if (pieRes?.success) setPieData(pieRes.data);
@@ -844,8 +846,17 @@ export default function DashboardPage() {
       router.push("/auth");
       return;
     }
-    loadData();
+    loadData(selectedMonth, selectedYear);
   }, [loadData, router]);
+
+  // Reload when month/year changes
+  useEffect(() => {
+    setDataLoading(true);
+    setSummary(null);
+    setPieData([]);
+    setHeatmapData([]);
+    loadData(selectedMonth, selectedYear);
+  }, [selectedMonth, selectedYear, loadData]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -863,7 +874,7 @@ export default function DashboardPage() {
         if (res?.success) {
           setMessages((prev) => [...prev, { role: "bot", text: res.message }]);
           showToast("Expense recorded!", "success");
-          loadData();
+          loadData(selectedMonth, selectedYear);
         } else {
           setMessages((prev) => [
             ...prev,
@@ -887,9 +898,60 @@ export default function DashboardPage() {
     removeTokens();
     router.push("/auth");
   }, [router]);
+
+  const MONTHS = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  const goBack = () => {
+    if (selectedMonth === 1) {
+      setSelectedMonth(12);
+      setSelectedYear((y) => y - 1);
+    } else setSelectedMonth((m) => m - 1);
+  };
+
+  const goForward = () => {
+    if (isCurrentMonthSelected) return;
+    if (selectedMonth === 12) {
+      setSelectedMonth(1);
+      setSelectedYear((y) => y + 1);
+    } else setSelectedMonth((m) => m + 1);
+  };
+
   const fmt = (n) => (n ? `₹${Number(n).toLocaleString("en-IN")}` : "₹0");
+  const isCurrentMonthSelected =
+    selectedMonth === now.getMonth() + 1 && selectedYear === now.getFullYear();
+  // Mark user as returning once they have any transaction ever
+  useEffect(() => {
+    if (summary?.total_transactions > 0) {
+      localStorage.setItem("has_transactions", "true");
+    }
+  }, [summary]);
+
+  const isReturningUser =
+    typeof window !== "undefined" &&
+    localStorage.getItem("has_transactions") === "true";
   const isFirstTime =
-    !dataLoading && (!summary || summary.total_transactions === 0);
+    !dataLoading &&
+    !isReturningUser &&
+    isCurrentMonthSelected &&
+    (!summary || summary.total_transactions === 0);
+  const isEmptyMonth =
+    !dataLoading &&
+    !isCurrentMonthSelected &&
+    (!summary || summary.total_transactions === 0) &&
+    !isFirstTime;
   const chatProps = {
     messages,
     chatLoading,
@@ -912,21 +974,17 @@ export default function DashboardPage() {
           style={{ maxWidth: "860px", margin: "0 auto", padding: "40px 20px" }}
         >
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <div
+            <img
+              src="/icons/icon-192.png"
+              alt="FinanceAI"
               style={{
-                display: "inline-flex",
                 width: "56px",
                 height: "56px",
-                background: "linear-gradient(135deg, #6366F1, #818CF8)",
                 borderRadius: "16px",
-                alignItems: "center",
-                justifyContent: "center",
+                objectFit: "cover",
                 marginBottom: "20px",
-                boxShadow: "0 12px 32px rgba(99,102,241,0.35)",
               }}
-            >
-              <Wallet size={28} color="#fff" strokeWidth={2} />
-            </div>
+            />
             <h1
               style={{
                 fontSize: "32px",
@@ -950,7 +1008,7 @@ export default function DashboardPage() {
               }}
             >
               Track every expense just by chatting. No spreadsheets, no manual
-              entry — just plain English.
+              entry - just plain English.
             </p>
           </div>
           <div className="cards-grid" style={{ marginBottom: "36px" }}>
@@ -1049,7 +1107,7 @@ export default function DashboardPage() {
                   whiteSpace: "nowrap",
                 }}
               >
-                Start here — record your first expense
+                Start here - record your first expense
               </p>
               <div
                 style={{
@@ -1095,212 +1153,372 @@ export default function DashboardPage() {
         className="mobile-main"
         style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 20px" }}
       >
-        <p
+        {/* Month switcher */}
+        <div
           style={{
-            fontSize: "12px",
-            fontWeight: "600",
-            color: "#475569",
-            textTransform: "uppercase",
-            letterSpacing: "1px",
-            marginBottom: "16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "20px",
           }}
         >
-          {summary?.month || "This Month"}
-        </p>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              background: "#1E293B",
+              borderRadius: "10px",
+              border: "1px solid rgba(255,255,255,0.08)",
+              overflow: "hidden",
+            }}
+          >
+            <button
+              onClick={goBack}
+              style={{
+                padding: "9px 14px",
+                background: "transparent",
+                border: "none",
+                borderRight: "1px solid rgba(255,255,255,0.08)",
+                color: "#64748B",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                transition: "color 0.15s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#F1F5F9")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#64748B")}
+            >
+              <ChevronLeft size={15} strokeWidth={2.5} />
+            </button>
+            <span
+              style={{
+                padding: "9px 20px",
+                fontSize: "14px",
+                fontWeight: "600",
+                color: "#F1F5F9",
+                minWidth: "110px",
+                textAlign: "center",
+                letterSpacing: "-0.2px",
+              }}
+            >
+              {MONTHS[selectedMonth - 1]} {selectedYear}
+            </span>
+            <button
+              onClick={goForward}
+              disabled={!isCurrentMonthSelected ? false : true}
+              style={{
+                padding: "9px 14px",
+                background: "transparent",
+                border: "none",
+                borderLeft: "1px solid rgba(255,255,255,0.08)",
+                color: isCurrentMonthSelected ? "#2D3748" : "#64748B",
+                cursor: isCurrentMonthSelected ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                transition: "color 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                if (isCurrentMonthSelected)
+                  e.currentTarget.style.color = "#F1F5F9";
+              }}
+              onMouseLeave={(e) => {
+                if (isCurrentMonthSelected)
+                  e.currentTarget.style.color = "#64748B";
+              }}
+            >
+              <ChevronRight size={15} strokeWidth={2.5} />
+            </button>
+          </div>
+          {!isCurrentMonthSelected ? (
+            <button
+              onClick={() => {
+                setSelectedMonth(now.getMonth() + 1);
+                setSelectedYear(now.getFullYear());
+              }}
+              style={{
+                fontSize: "12px",
+                color: "#818CF8",
+                fontWeight: "600",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                padding: "0",
+                opacity: 0.8,
+              }}
+            >
+              Back to current
+            </button>
+          ) : (
+            <span />
+          )}
+        </div>
 
         {/* Summary cards with animated counters */}
-        <div className="cards-grid">
+        {isEmptyMonth ? (
           <div
             style={{
-              background: "#1E293B",
-              borderRadius: "16px",
-              padding: "20px",
-              border: "1px solid rgba(255,255,255,0.07)",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: "-20px",
-                right: "-20px",
-                width: "80px",
-                height: "80px",
-                background: "rgba(239,68,68,0.08)",
-                borderRadius: "50%",
-              }}
-            />
-            <p
-              style={{
-                fontSize: "11px",
-                color: "#64748B",
-                fontWeight: "600",
-                textTransform: "uppercase",
-                letterSpacing: "0.8px",
-                marginBottom: "10px",
-              }}
-            >
-              Total Spent
-            </p>
-            <p
-              style={{
-                fontSize: "28px",
-                fontWeight: "800",
-                color: "#F87171",
-                letterSpacing: "-1px",
-                lineHeight: 1,
-              }}
-            >
-              <CountUp to={summary?.total_expense || 0} prefix="₹" />
-            </p>
-            <p style={{ fontSize: "12px", color: "#475569", marginTop: "6px" }}>
-              This month
-            </p>
-          </div>
-          <div
-            style={{
-              background: "#1E293B",
-              borderRadius: "16px",
-              padding: "20px",
-              border: "1px solid rgba(255,255,255,0.07)",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: "-20px",
-                right: "-20px",
-                width: "80px",
-                height: "80px",
-                background: "rgba(99,102,241,0.08)",
-                borderRadius: "50%",
-              }}
-            />
-            <p
-              style={{
-                fontSize: "11px",
-                color: "#64748B",
-                fontWeight: "600",
-                textTransform: "uppercase",
-                letterSpacing: "0.8px",
-                marginBottom: "10px",
-              }}
-            >
-              Transactions
-            </p>
-            <p
-              style={{
-                fontSize: "28px",
-                fontWeight: "800",
-                color: "#818CF8",
-                letterSpacing: "-1px",
-                lineHeight: 1,
-              }}
-            >
-              <CountUp to={summary?.total_transactions || 0} />
-            </p>
-            <p style={{ fontSize: "12px", color: "#475569", marginTop: "6px" }}>
-              This month
-            </p>
-          </div>
-          <div
-            style={{
-              background: "#1E293B",
-              borderRadius: "16px",
-              padding: "20px",
-              border: "1px solid rgba(255,255,255,0.07)",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: "-20px",
-                right: "-20px",
-                width: "80px",
-                height: "80px",
-                background: "rgba(16,185,129,0.08)",
-                borderRadius: "50%",
-              }}
-            />
-            <p
-              style={{
-                fontSize: "11px",
-                color: "#64748B",
-                fontWeight: "600",
-                textTransform: "uppercase",
-                letterSpacing: "0.8px",
-                marginBottom: "10px",
-              }}
-            >
-              Top Category
-            </p>
-            <p
-              style={{
-                fontSize: "18px",
-                fontWeight: "800",
-                color: "#34D399",
-                letterSpacing: "-0.5px",
-                lineHeight: 1.2,
-              }}
-            >
-              {summary?.top_category || "—"}
-            </p>
-            <p style={{ fontSize: "12px", color: "#475569", marginTop: "6px" }}>
-              {summary?.category_amount
-                ? `₹${Number(summary.category_amount).toLocaleString(
-                    "en-IN"
-                  )} spent`
-                : "No data"}
-            </p>
-          </div>
-        </div>
-
-        {/* Row 2: Chat (primary) | Insights (secondary) */}
-        <div className="bottom-grid" style={{ marginBottom: "16px" }}>
-          <ChatBox {...chatProps} fullWidth={false} />
-          <SpendingInsights
-            summary={summary}
-            pieData={pieData}
-            heatmapData={heatmapData}
-          />
-        </div>
-
-        {/* Row 3: Pie Chart | Heatmap */}
-        <div className="bottom-grid">
-          <div
-            style={{
-              background: "#1E293B",
-              borderRadius: "16px",
-              padding: "20px",
-              border: "1px solid rgba(255,255,255,0.07)",
               display: "flex",
               flexDirection: "column",
-              minHeight: "340px",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "80px 20px",
+              color: "#475569",
+              textAlign: "center",
             }}
           >
+            <div style={{ fontSize: "48px", marginBottom: "16px" }}>🗓️</div>
             <p
               style={{
-                fontSize: "11px",
+                fontSize: "16px",
                 fontWeight: "600",
                 color: "#64748B",
-                textTransform: "uppercase",
-                letterSpacing: "0.8px",
-                marginBottom: "16px",
+                marginBottom: "8px",
               }}
             >
-              Spending by Category
+              No data for {MONTHS[selectedMonth - 1]} {selectedYear}
             </p>
-            <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
-              <ExpensePieChart data={pieData} />
-            </div>
+            <p
+              style={{
+                fontSize: "14px",
+                color: "#475569",
+                marginBottom: "20px",
+              }}
+            >
+              No expenses were recorded this month
+            </p>
+            <button
+              onClick={() => {
+                setSelectedMonth(now.getMonth() + 1);
+                setSelectedYear(now.getFullYear());
+              }}
+              style={{
+                padding: "10px 20px",
+                background: "rgba(99,102,241,0.15)",
+                border: "1px solid rgba(99,102,241,0.3)",
+                borderRadius: "10px",
+                color: "#818CF8",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "600",
+              }}
+            >
+              Go to current month
+            </button>
           </div>
-          <SpendingHeatmap data={heatmapData} />
-        </div>
+        ) : (
+          <>
+            <div className="cards-grid">
+              <div
+                style={{
+                  background: "#1E293B",
+                  borderRadius: "16px",
+                  padding: "20px",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "-20px",
+                    right: "-20px",
+                    width: "80px",
+                    height: "80px",
+                    background: "rgba(239,68,68,0.08)",
+                    borderRadius: "50%",
+                  }}
+                />
+                <p
+                  style={{
+                    fontSize: "11px",
+                    color: "#64748B",
+                    fontWeight: "600",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.8px",
+                    marginBottom: "10px",
+                  }}
+                >
+                  Total Spent
+                </p>
+                <p
+                  style={{
+                    fontSize: "28px",
+                    fontWeight: "800",
+                    color: "#F87171",
+                    letterSpacing: "-1px",
+                    lineHeight: 1,
+                  }}
+                >
+                  <CountUp to={summary?.total_expense || 0} prefix="₹" />
+                </p>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#475569",
+                    marginTop: "6px",
+                  }}
+                >
+                  This month
+                </p>
+              </div>
+              <div
+                style={{
+                  background: "#1E293B",
+                  borderRadius: "16px",
+                  padding: "20px",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "-20px",
+                    right: "-20px",
+                    width: "80px",
+                    height: "80px",
+                    background: "rgba(99,102,241,0.08)",
+                    borderRadius: "50%",
+                  }}
+                />
+                <p
+                  style={{
+                    fontSize: "11px",
+                    color: "#64748B",
+                    fontWeight: "600",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.8px",
+                    marginBottom: "10px",
+                  }}
+                >
+                  Transactions
+                </p>
+                <p
+                  style={{
+                    fontSize: "28px",
+                    fontWeight: "800",
+                    color: "#818CF8",
+                    letterSpacing: "-1px",
+                    lineHeight: 1,
+                  }}
+                >
+                  <CountUp to={summary?.total_transactions || 0} />
+                </p>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#475569",
+                    marginTop: "6px",
+                  }}
+                >
+                  This month
+                </p>
+              </div>
+              <div
+                style={{
+                  background: "#1E293B",
+                  borderRadius: "16px",
+                  padding: "20px",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "-20px",
+                    right: "-20px",
+                    width: "80px",
+                    height: "80px",
+                    background: "rgba(16,185,129,0.08)",
+                    borderRadius: "50%",
+                  }}
+                />
+                <p
+                  style={{
+                    fontSize: "11px",
+                    color: "#64748B",
+                    fontWeight: "600",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.8px",
+                    marginBottom: "10px",
+                  }}
+                >
+                  Top Category
+                </p>
+                <p
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "800",
+                    color: "#34D399",
+                    letterSpacing: "-0.5px",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {summary?.top_category || "-"}
+                </p>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#475569",
+                    marginTop: "6px",
+                  }}
+                >
+                  {summary?.category_amount
+                    ? `₹${Number(summary.category_amount).toLocaleString(
+                        "en-IN"
+                      )} spent`
+                    : "No data"}
+                </p>
+              </div>
+            </div>
+
+            {/* Row 2: Chat (primary) | Insights (secondary) */}
+            <div className="bottom-grid" style={{ marginBottom: "16px" }}>
+              <ChatBox {...chatProps} fullWidth={false} />
+              <SpendingInsights
+                summary={summary}
+                pieData={pieData}
+                heatmapData={heatmapData}
+              />
+            </div>
+
+            {/* Row 3: Pie Chart | Heatmap */}
+            <div className="bottom-grid">
+              <div
+                style={{
+                  background: "#1E293B",
+                  borderRadius: "16px",
+                  padding: "20px",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: "340px",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "600",
+                    color: "#64748B",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.8px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  Spending by Category
+                </p>
+                <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+                  <ExpensePieChart data={pieData} />
+                </div>
+              </div>
+              <SpendingHeatmap data={heatmapData} />
+            </div>
+          </>
+        )}
       </main>
       <BottomTabs active="dashboard" />
       <Toast />

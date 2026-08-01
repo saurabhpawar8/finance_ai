@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Wallet } from "lucide-react";
 import { login, register } from "@/lib/api";
 
 export default function AuthPage() {
@@ -15,6 +16,17 @@ export default function AuthPage() {
   const reset = () => {
     setError("");
     setSuccess("");
+  };
+
+  // Backend sometimes returns message as object e.g. {email: ["already exists"]}
+  const parseMessage = (msg) => {
+    if (!msg) return "";
+    if (typeof msg === "string") return msg;
+    if (typeof msg === "object") {
+      const first = Object.values(msg)[0];
+      return Array.isArray(first) ? first[0] : String(first);
+    }
+    return String(msg);
   };
 
   const handleSubmit = async () => {
@@ -33,7 +45,9 @@ export default function AuthPage() {
           localStorage.setItem("user_email", email);
           router.push("/dashboard");
         } else {
-          setError(res.message || "Login failed. Check your credentials.");
+          setError(
+            parseMessage(res.message) || "Login failed. Check your credentials."
+          );
         }
       } else {
         const res = await register(email, password);
@@ -43,7 +57,8 @@ export default function AuthPage() {
           setPassword("");
         } else {
           setError(
-            res.message || "Registration failed. Try a different email."
+            parseMessage(res.message) ||
+              "Registration failed. Try a different email."
           );
         }
       }
