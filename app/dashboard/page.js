@@ -515,7 +515,7 @@ function AppHeader({
         background: "var(--bg-header)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        padding: "0 24px",
+        padding: "0 16px",
         height: "56px",
         display: "flex",
         alignItems: "center",
@@ -526,14 +526,7 @@ function AppHeader({
       }}
     >
       {/* Left: Logo */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          minWidth: "160px",
-        }}
-      >
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
         <img
           src="/icons/icon-192.png"
           alt="FinanceAI"
@@ -555,8 +548,11 @@ function AppHeader({
         </span>
       </div>
 
-      {/* Centre: Month switcher */}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      {/* Centre: Month switcher — desktop only */}
+      <div
+        className="hide-mobile"
+        style={{ display: "flex", alignItems: "center", gap: "8px" }}
+      >
         <div
           style={{
             display: "inline-flex",
@@ -647,16 +643,8 @@ function AppHeader({
       </div>
 
       {/* Right: Nav + actions */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "4px",
-          minWidth: "160px",
-          justifyContent: "flex-end",
-        }}
-      >
-        <div className="hide-mobile" style={{ gap: "0px", display: "flex" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+        <div className="hide-mobile" style={{ display: "flex", gap: "0" }}>
           <Link
             href="/transactions"
             style={{
@@ -707,28 +695,32 @@ function AppHeader({
             <BarChart3 size={14} strokeWidth={2} />
             Reports
           </Link>
+          <button
+            onClick={onLogout}
+            style={{
+              padding: "7px 12px",
+              background: "transparent",
+              border: "none",
+              borderRadius: "8px",
+              color: "var(--text-3)",
+              cursor: "pointer",
+              fontSize: "13px",
+              fontWeight: "500",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              transition: "color 100ms ease",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--text-1)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-3)")
+            }
+          >
+            <LogOut size={14} strokeWidth={2} />
+          </button>
         </div>
-        <button
-          onClick={onLogout}
-          style={{
-            padding: "7px 12px",
-            background: "transparent",
-            border: "none",
-            borderRadius: "8px",
-            color: "var(--text-3)",
-            cursor: "pointer",
-            fontSize: "13px",
-            fontWeight: "500",
-            display: "flex",
-            alignItems: "center",
-            gap: "5px",
-            transition: "color 100ms ease",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-1)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-3)")}
-        >
-          <LogOut size={14} strokeWidth={2} />
-        </button>
         <button
           onClick={toggleTheme}
           style={{
@@ -1361,7 +1353,92 @@ export default function DashboardPage() {
         className="mobile-main"
         style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 20px" }}
       >
-        {/* Summary cards with animated counters */}
+        {/* Mobile month switcher — shown below header on mobile only */}
+        <div
+          className="show-mobile"
+          style={{
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "16px",
+          }}
+        >
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              background: "var(--bg-surface)",
+              borderRadius: "10px",
+              overflow: "hidden",
+              boxShadow: "var(--shadow-card)",
+            }}
+          >
+            <button
+              onClick={goBack}
+              style={{
+                padding: "10px 14px",
+                background: "transparent",
+                border: "none",
+                borderRight: "1px solid var(--border)",
+                color: "var(--text-3)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <ChevronLeft size={15} strokeWidth={2.5} />
+            </button>
+            <span
+              style={{
+                padding: "10px 18px",
+                fontSize: "14px",
+                fontWeight: "700",
+                color: "var(--text-1)",
+                textAlign: "center",
+                letterSpacing: "-0.2px",
+              }}
+            >
+              {MONTHS[selectedMonth - 1]} {selectedYear}
+            </span>
+            <button
+              onClick={goForward}
+              disabled={isCurrentMonthSelected}
+              style={{
+                padding: "10px 14px",
+                background: "transparent",
+                border: "none",
+                borderLeft: "1px solid var(--border)",
+                color: isCurrentMonthSelected
+                  ? "var(--text-4)"
+                  : "var(--text-3)",
+                cursor: isCurrentMonthSelected ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <ChevronRight size={15} strokeWidth={2.5} />
+            </button>
+          </div>
+          {!isCurrentMonthSelected && (
+            <button
+              onClick={() => {
+                setSelectedMonth(now.getMonth() + 1);
+                setSelectedYear(now.getFullYear());
+              }}
+              style={{
+                fontSize: "12px",
+                color: "var(--accent-dim)",
+                fontWeight: "600",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Now
+            </button>
+          )}
+        </div>
+
+        {/* Summary cards */}
         {isEmptyMonth ? (
           <div
             style={{
