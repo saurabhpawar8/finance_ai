@@ -169,17 +169,18 @@ function CatBadge({ category }) {
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: "4px",
-        padding: "4px 10px",
-        borderRadius: "20px",
+        gap: "5px",
+        padding: "3px 8px",
+        borderRadius: "6px",
         background: m.bg,
         color: m.text,
-        fontSize: "12px",
+        fontSize: "11px",
         fontWeight: "600",
         whiteSpace: "nowrap",
+        width: "fit-content",
       }}
     >
-      <m.Icon size={11} strokeWidth={2.5} />
+      <m.Icon size={10} strokeWidth={2.5} />
       {category}
     </span>
   );
@@ -875,7 +876,7 @@ export default function TransactionsPage() {
       {/* HEADER */}
       <header
         style={{
-          background: "rgba(10,10,12,0.85)",
+          background: "var(--bg-header)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           padding: "0 24px",

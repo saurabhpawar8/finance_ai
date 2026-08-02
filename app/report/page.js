@@ -396,7 +396,7 @@ export default function ReportPage() {
       {/* HEADER */}
       <header
         style={{
-          background: "rgba(10,10,12,0.85)",
+          background: "var(--bg-header)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           padding: "0 24px",
@@ -498,7 +498,7 @@ export default function ReportPage() {
 
       <main
         className="mobile-main"
-        style={{ maxWidth: "900px", margin: "0 auto", padding: "24px 20px" }}
+        style={{ maxWidth: "720px", margin: "0 auto", padding: "24px 20px" }}
       >
         <div style={{ marginBottom: "24px" }}>
           <h1
@@ -523,7 +523,7 @@ export default function ReportPage() {
             background: "var(--bg-surface)",
             borderRadius: "16px",
             padding: "20px",
-            border: "1px solid var(--green-border)",
+            boxShadow: "var(--shadow-card)",
             marginBottom: "16px",
           }}
         >
@@ -540,7 +540,7 @@ export default function ReportPage() {
                 width: "34px",
                 height: "34px",
                 borderRadius: "8px",
-                background: "var(--green-bg)",
+                background: "var(--accent-bg)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -593,17 +593,15 @@ export default function ReportPage() {
               style={{
                 padding: "13px",
                 background: downloading
-                  ? "#334155"
-                  : "linear-gradient(135deg, var(--green), var(--green-dim))",
+                  ? "var(--disabled-bg)"
+                  : "var(--accent-gradient)",
                 border: "none",
                 borderRadius: "10px",
-                color: downloading ? "#64748B" : "#fff",
+                color: downloading ? "var(--text-3)" : "#fff",
                 fontSize: "14px",
                 fontWeight: "700",
                 cursor: downloading ? "not-allowed" : "pointer",
-                boxShadow: downloading
-                  ? "none"
-                  : "0 6px 20px rgba(16,185,129,0.3)",
+                boxShadow: downloading ? "none" : "var(--shadow-accent)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

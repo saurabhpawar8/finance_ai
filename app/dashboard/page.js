@@ -230,7 +230,7 @@ function SpendingInsights({ summary, pieData, heatmapData }) {
               style={{
                 fontSize: "13px",
                 color: "var(--text-2)",
-                lineHeight: "1.6",
+                lineHeight: "1.7",
                 margin: 0,
               }}
             >
@@ -295,7 +295,7 @@ function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
   }
 
   const getColor = (total) => {
-    if (!total) return "var(--border-subtle)";
+    if (!total) return "rgba(255,255,255,0.07)";
     const t = Math.min(total / maxTotal, 1);
     if (t < 0.25) return `rgba(251,146,60,0.35)`;
     if (t < 0.5) return `rgba(239,100,68,0.55)`;
@@ -497,11 +497,22 @@ function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
 }
 
 // ── Shared components (outside parent to avoid remount) ───
-function AppHeader({ onLogout, theme, toggleTheme }) {
+function AppHeader({
+  onLogout,
+  theme,
+  toggleTheme,
+  selectedMonth,
+  selectedYear,
+  goBack,
+  goForward,
+  isCurrentMonth,
+  months,
+  onBackToCurrent,
+}) {
   return (
     <header
       style={{
-        background: "rgba(10,10,12,0.85)",
+        background: "var(--bg-header)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         padding: "0 24px",
@@ -514,20 +525,28 @@ function AppHeader({ onLogout, theme, toggleTheme }) {
         zIndex: 10,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      {/* Left: Logo */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          minWidth: "160px",
+        }}
+      >
         <img
           src="/icons/icon-192.png"
           alt="FinanceAI"
           style={{
-            width: "34px",
-            height: "34px",
-            borderRadius: "8px",
+            width: "30px",
+            height: "30px",
+            borderRadius: "7px",
             objectFit: "cover",
           }}
         />
         <span
           style={{
-            fontSize: "17px",
+            fontSize: "16px",
             fontWeight: "800",
             letterSpacing: "-0.4px",
           }}
@@ -535,23 +554,130 @@ function AppHeader({ onLogout, theme, toggleTheme }) {
           FinanceAI
         </span>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <div className="hide-mobile" style={{ gap: "10px" }}>
+
+      {/* Centre: Month switcher */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            background: "var(--bg-elevated)",
+            borderRadius: "8px",
+            overflow: "hidden",
+          }}
+        >
+          <button
+            onClick={goBack}
+            style={{
+              padding: "7px 12px",
+              background: "transparent",
+              border: "none",
+              borderRight: "1px solid var(--border)",
+              color: "var(--text-3)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              transition: "color 100ms ease",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--text-1)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-3)")
+            }
+          >
+            <ChevronLeft size={14} strokeWidth={2.5} />
+          </button>
+          <span
+            style={{
+              padding: "7px 16px",
+              fontSize: "13px",
+              fontWeight: "700",
+              color: "var(--text-1)",
+              minWidth: "100px",
+              textAlign: "center",
+              letterSpacing: "-0.2px",
+            }}
+          >
+            {months[selectedMonth - 1]} {selectedYear}
+          </span>
+          <button
+            onClick={goForward}
+            disabled={isCurrentMonth}
+            style={{
+              padding: "7px 12px",
+              background: "transparent",
+              border: "none",
+              borderLeft: "1px solid var(--border)",
+              color: isCurrentMonth ? "var(--text-4)" : "var(--text-3)",
+              cursor: isCurrentMonth ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              transition: "color 100ms ease",
+            }}
+            onMouseEnter={(e) => {
+              if (!isCurrentMonth)
+                e.currentTarget.style.color = "var(--text-1)";
+            }}
+            onMouseLeave={(e) => {
+              if (!isCurrentMonth)
+                e.currentTarget.style.color = "var(--text-3)";
+            }}
+          >
+            <ChevronRight size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+        {!isCurrentMonth && (
+          <button
+            onClick={onBackToCurrent}
+            style={{
+              fontSize: "11px",
+              color: "var(--accent-dim)",
+              fontWeight: "600",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              padding: "0",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Now
+          </button>
+        )}
+      </div>
+
+      {/* Right: Nav + actions */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
+          minWidth: "160px",
+          justifyContent: "flex-end",
+        }}
+      >
+        <div className="hide-mobile" style={{ gap: "0px", display: "flex" }}>
           <Link
             href="/transactions"
             style={{
-              padding: "7px 14px",
-              background: "var(--green-bg)",
-              border: "1px solid var(--green-border)",
+              padding: "7px 12px",
+              background: "transparent",
               borderRadius: "8px",
-              color: "var(--green-dim)",
+              color: "var(--text-3)",
               textDecoration: "none",
               fontSize: "13px",
-              fontWeight: "600",
+              fontWeight: "500",
               display: "flex",
               alignItems: "center",
-              gap: "6px",
+              gap: "5px",
+              transition: "color 100ms ease",
             }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--text-1)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-3)")
+            }
           >
             <Receipt size={14} strokeWidth={2} />
             Transactions
@@ -559,18 +685,24 @@ function AppHeader({ onLogout, theme, toggleTheme }) {
           <Link
             href="/report"
             style={{
-              padding: "7px 14px",
-              background: "var(--accent-bg)",
-              border: "1px solid var(--accent-border)",
+              padding: "7px 12px",
+              background: "transparent",
               borderRadius: "8px",
-              color: "var(--accent-dim)",
+              color: "var(--text-3)",
               textDecoration: "none",
               fontSize: "13px",
-              fontWeight: "600",
+              fontWeight: "500",
               display: "flex",
               alignItems: "center",
-              gap: "6px",
+              gap: "5px",
+              transition: "color 100ms ease",
             }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--text-1)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-3)")
+            }
           >
             <BarChart3 size={14} strokeWidth={2} />
             Reports
@@ -579,45 +711,46 @@ function AppHeader({ onLogout, theme, toggleTheme }) {
         <button
           onClick={onLogout}
           style={{
-            padding: "7px 14px",
+            padding: "7px 12px",
             background: "transparent",
-            border: "1px solid var(--border-strong)",
+            border: "none",
             borderRadius: "8px",
-            color: "var(--text-2)",
+            color: "var(--text-3)",
             cursor: "pointer",
             fontSize: "13px",
             fontWeight: "500",
             display: "flex",
             alignItems: "center",
-            gap: "6px",
+            gap: "5px",
+            transition: "color 100ms ease",
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-1)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-3)")}
         >
           <LogOut size={14} strokeWidth={2} />
-          Sign Out
         </button>
         <button
           onClick={toggleTheme}
-          title="Toggle theme"
           style={{
             width: "32px",
             height: "32px",
             borderRadius: "8px",
-            background: "var(--bg-inset)",
-            boxShadow: "var(--shadow-card)",
-            color: "var(--text-2)",
+            background: "var(--bg-elevated)",
+            border: "none",
+            color: "var(--text-3)",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            transition: "all 100ms ease",
+            transition: "color 100ms ease",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-1)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-2)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-3)")}
         >
           {theme === "dark" ? (
-            <Sun size={15} strokeWidth={2} />
+            <Sun size={14} strokeWidth={2} />
           ) : (
-            <Moon size={15} strokeWidth={2} />
+            <Moon size={14} strokeWidth={2} />
           )}
         </button>
       </div>
@@ -740,7 +873,7 @@ function ChatBox({
               style={{
                 padding: "5px 12px",
                 background: "var(--bg-elevated)",
-                border: "none",
+                border: "1px solid var(--border-strong)",
                 borderRadius: "20px",
                 color: "var(--text-2)",
                 fontSize: "12px",
@@ -751,10 +884,12 @@ function ChatBox({
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "var(--accent-bg)";
                 e.currentTarget.style.color = "var(--accent-dim)";
+                e.currentTarget.style.borderColor = "var(--accent-border)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "var(--bg-elevated)";
                 e.currentTarget.style.color = "var(--text-2)";
+                e.currentTarget.style.borderColor = "var(--border-strong)";
               }}
             >
               {s}
@@ -1021,6 +1156,16 @@ export default function DashboardPage() {
           onLogout={handleLogout}
           theme={theme}
           toggleTheme={toggleTheme}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          goBack={goBack}
+          goForward={goForward}
+          isCurrentMonth={isCurrentMonthSelected}
+          months={MONTHS}
+          onBackToCurrent={() => {
+            setSelectedMonth(now.getMonth() + 1);
+            setSelectedYear(now.getFullYear());
+          }}
         />
         <main
           className="mobile-main"
@@ -1201,111 +1346,21 @@ export default function DashboardPage() {
         onLogout={handleLogout}
         theme={theme}
         toggleTheme={toggleTheme}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        goBack={goBack}
+        goForward={goForward}
+        isCurrentMonth={isCurrentMonthSelected}
+        months={MONTHS}
+        onBackToCurrent={() => {
+          setSelectedMonth(now.getMonth() + 1);
+          setSelectedYear(now.getFullYear());
+        }}
       />
       <main
         className="mobile-main"
         style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 20px" }}
       >
-        {/* Month switcher */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "20px",
-          }}
-        >
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              background: "var(--bg-surface)",
-              borderRadius: "10px",
-              boxShadow: "var(--shadow-card)",
-              overflow: "hidden",
-            }}
-          >
-            <button
-              onClick={goBack}
-              style={{
-                padding: "9px 14px",
-                background: "transparent",
-                border: "none",
-                borderRight: "1px solid var(--border)",
-                color: "var(--text-3)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                transition: "color 0.15s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#F1F5F9")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#64748B")}
-            >
-              <ChevronLeft size={15} strokeWidth={2.5} />
-            </button>
-            <span
-              style={{
-                padding: "9px 20px",
-                fontSize: "14px",
-                fontWeight: "600",
-                color: "var(--text-1)",
-                minWidth: "110px",
-                textAlign: "center",
-                letterSpacing: "-0.2px",
-              }}
-            >
-              {MONTHS[selectedMonth - 1]} {selectedYear}
-            </span>
-            <button
-              onClick={goForward}
-              disabled={!isCurrentMonthSelected ? false : true}
-              style={{
-                padding: "9px 14px",
-                background: "transparent",
-                border: "none",
-                borderLeft: "1px solid var(--border)",
-                color: isCurrentMonthSelected ? "#2D3748" : "#64748B",
-                cursor: isCurrentMonthSelected ? "not-allowed" : "pointer",
-                display: "flex",
-                alignItems: "center",
-                transition: "color 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                if (isCurrentMonthSelected)
-                  e.currentTarget.style.color = "#F1F5F9";
-              }}
-              onMouseLeave={(e) => {
-                if (isCurrentMonthSelected)
-                  e.currentTarget.style.color = "#64748B";
-              }}
-            >
-              <ChevronRight size={15} strokeWidth={2.5} />
-            </button>
-          </div>
-          {!isCurrentMonthSelected ? (
-            <button
-              onClick={() => {
-                setSelectedMonth(now.getMonth() + 1);
-                setSelectedYear(now.getFullYear());
-              }}
-              style={{
-                fontSize: "12px",
-                color: "var(--accent-dim)",
-                fontWeight: "600",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                padding: "0",
-                opacity: 0.8,
-              }}
-            >
-              Back to current
-            </button>
-          ) : (
-            <span />
-          )}
-        </div>
-
         {/* Summary cards with animated counters */}
         {isEmptyMonth ? (
           <div
@@ -1361,13 +1416,14 @@ export default function DashboardPage() {
         ) : (
           <>
             <div className="cards-grid">
-              {/* Total Spent — CRED hero */}
+              {/* Total Spent */}
               <div
                 style={{
                   background: "var(--bg-surface)",
                   borderRadius: "16px",
                   padding: "24px",
                   boxShadow: "var(--shadow-card)",
+                  borderTop: "2px solid var(--red)",
                 }}
               >
                 <p
@@ -1386,7 +1442,7 @@ export default function DashboardPage() {
                   style={{
                     fontSize: "40px",
                     fontWeight: "800",
-                    color: "var(--red)",
+                    color: "var(--text-1)",
                     letterSpacing: "-2px",
                     lineHeight: 1,
                     fontVariantNumeric: "tabular-nums",
@@ -1394,24 +1450,16 @@ export default function DashboardPage() {
                 >
                   <CountUp to={summary?.total_expense || 0} prefix="₹" />
                 </p>
-                <div
+                <p
                   style={{
-                    marginTop: "14px",
-                    height: "2px",
-                    background: "var(--border-subtle)",
-                    borderRadius: "2px",
+                    fontSize: "12px",
+                    color: "var(--red)",
+                    marginTop: "10px",
+                    fontWeight: "500",
                   }}
                 >
-                  <div
-                    style={{
-                      height: "100%",
-                      width: "100%",
-                      background: "var(--red)",
-                      borderRadius: "2px",
-                      opacity: 0.4,
-                    }}
-                  />
-                </div>
+                  {MONTHS[selectedMonth - 1]} {selectedYear}
+                </p>
               </div>
               {/* Transactions */}
               <div
@@ -1420,6 +1468,7 @@ export default function DashboardPage() {
                   borderRadius: "16px",
                   padding: "24px",
                   boxShadow: "var(--shadow-card)",
+                  borderTop: "2px solid var(--accent)",
                 }}
               >
                 <p
@@ -1446,24 +1495,16 @@ export default function DashboardPage() {
                 >
                   <CountUp to={summary?.total_transactions || 0} />
                 </p>
-                <div
+                <p
                   style={{
-                    marginTop: "14px",
-                    height: "2px",
-                    background: "var(--border-subtle)",
-                    borderRadius: "2px",
+                    fontSize: "12px",
+                    color: "var(--accent-dim)",
+                    marginTop: "10px",
+                    fontWeight: "500",
                   }}
                 >
-                  <div
-                    style={{
-                      height: "100%",
-                      width: "65%",
-                      background: "var(--accent)",
-                      borderRadius: "2px",
-                      opacity: 0.5,
-                    }}
-                  />
-                </div>
+                  this month
+                </p>
               </div>
               {/* Top Category */}
               <div
@@ -1472,6 +1513,7 @@ export default function DashboardPage() {
                   borderRadius: "16px",
                   padding: "24px",
                   boxShadow: "var(--shadow-card)",
+                  borderTop: "2px solid var(--green)",
                 }}
               >
                 <p
@@ -1490,7 +1532,7 @@ export default function DashboardPage() {
                   style={{
                     fontSize: "22px",
                     fontWeight: "800",
-                    color: "var(--green)",
+                    color: "var(--text-1)",
                     letterSpacing: "-0.5px",
                     lineHeight: 1.2,
                   }}
@@ -1500,34 +1542,17 @@ export default function DashboardPage() {
                 <p
                   style={{
                     fontSize: "12px",
-                    color: "var(--text-3)",
-                    marginTop: "6px",
+                    color: "var(--green)",
+                    marginTop: "8px",
+                    fontWeight: "500",
                   }}
                 >
                   {summary?.category_amount
                     ? `₹${Number(summary.category_amount).toLocaleString(
                         "en-IN"
-                      )}`
+                      )} spent`
                     : "No data"}
                 </p>
-                <div
-                  style={{
-                    marginTop: "14px",
-                    height: "2px",
-                    background: "var(--border-subtle)",
-                    borderRadius: "2px",
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      width: "80%",
-                      background: "var(--green)",
-                      borderRadius: "2px",
-                      opacity: 0.4,
-                    }}
-                  />
-                </div>
               </div>
             </div>
 
@@ -1551,7 +1576,6 @@ export default function DashboardPage() {
                   boxShadow: "var(--shadow-card)",
                   display: "flex",
                   flexDirection: "column",
-                  minHeight: "340px",
                 }}
               >
                 <p
@@ -1566,7 +1590,15 @@ export default function DashboardPage() {
                 >
                   Spending by Category
                 </p>
-                <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+                <div
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: "280px",
+                  }}
+                >
                   <ExpensePieChart data={pieData} />
                 </div>
               </div>
