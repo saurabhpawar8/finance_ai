@@ -1,6 +1,6 @@
 {
-  "name": "FinanceAI",
-  "short_name": "FinanceAI",
+  "name": "Outgo",
+  "short_name": "Outgo",
   "description": "Track expenses with AI",
   "start_url": "/",
   "display": "standalone",
