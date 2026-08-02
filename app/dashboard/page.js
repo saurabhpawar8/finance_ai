@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
+  Wallet,
   LayoutDashboard,
   Receipt,
   BarChart3,
@@ -66,7 +67,7 @@ const STEPS = [
   },
   {
     icon: Sparkles,
-    color: "#F59E0B",
+    color: "var(--yellow)",
     bg: "rgba(245,158,11,0.12)",
     border: "rgba(245,158,11,0.2)",
     step: "3",
@@ -94,7 +95,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
   // Daily average + projection
   results.push({
     icon: TrendingUp,
-    color: "#F59E0B",
+    color: "var(--yellow)",
     priority: 2,
     text: `Averaging ₹${Math.round(dailyAvg).toLocaleString(
       "en-IN"
@@ -145,7 +146,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
       });
       results.push({
         icon: AlertCircle,
-        color: "#F87171",
+        color: "var(--red)",
         priority: 1,
         text: `Biggest day was ${dateLabel} - ₹${Number(
           maxDay.total
@@ -159,7 +160,7 @@ const generateInsights = (summary, pieData, heatmapData) => {
     const smallest = [...pieData].sort((a, b) => a.total - b.total)[0];
     results.push({
       icon: Activity,
-      color: "#06B6D4",
+      color: "var(--cyan)",
       priority: 4,
       text: `Spending across ${pieData.length} categories - ${
         smallest.category_name
@@ -181,7 +182,7 @@ function SpendingInsights({ summary, pieData, heatmapData }) {
         background: "var(--bg-surface)",
         borderRadius: "16px",
         padding: "20px",
-        border: "1px solid rgba(255,255,255,0.07)",
+        boxShadow: "var(--shadow-card)",
         display: "flex",
         flexDirection: "column",
         gap: "10px",
@@ -317,7 +318,7 @@ function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
         background: "var(--bg-surface)",
         borderRadius: "16px",
         padding: "20px",
-        border: "1px solid rgba(255,255,255,0.07)",
+        boxShadow: "var(--shadow-card)",
         marginTop: "0",
       }}
     >
@@ -425,7 +426,7 @@ function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
               padding: "8px 14px",
               background: "var(--bg-inset)",
               borderRadius: "8px",
-              border: "1px solid rgba(255,255,255,0.08)",
+              boxShadow: "var(--shadow-card)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -500,10 +501,11 @@ function AppHeader({ onLogout, theme, toggleTheme }) {
   return (
     <header
       style={{
-        background: "var(--bg-surface)",
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
-        padding: "0 20px",
-        height: "60px",
+        background: "rgba(10,10,12,0.85)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        padding: "0 24px",
+        height: "56px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -540,7 +542,7 @@ function AppHeader({ onLogout, theme, toggleTheme }) {
             style={{
               padding: "7px 14px",
               background: "var(--green-bg)",
-              border: "1px solid rgba(16,185,129,0.25)",
+              border: "1px solid var(--green-border)",
               borderRadius: "8px",
               color: "var(--green-dim)",
               textDecoration: "none",
@@ -559,7 +561,7 @@ function AppHeader({ onLogout, theme, toggleTheme }) {
             style={{
               padding: "7px 14px",
               background: "var(--accent-bg)",
-              border: "1px solid rgba(99,102,241,0.25)",
+              border: "1px solid var(--accent-border)",
               borderRadius: "8px",
               color: "var(--accent-dim)",
               textDecoration: "none",
@@ -579,7 +581,7 @@ function AppHeader({ onLogout, theme, toggleTheme }) {
           style={{
             padding: "7px 14px",
             background: "transparent",
-            border: "1px solid rgba(255,255,255,0.12)",
+            border: "1px solid var(--border-strong)",
             borderRadius: "8px",
             color: "var(--text-2)",
             cursor: "pointer",
@@ -601,7 +603,7 @@ function AppHeader({ onLogout, theme, toggleTheme }) {
             height: "32px",
             borderRadius: "8px",
             background: "var(--bg-inset)",
-            border: "1px solid var(--border)",
+            boxShadow: "var(--shadow-card)",
             color: "var(--text-2)",
             cursor: "pointer",
             display: "flex",
@@ -636,9 +638,9 @@ function ChatBox({
     <div
       style={{
         background: "var(--bg-surface)",
-        borderRadius: "16px",
+        borderRadius: "20px",
         padding: "20px",
-        border: "1px solid rgba(255,255,255,0.07)",
+        boxShadow: "var(--shadow-card)",
         display: "flex",
         flexDirection: "column",
         minHeight: fullWidth ? "320px" : "380px",
@@ -648,10 +650,10 @@ function ChatBox({
         <p
           style={{
             fontSize: "11px",
-            fontWeight: "600",
+            fontWeight: "700",
             color: "var(--text-3)",
             textTransform: "uppercase",
-            letterSpacing: "0.8px",
+            letterSpacing: "1px",
             marginBottom: "16px",
           }}
         >
@@ -664,9 +666,9 @@ function ChatBox({
           overflowY: "auto",
           display: "flex",
           flexDirection: "column",
-          gap: "12px",
+          gap: "10px",
           marginBottom: "16px",
-          paddingRight: "4px",
+          paddingRight: "2px",
         }}
       >
         {messages.map((msg, i) => (
@@ -675,25 +677,20 @@ function ChatBox({
             style={{
               alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
               maxWidth: "85%",
-              padding: "11px 15px",
+              padding: "10px 14px",
               borderRadius:
                 msg.role === "user"
-                  ? "16px 16px 4px 16px"
-                  : "16px 16px 16px 4px",
+                  ? "18px 18px 4px 18px"
+                  : "18px 18px 18px 4px",
               background:
-                msg.role === "user" ? "var(--accent-gradient)" : "#0F172A",
-              color: msg.role === "user" ? "#fff" : "#CBD5E1",
-              fontSize: "14px",
-              lineHeight: "1.5",
-              border:
-                msg.role === "bot"
-                  ? "1px solid rgba(255,255,255,0.07)"
-                  : "none",
-              whiteSpace: "pre-wrap",
-              boxShadow:
                 msg.role === "user"
-                  ? "0 4px 12px rgba(99,102,241,0.3)"
-                  : "none",
+                  ? "var(--accent-gradient)"
+                  : "var(--bg-elevated)",
+              color: msg.role === "user" ? "#fff" : "var(--text-2)",
+              fontSize: "14px",
+              lineHeight: "1.55",
+              whiteSpace: "pre-wrap",
+              boxShadow: msg.role === "user" ? "var(--shadow-accent)" : "none",
             }}
           >
             {msg.text}
@@ -704,11 +701,10 @@ function ChatBox({
             style={{
               alignSelf: "flex-start",
               padding: "12px 16px",
-              borderRadius: "16px 16px 16px 4px",
-              background: "var(--bg-inset)",
-              border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: "18px 18px 18px 4px",
+              background: "var(--bg-elevated)",
               display: "flex",
-              gap: "4px",
+              gap: "5px",
               alignItems: "center",
             }}
           >
@@ -716,10 +712,10 @@ function ChatBox({
               <div
                 key={i}
                 style={{
-                  width: "6px",
-                  height: "6px",
+                  width: "5px",
+                  height: "5px",
                   borderRadius: "50%",
-                  background: "#475569",
+                  background: "var(--text-3)",
                   animation: `bounce 1.2s infinite ${i * 0.2}s`,
                 }}
               />
@@ -733,7 +729,7 @@ function ChatBox({
           style={{
             display: "flex",
             flexWrap: "wrap",
-            gap: "8px",
+            gap: "6px",
             marginBottom: "12px",
           }}
         >
@@ -742,14 +738,23 @@ function ChatBox({
               key={i}
               onClick={() => onSend(s)}
               style={{
-                padding: "6px 12px",
-                background: "var(--accent-bg)",
-                border: "1px solid rgba(99,102,241,0.25)",
+                padding: "5px 12px",
+                background: "var(--bg-elevated)",
+                border: "none",
                 borderRadius: "20px",
-                color: "var(--accent-dim)",
+                color: "var(--text-2)",
                 fontSize: "12px",
                 cursor: "pointer",
                 fontWeight: "500",
+                transition: "all 100ms ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--accent-bg)";
+                e.currentTarget.style.color = "var(--accent-dim)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "var(--bg-elevated)";
+                e.currentTarget.style.color = "var(--text-2)";
               }}
             >
               {s}
@@ -757,7 +762,15 @@ function ChatBox({
           ))}
         </div>
       )}
-      <div style={{ display: "flex", gap: "10px" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          background: "var(--bg-elevated)",
+          borderRadius: "14px",
+          padding: "6px 6px 6px 14px",
+        }}
+      >
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -766,32 +779,34 @@ function ChatBox({
           disabled={chatLoading}
           style={{
             flex: 1,
-            padding: "12px 16px",
-            background: "var(--bg-inset)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "10px",
+            background: "transparent",
+            border: "none",
             color: "var(--text-1)",
             fontSize: "14px",
             outline: "none",
+            padding: "6px 0",
           }}
         />
         <button
           onClick={() => onSend()}
           disabled={chatLoading || !input.trim()}
           style={{
-            padding: "12px 16px",
+            padding: "10px 14px",
             background:
               !input.trim() || chatLoading
-                ? "var(--disabled-bg)"
+                ? "var(--bg-inset)"
                 : "var(--accent-gradient)",
             border: "none",
             borderRadius: "10px",
-            color: !input.trim() || chatLoading ? "#475569" : "#fff",
+            color: !input.trim() || chatLoading ? "var(--text-3)" : "#fff",
             cursor: !input.trim() || chatLoading ? "not-allowed" : "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
+            boxShadow:
+              !input.trim() || chatLoading ? "none" : "var(--shadow-accent)",
+            transition: "all 150ms ease",
           }}
         >
           <Send size={16} strokeWidth={2} />
@@ -1206,7 +1221,7 @@ export default function DashboardPage() {
               alignItems: "center",
               background: "var(--bg-surface)",
               borderRadius: "10px",
-              border: "1px solid rgba(255,255,255,0.08)",
+              boxShadow: "var(--shadow-card)",
               overflow: "hidden",
             }}
           >
@@ -1216,7 +1231,7 @@ export default function DashboardPage() {
                 padding: "9px 14px",
                 background: "transparent",
                 border: "none",
-                borderRight: "1px solid rgba(255,255,255,0.08)",
+                borderRight: "1px solid var(--border)",
                 color: "var(--text-3)",
                 cursor: "pointer",
                 display: "flex",
@@ -1248,7 +1263,7 @@ export default function DashboardPage() {
                 padding: "9px 14px",
                 background: "transparent",
                 border: "none",
-                borderLeft: "1px solid rgba(255,255,255,0.08)",
+                borderLeft: "1px solid var(--border)",
                 color: isCurrentMonthSelected ? "#2D3748" : "#64748B",
                 cursor: isCurrentMonthSelected ? "not-allowed" : "pointer",
                 display: "flex",
@@ -1332,7 +1347,7 @@ export default function DashboardPage() {
               style={{
                 padding: "10px 20px",
                 background: "var(--accent-bg)",
-                border: "1px solid rgba(99,102,241,0.3)",
+                border: "1px solid var(--accent-border)",
                 borderRadius: "10px",
                 color: "var(--accent-dim)",
                 cursor: "pointer",
@@ -1346,32 +1361,22 @@ export default function DashboardPage() {
         ) : (
           <>
             <div className="cards-grid">
+              {/* Total Spent — CRED hero */}
               <div
                 style={{
                   background: "var(--bg-surface)",
-                  borderRadius: "12px",
-                  padding: "20px 24px",
-                  border: "1px solid var(--border)",
+                  borderRadius: "16px",
+                  padding: "24px",
+                  boxShadow: "var(--shadow-card)",
                 }}
               >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "-20px",
-                    right: "-20px",
-                    width: "80px",
-                    height: "80px",
-                    background: "var(--red-bg)",
-                    borderRadius: "50%",
-                  }}
-                />
                 <p
                   style={{
                     fontSize: "11px",
                     color: "var(--text-3)",
                     fontWeight: "600",
                     textTransform: "uppercase",
-                    letterSpacing: "0.8px",
+                    letterSpacing: "1px",
                     marginBottom: "10px",
                   }}
                 >
@@ -1379,52 +1384,51 @@ export default function DashboardPage() {
                 </p>
                 <p
                   style={{
-                    fontSize: "36px",
+                    fontSize: "40px",
                     fontWeight: "800",
-                    color: "#F87171",
-                    letterSpacing: "-1.5px",
+                    color: "var(--red)",
+                    letterSpacing: "-2px",
                     lineHeight: 1,
                     fontVariantNumeric: "tabular-nums",
                   }}
                 >
                   <CountUp to={summary?.total_expense || 0} prefix="₹" />
                 </p>
-                <p
+                <div
                   style={{
-                    fontSize: "12px",
-                    color: "var(--text-3)",
-                    marginTop: "6px",
+                    marginTop: "14px",
+                    height: "2px",
+                    background: "var(--border-subtle)",
+                    borderRadius: "2px",
                   }}
                 >
-                  This month
-                </p>
+                  <div
+                    style={{
+                      height: "100%",
+                      width: "100%",
+                      background: "var(--red)",
+                      borderRadius: "2px",
+                      opacity: 0.4,
+                    }}
+                  />
+                </div>
               </div>
+              {/* Transactions */}
               <div
                 style={{
                   background: "var(--bg-surface)",
-                  borderRadius: "12px",
-                  padding: "20px 24px",
-                  border: "1px solid var(--border)",
+                  borderRadius: "16px",
+                  padding: "24px",
+                  boxShadow: "var(--shadow-card)",
                 }}
               >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "-20px",
-                    right: "-20px",
-                    width: "80px",
-                    height: "80px",
-                    background: "var(--accent-bg)",
-                    borderRadius: "50%",
-                  }}
-                />
                 <p
                   style={{
                     fontSize: "11px",
                     color: "var(--text-3)",
                     fontWeight: "600",
                     textTransform: "uppercase",
-                    letterSpacing: "0.8px",
+                    letterSpacing: "1px",
                     marginBottom: "10px",
                   }}
                 >
@@ -1432,52 +1436,51 @@ export default function DashboardPage() {
                 </p>
                 <p
                   style={{
-                    fontSize: "36px",
+                    fontSize: "40px",
                     fontWeight: "800",
-                    color: "var(--accent-dim)",
-                    letterSpacing: "-1.5px",
+                    color: "var(--text-1)",
+                    letterSpacing: "-2px",
                     lineHeight: 1,
                     fontVariantNumeric: "tabular-nums",
                   }}
                 >
                   <CountUp to={summary?.total_transactions || 0} />
                 </p>
-                <p
+                <div
                   style={{
-                    fontSize: "12px",
-                    color: "var(--text-3)",
-                    marginTop: "6px",
+                    marginTop: "14px",
+                    height: "2px",
+                    background: "var(--border-subtle)",
+                    borderRadius: "2px",
                   }}
                 >
-                  This month
-                </p>
+                  <div
+                    style={{
+                      height: "100%",
+                      width: "65%",
+                      background: "var(--accent)",
+                      borderRadius: "2px",
+                      opacity: 0.5,
+                    }}
+                  />
+                </div>
               </div>
+              {/* Top Category */}
               <div
                 style={{
                   background: "var(--bg-surface)",
-                  borderRadius: "12px",
-                  padding: "20px 24px",
-                  border: "1px solid var(--border)",
+                  borderRadius: "16px",
+                  padding: "24px",
+                  boxShadow: "var(--shadow-card)",
                 }}
               >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "-20px",
-                    right: "-20px",
-                    width: "80px",
-                    height: "80px",
-                    background: "var(--green-bg)",
-                    borderRadius: "50%",
-                  }}
-                />
                 <p
                   style={{
                     fontSize: "11px",
                     color: "var(--text-3)",
                     fontWeight: "600",
                     textTransform: "uppercase",
-                    letterSpacing: "0.8px",
+                    letterSpacing: "1px",
                     marginBottom: "10px",
                   }}
                 >
@@ -1485,9 +1488,9 @@ export default function DashboardPage() {
                 </p>
                 <p
                   style={{
-                    fontSize: "18px",
+                    fontSize: "22px",
                     fontWeight: "800",
-                    color: "var(--green-dim)",
+                    color: "var(--green)",
                     letterSpacing: "-0.5px",
                     lineHeight: 1.2,
                   }}
@@ -1504,9 +1507,27 @@ export default function DashboardPage() {
                   {summary?.category_amount
                     ? `₹${Number(summary.category_amount).toLocaleString(
                         "en-IN"
-                      )} spent`
+                      )}`
                     : "No data"}
                 </p>
+                <div
+                  style={{
+                    marginTop: "14px",
+                    height: "2px",
+                    background: "var(--border-subtle)",
+                    borderRadius: "2px",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: "80%",
+                      background: "var(--green)",
+                      borderRadius: "2px",
+                      opacity: 0.4,
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -1527,7 +1548,7 @@ export default function DashboardPage() {
                   background: "var(--bg-surface)",
                   borderRadius: "16px",
                   padding: "20px",
-                  border: "1px solid rgba(255,255,255,0.07)",
+                  boxShadow: "var(--shadow-card)",
                   display: "flex",
                   flexDirection: "column",
                   minHeight: "340px",

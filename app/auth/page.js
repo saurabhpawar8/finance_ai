@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { useRouter } from "next/navigation";
-import { Sun, Moon } from "lucide-react";
+import { Wallet, Sun, Moon } from "lucide-react";
 import { login, register } from "@/lib/api";
 
 export default function AuthPage() {
@@ -74,7 +74,7 @@ export default function AuthPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "var(--bg-inset)",
+        background: "var(--bg-base)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -93,13 +93,14 @@ export default function AuthPage() {
           height: "36px",
           borderRadius: "8px",
           background: "var(--bg-surface)",
-          border: "1px solid var(--border)",
+          boxShadow: "var(--shadow-card)",
           color: "var(--text-2)",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           zIndex: 10,
+          border: "none",
         }}
       >
         {theme === "dark" ? (
@@ -108,13 +109,14 @@ export default function AuthPage() {
           <Moon size={16} strokeWidth={2} />
         )}
       </button>
+      {/* CRED-style ambient glow */}
       <div
         style={{
           position: "fixed",
           inset: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(ellipse at 20% 60%, rgba(99,102,241,0.12) 0%, transparent 55%), radial-gradient(ellipse at 80% 20%, rgba(16,185,129,0.08) 0%, transparent 45%)",
+            "radial-gradient(ellipse 60% 50% at 30% 60%, rgba(99,102,241,0.14) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 75% 25%, rgba(0,212,170,0.08) 0%, transparent 70%)",
         }}
       />
 
@@ -122,51 +124,45 @@ export default function AuthPage() {
         style={{
           background: "var(--bg-surface)",
           borderRadius: "24px",
-          padding: "40px",
+          padding: "44px",
           width: "100%",
           maxWidth: "420px",
-          boxShadow: "0 32px 64px rgba(0,0,0,0.5)",
-          border: "1px solid rgba(255,255,255,0.07)",
+          boxShadow: "var(--shadow-elevated)",
           position: "relative",
         }}
       >
         {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+        <div style={{ textAlign: "center", marginBottom: "36px" }}>
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "12px",
+              gap: "14px",
+              marginBottom: "12px",
             }}
           >
             <img
               src="/icons/icon-192.png"
               alt="FinanceAI"
               style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
+                width: "48px",
+                height: "48px",
+                borderRadius: "14px",
                 objectFit: "cover",
               }}
             />
             <span
               style={{
-                fontSize: "24px",
+                fontSize: "26px",
                 fontWeight: "800",
                 color: "var(--text-1)",
-                letterSpacing: "-0.5px",
+                letterSpacing: "-0.8px",
               }}
             >
               FinanceAI
             </span>
           </div>
-          <p
-            style={{
-              color: "var(--text-3)",
-              marginTop: "10px",
-              fontSize: "14px",
-            }}
-          >
+          <p style={{ color: "var(--text-3)", fontSize: "14px" }}>
             Track expenses with the power of AI
           </p>
         </div>
@@ -232,7 +228,7 @@ export default function AuthPage() {
                 width: "100%",
                 padding: "12px 16px",
                 background: "var(--bg-inset)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                boxShadow: "var(--shadow-card)",
                 borderRadius: "10px",
                 color: "var(--text-1)",
                 fontSize: "15px",
@@ -262,7 +258,7 @@ export default function AuthPage() {
                 width: "100%",
                 padding: "12px 16px",
                 background: "var(--bg-inset)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                boxShadow: "var(--shadow-card)",
                 borderRadius: "10px",
                 color: "var(--text-1)",
                 fontSize: "15px",
@@ -277,8 +273,8 @@ export default function AuthPage() {
                 padding: "12px 16px",
                 borderRadius: "10px",
                 background: "var(--red-bg)",
-                border: "1px solid rgba(239,68,68,0.25)",
-                color: "#FCA5A5",
+                border: "1px solid var(--red-border)",
+                color: "var(--red-dim)",
                 fontSize: "14px",
               }}
             >
@@ -291,8 +287,8 @@ export default function AuthPage() {
                 padding: "12px 16px",
                 borderRadius: "10px",
                 background: "var(--green-bg)",
-                border: "1px solid rgba(16,185,129,0.25)",
-                color: "#6EE7B7",
+                border: "1px solid var(--green-border)",
+                color: "var(--green-dim)",
                 fontSize: "14px",
               }}
             >

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
+  Wallet,
   LayoutDashboard,
   Receipt,
   BarChart3,
@@ -73,7 +74,7 @@ function Highlight({ text, query }) {
       <mark
         style={{
           background: "rgba(245,158,11,0.25)",
-          color: "#FCD34D",
+          color: "var(--yellow)",
           borderRadius: "2px",
           padding: "0 2px",
           fontWeight: "600",
@@ -137,7 +138,7 @@ const selectStyle = {
   padding: "10px 36px 10px 14px",
   width: "100%",
   background: "var(--bg-inset)",
-  border: "1px solid rgba(255,255,255,0.08)",
+  boxShadow: "var(--shadow-card)",
   borderRadius: "10px",
   color: "var(--text-1)",
   fontSize: "14px",
@@ -153,7 +154,7 @@ const inputStyle = {
   width: "100%",
   padding: "11px 14px",
   background: "var(--bg-inset)",
-  border: "1px solid rgba(255,255,255,0.08)",
+  boxShadow: "var(--shadow-card)",
   borderRadius: "10px",
   color: "var(--text-1)",
   fontSize: "14px",
@@ -228,7 +229,7 @@ function CardSkeleton() {
             background: "var(--bg-surface)",
             borderRadius: "14px",
             padding: "16px",
-            border: "1px solid rgba(255,255,255,0.07)",
+            boxShadow: "var(--shadow-card)",
           }}
         >
           <div
@@ -352,7 +353,7 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
           padding: "28px",
           width: "100%",
           maxWidth: "460px",
-          border: "1px solid rgba(255,255,255,0.1)",
+          boxShadow: "var(--shadow-card)",
           boxShadow: "0 32px 64px rgba(0,0,0,0.5)",
           maxHeight: "90vh",
           overflowY: "auto",
@@ -394,7 +395,7 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
               width: "32px",
               height: "32px",
               borderRadius: "8px",
-              border: "1px solid rgba(255,255,255,0.1)",
+              boxShadow: "var(--shadow-card)",
               background: "transparent",
               color: "var(--text-3)",
               cursor: "pointer",
@@ -588,8 +589,8 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
                 padding: "10px 14px",
                 borderRadius: "8px",
                 background: "var(--red-bg)",
-                border: "1px solid rgba(239,68,68,0.2)",
-                color: "#FCA5A5",
+                border: "1px solid var(--red-border)",
+                color: "var(--red-dim)",
                 fontSize: "13px",
               }}
             >
@@ -603,7 +604,7 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
                 padding: "14px 16px",
                 borderRadius: "10px",
                 background: "var(--red-bg)",
-                border: "1px solid rgba(239,68,68,0.25)",
+                border: "1px solid var(--red-border)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -611,7 +612,9 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
                 flexWrap: "wrap",
               }}
             >
-              <p style={{ fontSize: "13px", color: "#FCA5A5", margin: 0 }}>
+              <p
+                style={{ fontSize: "13px", color: "var(--red-dim)", margin: 0 }}
+              >
                 Delete permanently?
               </p>
               <div style={{ display: "flex", gap: "8px" }}>
@@ -620,7 +623,7 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
                   style={{
                     padding: "6px 12px",
                     background: "transparent",
-                    border: "1px solid rgba(255,255,255,0.12)",
+                    border: "1px solid var(--border-strong)",
                     borderRadius: "6px",
                     color: "var(--text-2)",
                     cursor: "pointer",
@@ -635,7 +638,7 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
                   disabled={deleting}
                   style={{
                     padding: "6px 12px",
-                    background: "#EF4444",
+                    background: "var(--red)",
                     border: "none",
                     borderRadius: "6px",
                     color: "#fff",
@@ -683,7 +686,7 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
                 style={{
                   padding: "12px 14px",
                   background: "transparent",
-                  border: "1px solid rgba(239,68,68,0.3)",
+                  border: "1px solid var(--red-border)",
                   borderRadius: "10px",
                   color: confirmDelete ? "#334155" : "#F87171",
                   cursor: confirmDelete ? "not-allowed" : "pointer",
@@ -701,7 +704,7 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
                 flex: 1,
                 padding: "12px",
                 background: "transparent",
-                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: "var(--shadow-card)",
                 borderRadius: "10px",
                 color: "var(--text-2)",
                 cursor: "pointer",
@@ -872,10 +875,11 @@ export default function TransactionsPage() {
       {/* HEADER */}
       <header
         style={{
-          background: "var(--bg-surface)",
-          borderBottom: "1px solid rgba(255,255,255,0.07)",
-          padding: "0 20px",
-          height: "60px",
+          background: "rgba(10,10,12,0.85)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          padding: "0 24px",
+          height: "56px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -912,7 +916,7 @@ export default function TransactionsPage() {
               style={{
                 padding: "7px 14px",
                 background: "var(--border-subtle)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: "var(--shadow-card)",
                 borderRadius: "8px",
                 color: "var(--text-2)",
                 textDecoration: "none",
@@ -931,7 +935,7 @@ export default function TransactionsPage() {
               style={{
                 padding: "7px 14px",
                 background: "var(--accent-bg)",
-                border: "1px solid rgba(99,102,241,0.25)",
+                border: "1px solid var(--accent-border)",
                 borderRadius: "8px",
                 color: "var(--accent-dim)",
                 textDecoration: "none",
@@ -951,7 +955,7 @@ export default function TransactionsPage() {
             style={{
               padding: "7px 14px",
               background: "transparent",
-              border: "1px solid rgba(255,255,255,0.12)",
+              border: "1px solid var(--border-strong)",
               borderRadius: "8px",
               color: "var(--text-2)",
               cursor: "pointer",
@@ -973,7 +977,7 @@ export default function TransactionsPage() {
               height: "32px",
               borderRadius: "8px",
               background: "var(--bg-inset)",
-              border: "1px solid var(--border)",
+              boxShadow: "var(--shadow-card)",
               color: "var(--text-2)",
               cursor: "pointer",
               display: "flex",
@@ -1019,7 +1023,7 @@ export default function TransactionsPage() {
             background: "var(--bg-surface)",
             borderRadius: "14px",
             padding: "16px",
-            border: "1px solid rgba(255,255,255,0.07)",
+            boxShadow: "var(--shadow-card)",
             marginBottom: "20px",
           }}
         >
@@ -1091,9 +1095,9 @@ export default function TransactionsPage() {
                 style={{
                   padding: "10px 14px",
                   background: "var(--red-bg)",
-                  border: "1px solid rgba(239,68,68,0.2)",
+                  border: "1px solid var(--red-border)",
                   borderRadius: "10px",
-                  color: "#FCA5A5",
+                  color: "var(--red-dim)",
                   cursor: "pointer",
                   fontSize: "13px",
                   fontWeight: "600",
@@ -1116,7 +1120,7 @@ export default function TransactionsPage() {
           style={{
             background: "var(--bg-surface)",
             borderRadius: "16px",
-            border: "1px solid rgba(255,255,255,0.07)",
+            boxShadow: "var(--shadow-card)",
             overflow: "hidden",
           }}
         >
@@ -1126,7 +1130,7 @@ export default function TransactionsPage() {
               gridTemplateColumns: "2fr 1fr 2fr 1fr 1.2fr 32px",
               gap: "0 20px",
               padding: "12px 20px",
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              borderBottom: "1px solid var(--border)",
               background: "var(--bg-inset)",
             }}
           >
@@ -1155,15 +1159,15 @@ export default function TransactionsPage() {
           ) : (
             groupTransactions(rows).map(({ label, items }) => (
               <div key={label}>
-                {/* Date group header */}
+                {/* Monzo-style date group header */}
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "12px",
-                    padding: "8px 20px",
-                    background: "var(--border-subtle)",
-                    borderBottom: "1px solid rgba(255,255,255,0.04)",
+                    justifyContent: "space-between",
+                    padding: "10px 20px 8px",
+                    background: "var(--bg-inset)",
+                    borderBottom: "1px solid var(--border-subtle)",
                   }}
                 >
                   <span
@@ -1173,18 +1177,10 @@ export default function TransactionsPage() {
                       color: "var(--text-3)",
                       textTransform: "uppercase",
                       letterSpacing: "1px",
-                      whiteSpace: "nowrap",
                     }}
                   >
                     {label}
                   </span>
-                  <div
-                    style={{
-                      flex: 1,
-                      height: "1px",
-                      background: "var(--border-subtle)",
-                    }}
-                  />
                   <span style={{ fontSize: "11px", color: "var(--text-4)" }}>
                     {items.length}
                   </span>
@@ -1232,7 +1228,7 @@ export default function TransactionsPage() {
                       style={{
                         fontSize: "14px",
                         fontWeight: "700",
-                        color: "#F87171",
+                        color: "var(--red)",
                         textAlign: "right",
                       }}
                     >
@@ -1257,7 +1253,7 @@ export default function TransactionsPage() {
                         height: "28px",
                         borderRadius: "6px",
                         background: "var(--accent-bg)",
-                        border: "1px solid rgba(99,102,241,0.2)",
+                        border: "1px solid var(--accent-border)",
                       }}
                     >
                       <Pencil size={12} color="#818CF8" strokeWidth={2} />
@@ -1278,132 +1274,135 @@ export default function TransactionsPage() {
               style={{
                 background: "var(--bg-surface)",
                 borderRadius: "16px",
-                border: "1px solid rgba(255,255,255,0.07)",
+                boxShadow: "var(--shadow-card)",
               }}
             >
               <EmptyState />
             </div>
           ) : (
-            groupTransactions(rows).map(({ label, items }) => (
+            groupTransactions(rows).map(({ label, items }, gi) => (
               <div key={label}>
-                {/* Date group label */}
+                {/* Monzo-style date group header */}
                 <div
                   style={{
                     display: "flex",
+                    justifyContent: "space-between",
                     alignItems: "center",
-                    gap: "10px",
-                    marginTop: "8px",
-                    marginBottom: "10px",
+                    padding: "16px 0 8px",
+                    marginTop: gi > 0 ? "8px" : "0",
                   }}
                 >
                   <span
                     style={{
-                      fontSize: "11px",
+                      fontSize: "12px",
                       fontWeight: "700",
                       color: "var(--text-3)",
                       textTransform: "uppercase",
-                      letterSpacing: "1px",
-                      whiteSpace: "nowrap",
+                      letterSpacing: "0.8px",
                     }}
                   >
                     {label}
                   </span>
-                  <div
-                    style={{
-                      flex: 1,
-                      height: "1px",
-                      background: "var(--border)",
-                    }}
-                  />
-                  <span style={{ fontSize: "11px", color: "var(--text-4)" }}>
+                  <span style={{ fontSize: "12px", color: "var(--text-4)" }}>
                     {items.length}
                   </span>
                 </div>
-                {/* Cards */}
+                {/* Monzo-style flat list inside a single card */}
                 <div
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "10px",
+                    background: "var(--bg-surface)",
+                    borderRadius: "16px",
+                    boxShadow: "var(--shadow-card)",
+                    overflow: "hidden",
                   }}
                 >
-                  {items.map((tx) => {
+                  {items.map((tx, i) => {
                     const m = CAT_META[tx.category] || DEFAULT_META;
                     return (
                       <div
                         key={tx.id}
                         onClick={() => setModalTx(tx)}
                         style={{
-                          background: "var(--bg-surface)",
-                          borderRadius: "14px",
-                          padding: "16px",
-                          borderLeft: `3px solid ${m.text}`,
-                          border: `1px solid rgba(255,255,255,0.07)`,
-                          borderLeftWidth: "3px",
-                          borderLeftColor: m.text,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "14px",
+                          padding: "14px 16px",
+                          borderBottom:
+                            i < items.length - 1
+                              ? "1px solid var(--border-subtle)"
+                              : "none",
                           cursor: "pointer",
-                          transition: "border-color 0.15s",
+                          transition: "background 100ms ease",
                         }}
                         onMouseEnter={(e) =>
-                          (e.currentTarget.style.borderColor =
-                            "var(--accent-glow)")
+                          (e.currentTarget.style.background =
+                            "var(--accent-bg)")
                         }
                         onMouseLeave={(e) =>
-                          (e.currentTarget.style.borderColor = "var(--border)")
+                          (e.currentTarget.style.background = "transparent")
                         }
                       >
+                        {/* Category circle icon */}
                         <div
                           style={{
+                            width: "42px",
+                            height: "42px",
+                            borderRadius: "50%",
+                            background: m.bg,
                             display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                            marginBottom: "6px",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
                           }}
                         >
-                          <span
+                          <m.Icon size={18} color={m.text} strokeWidth={1.8} />
+                        </div>
+                        {/* Name + category */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p
                             style={{
-                              fontSize: "15px",
-                              fontWeight: "700",
+                              fontSize: "14px",
+                              fontWeight: "600",
                               color: "var(--text-1)",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
                             }}
                           >
                             <Highlight text={tx.name} query={search} />
-                          </span>
-                          <span
+                          </p>
+                          <p
                             style={{
-                              fontSize: "14px",
-                              fontWeight: "800",
-                              color: "#F87171",
-                              letterSpacing: "-0.5px",
+                              fontSize: "12px",
+                              color: "var(--text-3)",
+                              marginTop: "2px",
+                            }}
+                          >
+                            {tx.category}
+                            {tx.notes ? ` · ${tx.notes}` : ""}
+                          </p>
+                        </div>
+                        {/* Amount + date aligned right */}
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <p
+                            style={{
+                              fontSize: "15px",
+                              fontWeight: "700",
+                              color: "var(--red)",
+                              fontVariantNumeric: "tabular-nums",
                             }}
                           >
                             {fmtAmount(tx.amount)}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "8px",
-                            alignItems: "center",
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <CatBadge category={tx.category} />
-                          <span
-                            style={{ fontSize: "12px", color: "var(--text-3)" }}
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "11px",
+                              color: "var(--text-4)",
+                              marginTop: "2px",
+                            }}
                           >
-                            · {tx.wallet}
-                          </span>
-                          {tx.notes && (
-                            <span
-                              style={{
-                                fontSize: "12px",
-                                color: "var(--text-3)",
-                              }}
-                            >
-                              · {tx.notes}
-                            </span>
-                          )}
+                            {fmtDate(tx.date)}
+                          </p>
                         </div>
                       </div>
                     );

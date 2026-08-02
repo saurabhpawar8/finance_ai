@@ -47,7 +47,7 @@ const currentYear = new Date().getFullYear();
 const YEARS = [currentYear - 2, currentYear - 1, currentYear];
 const COLORS = [
   "#6366F1",
-  "#10B981",
+  "var(--green)",
   "#F59E0B",
   "#EF4444",
   "#8B5CF6",
@@ -56,7 +56,13 @@ const COLORS = [
 ];
 
 const scoreColor = (s) =>
-  s >= 8 ? "#34D399" : s >= 6 ? "#10B981" : s >= 4 ? "#F59E0B" : "#F87171";
+  s >= 8
+    ? "var(--green-dim)"
+    : s >= 6
+    ? "var(--green)"
+    : s >= 4
+    ? "#F59E0B"
+    : "var(--red)";
 const scoreLabel = (s) =>
   s >= 8 ? "Excellent" : s >= 6 ? "Good" : s >= 4 ? "Average" : "Poor";
 const scoreDesc = (s) => {
@@ -70,8 +76,8 @@ const scoreDesc = (s) => {
 };
 
 const SCORE_RANGES = [
-  { label: "Poor", range: "0–3", min: 0, max: 3, color: "#F87171" },
-  { label: "Average", range: "4–6", min: 4, max: 6, color: "#F59E0B" },
+  { label: "Poor", range: "0–3", min: 0, max: 3, color: "var(--red)" },
+  { label: "Average", range: "4–6", min: 4, max: 6, color: "var(--yellow)" },
   { label: "Good", range: "7–9", min: 7, max: 9, color: "var(--green)" },
   {
     label: "Excellent",
@@ -240,7 +246,7 @@ const selectStyle = {
   padding: "12px 36px 12px 14px",
   width: "100%",
   background: "var(--bg-inset)",
-  border: "1px solid rgba(255,255,255,0.08)",
+  boxShadow: "var(--shadow-card)",
   borderRadius: "10px",
   color: "var(--text-1)",
   fontSize: "14px",
@@ -390,10 +396,11 @@ export default function ReportPage() {
       {/* HEADER */}
       <header
         style={{
-          background: "var(--bg-surface)",
-          borderBottom: "1px solid rgba(255,255,255,0.07)",
-          padding: "0 20px",
-          height: "60px",
+          background: "rgba(10,10,12,0.85)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          padding: "0 24px",
+          height: "56px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -430,7 +437,7 @@ export default function ReportPage() {
               style={{
                 padding: "7px 14px",
                 background: "var(--border-subtle)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: "var(--shadow-card)",
                 borderRadius: "8px",
                 color: "var(--text-2)",
                 textDecoration: "none",
@@ -450,7 +457,7 @@ export default function ReportPage() {
             style={{
               padding: "7px 14px",
               background: "transparent",
-              border: "1px solid rgba(255,255,255,0.12)",
+              border: "1px solid var(--border-strong)",
               borderRadius: "8px",
               color: "var(--text-2)",
               cursor: "pointer",
@@ -472,7 +479,7 @@ export default function ReportPage() {
               height: "32px",
               borderRadius: "8px",
               background: "var(--bg-inset)",
-              border: "1px solid var(--border)",
+              boxShadow: "var(--shadow-card)",
               color: "var(--text-2)",
               cursor: "pointer",
               display: "flex",
@@ -516,7 +523,7 @@ export default function ReportPage() {
             background: "var(--bg-surface)",
             borderRadius: "16px",
             padding: "20px",
-            border: "1px solid rgba(16,185,129,0.2)",
+            border: "1px solid var(--green-border)",
             marginBottom: "16px",
           }}
         >
@@ -633,7 +640,7 @@ export default function ReportPage() {
             background: "var(--bg-surface)",
             borderRadius: "16px",
             padding: "20px",
-            border: "1px solid rgba(255,255,255,0.07)",
+            boxShadow: "var(--shadow-card)",
             marginBottom: "24px",
           }}
         >
@@ -744,8 +751,8 @@ export default function ReportPage() {
                 padding: "12px 16px",
                 borderRadius: "10px",
                 background: "var(--red-bg)",
-                border: "1px solid rgba(239,68,68,0.25)",
-                color: "#FCA5A5",
+                border: "1px solid var(--red-border)",
+                color: "var(--red-dim)",
                 fontSize: "14px",
               }}
             >
@@ -766,7 +773,7 @@ export default function ReportPage() {
                   background: "var(--bg-surface)",
                   borderRadius: "16px",
                   padding: "24px",
-                  border: "1px solid rgba(255,255,255,0.07)",
+                  boxShadow: "var(--shadow-card)",
                   display: "flex",
                   flexDirection: "column",
                   gap: "20px",
@@ -875,11 +882,11 @@ export default function ReportPage() {
                             borderRadius: "8px",
                             background: isActive
                               ? `rgba(${
-                                  r.color === "#F87171"
+                                  r.color === "var(--red)"
                                     ? "248,113,113"
                                     : r.color === "#F59E0B"
                                     ? "245,158,11"
-                                    : r.color === "#10B981"
+                                    : r.color === "var(--green)"
                                     ? "16,185,129"
                                     : "52,211,153"
                                 },0.1)`
@@ -924,7 +931,7 @@ export default function ReportPage() {
                               style={{
                                 fontSize: "10px",
                                 background: r.color,
-                                color: "#0F172A",
+                                color: "var(--text-1)",
                                 borderRadius: "4px",
                                 padding: "1px 6px",
                                 fontWeight: "700",
@@ -944,7 +951,7 @@ export default function ReportPage() {
                   background: "var(--bg-surface)",
                   borderRadius: "16px",
                   padding: "24px",
-                  border: "1px solid rgba(255,255,255,0.07)",
+                  boxShadow: "var(--shadow-card)",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
@@ -966,7 +973,7 @@ export default function ReportPage() {
                   style={{
                     fontSize: "34px",
                     fontWeight: "800",
-                    color: "#F87171",
+                    color: "var(--red)",
                     letterSpacing: "-1.5px",
                     lineHeight: 1,
                   }}
@@ -991,7 +998,7 @@ export default function ReportPage() {
                 background: "var(--bg-surface)",
                 borderRadius: "16px",
                 padding: "20px",
-                border: "1px solid rgba(255,255,255,0.07)",
+                boxShadow: "var(--shadow-card)",
               }}
             >
               <p
@@ -1069,7 +1076,7 @@ export default function ReportPage() {
                 background: "var(--bg-surface)",
                 borderRadius: "16px",
                 padding: "20px",
-                border: "1px solid rgba(255,255,255,0.07)",
+                boxShadow: "var(--shadow-card)",
               }}
             >
               <div
@@ -1096,7 +1103,7 @@ export default function ReportPage() {
                 <p
                   style={{
                     fontSize: "11px",
-                    color: "#F59E0B",
+                    color: "var(--yellow)",
                     fontWeight: "700",
                     textTransform: "uppercase",
                     letterSpacing: "0.6px",
@@ -1122,7 +1129,7 @@ export default function ReportPage() {
                       padding: "14px",
                       background: "var(--bg-inset)",
                       borderRadius: "12px",
-                      border: "1px solid rgba(255,255,255,0.05)",
+                      boxShadow: "var(--shadow-card)",
                     }}
                   >
                     <div
