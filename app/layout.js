@@ -2,7 +2,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/lib/ThemeContext";
 
 export const metadata = {
-  title: "FinanceAI - Smart Expense Tracker",
+  title: "Outgo - Smart Expense Tracker",
   description: "Track expenses with the power of AI",
   manifest: "/manifest.json",
   icons: { icon: "/favicon.ico", apple: "/icons/icon-192.png" },

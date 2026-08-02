@@ -143,7 +143,7 @@ export default function AuthPage() {
           >
             <img
               src="/icons/icon-192.png"
-              alt="FinanceAI"
+              alt="Outgo"
               style={{
                 width: "48px",
                 height: "48px",
@@ -159,7 +159,7 @@ export default function AuthPage() {
                 letterSpacing: "-0.8px",
               }}
             >
-              FinanceAI
+              Outgo
             </span>
           </div>
           <p style={{ color: "var(--text-3)", fontSize: "14px" }}>
