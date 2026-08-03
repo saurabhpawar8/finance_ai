@@ -1,9 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Wallet,
   LayoutDashboard,
   Receipt,
   BarChart3,
@@ -17,6 +16,7 @@ import {
   ArrowLeft,
   Sun,
   Moon,
+  AlertCircle,
 } from "lucide-react";
 import { getReport, fetchMonthlyReport, removeTokens } from "@/lib/api";
 import Toast, { showToast } from "@/components/Toast";
@@ -55,165 +55,225 @@ const COLORS = [
   "#F97316",
 ];
 
-const scoreColor = (s) =>
-  s >= 8
-    ? "var(--green-dim)"
-    : s >= 6
-    ? "var(--green)"
-    : s >= 4
-    ? "#F59E0B"
-    : "var(--red)";
-const scoreLabel = (s) =>
-  s >= 8 ? "Excellent" : s >= 6 ? "Good" : s >= 4 ? "Average" : "Poor";
-const scoreDesc = (s) => {
-  if (s <= 3)
-    return "Spending concentrated in discretionary categories like entertainment and shopping.";
-  if (s <= 6)
-    return "Mixed spending with some unnecessary expenses - room for improvement.";
-  if (s <= 9)
-    return "Balanced spending with essentials prioritized - doing well.";
-  return "Very disciplined spending with minimal discretionary expenses.";
-};
+// ── Parse and display plain text report ──────────────────
+function ReportDisplay({ text }) {
+  const sections = useMemo(() => {
+    const lines = text.split("\n");
+    const result = [];
+    let currentTitle = null;
+    let currentLines = [];
 
-const SCORE_RANGES = [
-  { label: "Poor", range: "0–3", min: 0, max: 3, color: "var(--red)" },
-  { label: "Average", range: "4–6", min: 4, max: 6, color: "var(--yellow)" },
-  { label: "Good", range: "7–9", min: 7, max: 9, color: "var(--green)" },
-  {
-    label: "Excellent",
-    range: "10",
-    min: 10,
-    max: 10,
-    color: "var(--green-dim)",
-  },
-];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const nextTrimmed = (lines[i + 1] || "").trim();
 
-function HealthRing({ score }) {
-  const color = scoreColor(score),
-    r = 48,
-    circ = 2 * Math.PI * r;
+      if (nextTrimmed.match(/^[-=]{3,}$/)) {
+        if (currentTitle !== null)
+          result.push({ title: currentTitle, lines: [...currentLines] });
+        currentTitle = line.trim();
+        currentLines = [];
+        i++; // skip divider
+      } else {
+        currentLines.push(line);
+      }
+    }
+    if (currentTitle !== null)
+      result.push({ title: currentTitle, lines: currentLines });
+    return result;
+  }, [text]);
+
+  const SECTION_META = {
+    OVERVIEW: { icon: TrendingUp, color: "var(--cyan)" },
+    "CATEGORY BREAKDOWN": { icon: BarChart3, color: "var(--purple)" },
+    ADVICE: { icon: Lightbulb, color: "var(--yellow)" },
+    "POSITIVE HIGHLIGHTS": { icon: Trophy, color: "var(--green)" },
+    "WATCH OUT NEXT MONTH": { icon: AlertCircle, color: "var(--red)" },
+  };
+
   return (
-    <div
-      style={{
-        position: "relative",
-        width: "130px",
-        height: "130px",
-        flexShrink: 0,
-      }}
-    >
-      <svg width="130" height="130" viewBox="0 0 130 130">
-        <circle
-          cx="65"
-          cy="65"
-          r={r}
-          fill="none"
-          stroke="rgba(255,255,255,0.06)"
-          strokeWidth="12"
-        />
-        <circle
-          cx="65"
-          cy="65"
-          r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth="12"
-          strokeDasharray={circ}
-          strokeDashoffset={circ * (1 - score / 10)}
-          strokeLinecap="round"
-          transform="rotate(-90 65 65)"
-          style={{ transition: "stroke-dashoffset 1s ease" }}
-        />
-      </svg>
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <span
-          style={{ fontSize: "28px", fontWeight: "800", color, lineHeight: 1 }}
-        >
-          {score}
-        </span>
-        <span
-          style={{ fontSize: "11px", color: "var(--text-3)", marginTop: "2px" }}
-        >
-          /10
-        </span>
-        <span
-          style={{
-            fontSize: "11px",
-            color,
-            fontWeight: "600",
-            marginTop: "2px",
-          }}
-        >
-          {scoreLabel(score)}
-        </span>
-      </div>
-    </div>
-  );
-}
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      {sections.map(({ title, lines }, i) => {
+        const content = lines.filter((l) => l.trim());
 
-function CategoryBar({ item, index, maxTotal }) {
-  const pct = Math.round((item.total / maxTotal) * 100),
-    color = COLORS[index % COLORS.length];
-  return (
-    <div style={{ marginBottom: "16px" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: "6px",
-        }}
-      >
-        <span
-          style={{
-            fontSize: "13px",
-            color: "var(--text-2)",
-            fontWeight: "500",
-          }}
-        >
-          {item.category_name}
-        </span>
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <span style={{ fontSize: "12px", color: "var(--text-3)" }}>
-            {pct}%
-          </span>
-          <span
+        // First section = report title/header
+        if (i === 0) {
+          return (
+            <div
+              key={i}
+              style={{
+                padding: "20px 24px",
+                background: "var(--bg-surface)",
+                borderRadius: "16px",
+                boxShadow: "var(--shadow-card)",
+                borderTop: "2px solid var(--accent)",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text-3)",
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  marginBottom: "6px",
+                }}
+              >
+                AI Report
+              </p>
+              <p
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "800",
+                  color: "var(--text-1)",
+                  letterSpacing: "-0.4px",
+                }}
+              >
+                {title}
+              </p>
+              {content.map((l, j) => (
+                <p
+                  key={j}
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--text-3)",
+                    marginTop: "4px",
+                  }}
+                >
+                  {l.trim()}
+                </p>
+              ))}
+            </div>
+          );
+        }
+
+        if (!content.length) return null;
+        const meta = SECTION_META[title] || {
+          icon: Activity,
+          color: "var(--accent-dim)",
+        };
+        const Icon = meta.icon;
+
+        return (
+          <div
+            key={i}
             style={{
-              fontSize: "13px",
-              color: "var(--text-1)",
-              fontWeight: "600",
+              background: "var(--bg-surface)",
+              borderRadius: "16px",
+              padding: "20px",
+              boxShadow: "var(--shadow-card)",
             }}
           >
-            ₹{item.total.toLocaleString("en-IN")}
-          </span>
-        </div>
-      </div>
-      <div
-        style={{
-          background: "var(--border-subtle)",
-          borderRadius: "6px",
-          height: "8px",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            width: `${pct}%`,
-            height: "100%",
-            background: color,
-            borderRadius: "6px",
-            transition: "width 0.8s ease",
-            boxShadow: `0 0 8px ${color}60`,
-          }}
-        />
-      </div>
+            {/* Section header */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                marginBottom: "14px",
+              }}
+            >
+              <div
+                style={{
+                  width: "30px",
+                  height: "30px",
+                  borderRadius: "8px",
+                  background: "var(--bg-elevated)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Icon size={15} color={meta.color} strokeWidth={2} />
+              </div>
+              <p
+                style={{
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  color: meta.color,
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                }}
+              >
+                {title}
+              </p>
+            </div>
+
+            {/* Section content */}
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+            >
+              {content.map((line, j) => {
+                const t = line.trim();
+                if (!t || t.match(/^-{3,}$/)) return null;
+
+                const isPositive = t.startsWith("✅");
+                const isWarning = t.startsWith("⚠️");
+                const isAdvice =
+                  t.startsWith("🟡") ||
+                  t.startsWith("🔴") ||
+                  t.startsWith("🟢");
+                const isBullet = isPositive || isWarning || isAdvice;
+                const borderColor = isPositive
+                  ? "var(--green)"
+                  : isWarning
+                  ? "var(--red)"
+                  : "var(--yellow)";
+
+                if (isBullet) {
+                  return (
+                    <div
+                      key={j}
+                      style={{
+                        padding: "10px 14px",
+                        background: "var(--bg-inset)",
+                        borderRadius: "10px",
+                        borderLeft: `3px solid ${borderColor}`,
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: "13px",
+                          color: "var(--text-2)",
+                          lineHeight: "1.7",
+                          margin: 0,
+                        }}
+                      >
+                        {t}
+                      </p>
+                    </div>
+                  );
+                }
+
+                // Table rows (contain ₹ or ↓ ↑)
+                const isTableRow =
+                  t.includes("₹") ||
+                  t.includes("↓") ||
+                  t.includes("↑") ||
+                  t.includes("No data");
+                return (
+                  <p
+                    key={j}
+                    style={{
+                      fontSize: "13px",
+                      color: isTableRow ? "var(--text-2)" : "var(--text-3)",
+                      lineHeight: "1.65",
+                      margin: 0,
+                      fontFamily: isTableRow
+                        ? "'Courier New', monospace"
+                        : "inherit",
+                      fontWeight:
+                        t.includes(":") && !isTableRow ? "500" : "400",
+                    }}
+                  >
+                    {t}
+                  </p>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -259,58 +319,6 @@ const selectStyle = {
   backgroundPosition: "right 14px center",
 };
 
-const SectionCard = ({
-  icon: Icon,
-  iconColor,
-  title,
-  children,
-  accentBg,
-  accentBorder,
-}) => (
-  <div
-    style={{
-      background: accentBg || "#1E293B",
-      borderRadius: "16px",
-      padding: "18px 20px",
-      border: `1px solid ${accentBorder || "var(--border)"}`,
-    }}
-  >
-    <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-      <div
-        style={{
-          width: "34px",
-          height: "34px",
-          borderRadius: "8px",
-          background: accentBg
-            ? "var(--border-strong)"
-            : "var(--border-subtle)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
-        <Icon size={17} color={iconColor || "#64748B"} strokeWidth={1.8} />
-      </div>
-      <div style={{ flex: 1 }}>
-        <p
-          style={{
-            fontSize: "11px",
-            color: iconColor || "#64748B",
-            fontWeight: "700",
-            textTransform: "uppercase",
-            letterSpacing: "0.6px",
-            marginBottom: "8px",
-          }}
-        >
-          {title}
-        </p>
-        {children}
-      </div>
-    </div>
-  </div>
-);
-
 export default function ReportPage() {
   const router = useRouter();
   const now = new Date();
@@ -332,8 +340,8 @@ export default function ReportPage() {
     setLoading(true);
     try {
       const res = await getReport(month, year);
-      if (res?.total_expense !== undefined) setReport(res);
-      else setError("No data found for the selected period.");
+      if (res?.success && res?.data) setReport(res.data); // plain text string
+      else setError(res?.message || "No data found for the selected period.");
     } catch {
       setError("Could not connect. Make sure your backend is running.");
     }
@@ -380,9 +388,6 @@ export default function ReportPage() {
   };
   const { theme, toggleTheme } = useTheme();
   const selectedMonthLabel = MONTHS.find((m) => m.value === month)?.label;
-  const maxTotal = report
-    ? Math.max(...report.breakdown.map((b) => b.total))
-    : 1;
 
   return (
     <div
@@ -412,7 +417,7 @@ export default function ReportPage() {
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <img
             src="/icons/icon-192.png"
-            alt="Outgo"
+            alt="FinanceAI"
             style={{
               width: "34px",
               height: "34px",
@@ -427,7 +432,7 @@ export default function ReportPage() {
               letterSpacing: "-0.4px",
             }}
           >
-            Outgo
+            FinanceAI
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -761,408 +766,7 @@ export default function ReportPage() {
 
         {loading && <ReportSkeleton />}
 
-        {report && !loading && (
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-          >
-            <div className="report-top-grid">
-              <div
-                style={{
-                  background: "var(--bg-surface)",
-                  borderRadius: "16px",
-                  padding: "24px",
-                  boxShadow: "var(--shadow-card)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "20px",
-                }}
-              >
-                {/* Ring + score */}
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "20px" }}
-                >
-                  <HealthRing score={report.health_score} />
-                  <div>
-                    <p
-                      style={{
-                        fontSize: "11px",
-                        color: "var(--text-3)",
-                        fontWeight: "600",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.8px",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      Financial Health
-                    </p>
-                    <p style={{ fontSize: "14px", color: "var(--text-2)" }}>
-                      {selectedMonthLabel} {report.year}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: "15px",
-                        color: scoreColor(report.health_score),
-                        fontWeight: "700",
-                        marginTop: "4px",
-                      }}
-                    >
-                      {scoreLabel(report.health_score)} - {report.health_score}
-                      /10
-                    </p>
-                  </div>
-                </div>
-
-                {/* What this score means */}
-                <div
-                  style={{
-                    padding: "12px 14px",
-                    background: "var(--bg-inset)",
-                    borderRadius: "10px",
-                    borderLeft: `3px solid ${scoreColor(report.health_score)}`,
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: "11px",
-                      color: "var(--text-3)",
-                      fontWeight: "600",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.6px",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    What this means
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      color: "var(--text-2)",
-                      lineHeight: "1.6",
-                    }}
-                  >
-                    {scoreDesc(report.health_score)}
-                  </p>
-                </div>
-
-                {/* Range scale */}
-                <div>
-                  <p
-                    style={{
-                      fontSize: "11px",
-                      color: "var(--text-3)",
-                      fontWeight: "600",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.6px",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    Score Guide
-                  </p>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
-                    {SCORE_RANGES.map((r) => {
-                      const isActive =
-                        report.health_score >= r.min &&
-                        report.health_score <= r.max;
-                      return (
-                        <div
-                          key={r.label}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "10px",
-                            padding: "8px 12px",
-                            borderRadius: "8px",
-                            background: isActive
-                              ? `rgba(${
-                                  r.color === "var(--red)"
-                                    ? "248,113,113"
-                                    : r.color === "#F59E0B"
-                                    ? "245,158,11"
-                                    : r.color === "var(--green)"
-                                    ? "16,185,129"
-                                    : "52,211,153"
-                                },0.1)`
-                              : "transparent",
-                            border: `1px solid ${
-                              isActive ? r.color + "40" : "transparent"
-                            }`,
-                            transition: "all 0.2s",
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: "8px",
-                              height: "8px",
-                              borderRadius: "50%",
-                              background: r.color,
-                              flexShrink: 0,
-                            }}
-                          />
-                          <span
-                            style={{
-                              fontSize: "12px",
-                              fontWeight: isActive ? "700" : "500",
-                              color: isActive ? r.color : "#475569",
-                              flex: 1,
-                            }}
-                          >
-                            {r.label}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "11px",
-                              color: isActive ? r.color : "#334155",
-                              fontWeight: "600",
-                              fontVariantNumeric: "tabular-nums",
-                            }}
-                          >
-                            {r.range}
-                          </span>
-                          {isActive && (
-                            <span
-                              style={{
-                                fontSize: "10px",
-                                background: r.color,
-                                color: "var(--text-1)",
-                                borderRadius: "4px",
-                                padding: "1px 6px",
-                                fontWeight: "700",
-                              }}
-                            >
-                              YOU
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              <div
-                style={{
-                  background: "var(--bg-surface)",
-                  borderRadius: "16px",
-                  padding: "24px",
-                  boxShadow: "var(--shadow-card)",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: "11px",
-                    color: "var(--text-3)",
-                    fontWeight: "600",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.8px",
-                    marginBottom: "12px",
-                  }}
-                >
-                  Total Expenses
-                </p>
-                <p
-                  style={{
-                    fontSize: "34px",
-                    fontWeight: "800",
-                    color: "var(--red)",
-                    letterSpacing: "-1.5px",
-                    lineHeight: 1,
-                  }}
-                >
-                  ₹{report.total_expense.toLocaleString("en-IN")}
-                </p>
-                <p
-                  style={{
-                    fontSize: "13px",
-                    color: "var(--text-3)",
-                    marginTop: "8px",
-                  }}
-                >
-                  {selectedMonthLabel} {report.year} · {report.breakdown.length}{" "}
-                  categories
-                </p>
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: "var(--bg-surface)",
-                borderRadius: "16px",
-                padding: "20px",
-                boxShadow: "var(--shadow-card)",
-              }}
-            >
-              <p
-                style={{
-                  fontSize: "11px",
-                  color: "var(--text-3)",
-                  fontWeight: "600",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.8px",
-                  marginBottom: "20px",
-                }}
-              >
-                Spending Breakdown
-              </p>
-              {report.breakdown.map((item, i) => (
-                <CategoryBar
-                  key={i}
-                  item={item}
-                  index={i}
-                  maxTotal={maxTotal}
-                />
-              ))}
-            </div>
-
-            <SectionCard
-              icon={Trophy}
-              iconColor="#818CF8"
-              title="Top Category"
-              accentBg="rgba(99,102,241,0.08)"
-              accentBorder="rgba(99,102,241,0.2)"
-            >
-              <p
-                style={{
-                  fontSize: "14px",
-                  color: "var(--text-2)",
-                  lineHeight: "1.7",
-                }}
-              >
-                {report.top_category}
-              </p>
-            </SectionCard>
-            <SectionCard
-              icon={TrendingUp}
-              iconColor="#34D399"
-              title="Spending Trend"
-            >
-              <p
-                style={{
-                  fontSize: "14px",
-                  color: "var(--text-2)",
-                  lineHeight: "1.7",
-                }}
-              >
-                {report.spending_trend}
-              </p>
-            </SectionCard>
-            <SectionCard
-              icon={Activity}
-              iconColor="#64748B"
-              title="Patterns Identified"
-            >
-              <p
-                style={{
-                  fontSize: "14px",
-                  color: "var(--text-2)",
-                  lineHeight: "1.7",
-                }}
-              >
-                {report.patterns}
-              </p>
-            </SectionCard>
-
-            <div
-              style={{
-                background: "var(--bg-surface)",
-                borderRadius: "16px",
-                padding: "20px",
-                boxShadow: "var(--shadow-card)",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  marginBottom: "16px",
-                }}
-              >
-                <div
-                  style={{
-                    width: "34px",
-                    height: "34px",
-                    borderRadius: "8px",
-                    background: "var(--border-subtle)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Lightbulb size={17} color="#F59E0B" strokeWidth={1.8} />
-                </div>
-                <p
-                  style={{
-                    fontSize: "11px",
-                    color: "var(--yellow)",
-                    fontWeight: "700",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.6px",
-                  }}
-                >
-                  AI Suggestions
-                </p>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "10px",
-                }}
-              >
-                {report.suggestions.map((tip, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      gap: "12px",
-                      alignItems: "flex-start",
-                      padding: "14px",
-                      background: "var(--bg-inset)",
-                      borderRadius: "12px",
-                      boxShadow: "var(--shadow-card)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "24px",
-                        height: "24px",
-                        borderRadius: "50%",
-                        background: "var(--accent-gradient)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "12px",
-                        fontWeight: "700",
-                        color: "#fff",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {i + 1}
-                    </div>
-                    <p
-                      style={{
-                        fontSize: "14px",
-                        color: "var(--text-2)",
-                        lineHeight: "1.65",
-                        margin: 0,
-                      }}
-                    >
-                      {tip}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+        {report && !loading && <ReportDisplay text={report} />}
 
         {!report && !loading && !error && (
           <div
