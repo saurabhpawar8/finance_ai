@@ -417,7 +417,7 @@ export default function ReportPage() {
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <img
             src="/icons/icon-192.png"
-            alt="FinanceAI"
+            alt="Outgo"
             style={{
               width: "34px",
               height: "34px",
@@ -432,7 +432,7 @@ export default function ReportPage() {
               letterSpacing: "-0.4px",
             }}
           >
-            FinanceAI
+            Outgo
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
