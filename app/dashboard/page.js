@@ -697,7 +697,7 @@ function AppHeader({
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
         <img
           src="/icons/icon-192.png"
-          alt="FinanceAI"
+          alt="Outgo"
           style={{
             width: "30px",
             height: "30px",
@@ -712,7 +712,7 @@ function AppHeader({
             letterSpacing: "-0.4px",
           }}
         >
-          FinanceAI
+          Outgo
         </span>
       </div>
 
@@ -1334,7 +1334,7 @@ export default function DashboardPage() {
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
             <img
               src="/icons/icon-192.png"
-              alt="FinanceAI"
+              alt="Outgo"
               style={{
                 width: "56px",
                 height: "56px",
@@ -1354,7 +1354,7 @@ export default function DashboardPage() {
                 WebkitTextFillColor: "transparent",
               }}
             >
-              Welcome to FinanceAI
+              Welcome to Outgo
             </h1>
             <p
               style={{
@@ -1861,3 +1861,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+Financ
