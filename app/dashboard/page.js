@@ -278,6 +278,203 @@ function CountUp({ to, prefix = "", decimals = 0, duration = 1600 }) {
 }
 
 // ── Spending Heatmap ─────────────────────────────────────
+// ── Spending Calendar Heatmap ─────────────────────────────
+function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
+  const [tooltip, setTooltip] = useState(null);
+
+  const now = new Date();
+  const year = selectedYear || now.getFullYear();
+  const month = selectedMonth ? selectedMonth - 1 : now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+
+  const dataMap = {};
+  (data || []).forEach((d) => {
+    dataMap[d.date_only] = d.total;
+  });
+  const maxTotal = Math.max(...(data || []).map((d) => d.total), 1);
+
+  const cells = [];
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+      d
+    ).padStart(2, "0")}`;
+    cells.push({ day: d, date: dateStr, total: dataMap[dateStr] || 0 });
+  }
+
+  const getColor = (total) => {
+    if (!total) return "rgba(255,255,255,0.06)";
+    const t = Math.min(total / maxTotal, 1);
+    if (t < 0.25) return "rgba(251,146,60,0.4)";
+    if (t < 0.5) return "rgba(239,100,68,0.6)";
+    if (t < 0.75) return "rgba(239,68,68,0.78)";
+    return "rgba(239,68,68,0.96)";
+  };
+
+  const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+  const todayDay = isCurrentMonth ? now.getDate() : -1;
+  const monthLabel = new Date(year, month, 1).toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
+
+  return (
+    <div
+      style={{
+        background: "var(--bg-surface)",
+        borderRadius: "16px",
+        padding: "20px",
+        boxShadow: "var(--shadow-card)",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "14px",
+        }}
+      >
+        <p
+          style={{
+            fontSize: "11px",
+            fontWeight: "700",
+            color: "var(--text-3)",
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+          }}
+        >
+          Spending Calendar
+        </p>
+        <span style={{ fontSize: "12px", color: "var(--text-4)" }}>
+          {monthLabel}
+        </span>
+      </div>
+
+      {/* Day headers */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gap: "3px",
+          marginBottom: "3px",
+        }}
+      >
+        {DAYS.map((d) => (
+          <div
+            key={d}
+            style={{
+              fontSize: "10px",
+              color: "var(--text-3)",
+              textAlign: "center",
+              fontWeight: "600",
+            }}
+          >
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Cells */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gap: "3px",
+          flex: 1,
+        }}
+      >
+        {cells.map((cell, i) => (
+          <div
+            key={i}
+            onMouseEnter={() => cell && setTooltip(cell)}
+            onMouseLeave={() => setTooltip(null)}
+            style={{
+              aspectRatio: "1",
+              borderRadius: "4px",
+              background: cell ? getColor(cell.total) : "transparent",
+              border:
+                cell?.day === todayDay
+                  ? "1.5px solid var(--accent)"
+                  : "1px solid transparent",
+              cursor: cell ? "default" : "auto",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "transform 100ms ease",
+            }}
+            onMouseEnter={(e) => {
+              if (cell) {
+                setTooltip(cell);
+                e.currentTarget.style.transform = "scale(1.15)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              setTooltip(null);
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+          >
+            {cell && (
+              <span
+                style={{
+                  fontSize: "9px",
+                  color:
+                    cell.total > 0 ? "rgba(255,255,255,0.8)" : "var(--text-4)",
+                  fontWeight: "600",
+                }}
+              >
+                {cell.day}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Tooltip bar */}
+      <div style={{ marginTop: "10px", minHeight: "34px" }}>
+        {tooltip ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "7px 12px",
+              background: "var(--bg-inset)",
+              borderRadius: "8px",
+            }}
+          >
+            <span style={{ fontSize: "12px", color: "var(--text-2)" }}>
+              {new Date(tooltip.date + "T00:00:00").toLocaleDateString(
+                "en-IN",
+                { weekday: "short", day: "numeric", month: "short" }
+              )}
+            </span>
+            <span
+              style={{
+                fontSize: "13px",
+                fontWeight: "700",
+                color: tooltip.total > 0 ? "var(--red)" : "var(--text-4)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {tooltip.total > 0
+                ? `₹${Number(tooltip.total).toLocaleString("en-IN")}`
+                : "No spending"}
+            </span>
+          </div>
+        ) : (
+          <div />
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Trend tooltip ─────────────────────────────────────────
 function TrendTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -500,7 +697,7 @@ function AppHeader({
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
         <img
           src="/icons/icon-192.png"
-          alt="Outgo"
+          alt="FinanceAI"
           style={{
             width: "30px",
             height: "30px",
@@ -515,7 +712,7 @@ function AppHeader({
             letterSpacing: "-0.4px",
           }}
         >
-          Outgo
+          FinanceAI
         </span>
       </div>
 
@@ -1137,7 +1334,7 @@ export default function DashboardPage() {
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
             <img
               src="/icons/icon-192.png"
-              alt="Outgo"
+              alt="FinanceAI"
               style={{
                 width: "56px",
                 height: "56px",
@@ -1157,7 +1354,7 @@ export default function DashboardPage() {
                 WebkitTextFillColor: "transparent",
               }}
             >
-              Welcome to Outgo
+              Welcome to FinanceAI
             </h1>
             <p
               style={{
@@ -1604,13 +1801,13 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Row 2: Chat (primary) | Insights (secondary) */}
+            {/* Row 2: Chat | Heatmap */}
             <div className="bottom-grid" style={{ marginBottom: "16px" }}>
               <ChatBox {...chatProps} fullWidth={false} />
-              <SpendingInsights
-                summary={summary}
-                pieData={pieData}
-                heatmapData={heatmapData}
+              <SpendingHeatmap
+                data={heatmapData}
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
               />
             </div>
 
