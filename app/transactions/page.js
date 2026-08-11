@@ -35,14 +35,35 @@ import {
 import Toast, { showToast } from "@/components/Toast";
 import { useTheme } from "@/lib/ThemeContext";
 
-// Category metadata with icons
+const ICON_OPTIONS = [
+  UtensilsCrossed,
+  Car,
+  ShoppingBag,
+  FileText,
+  Gamepad2,
+  Heart,
+  Grid3X3,
+  Wallet,
+];
+
+const COLOR_OPTIONS = [
+  { bg: "var(--accent-bg)", text: "var(--accent-dim)" },
+  { bg: "var(--green-bg)", text: "var(--green-dim)" },
+  { bg: "rgba(139,92,246,0.15)", text: "#A78BFA" },
+  { bg: "rgba(6,182,212,0.15)", text: "#22D3EE" },
+  { bg: "rgba(245,158,11,0.15)", text: "#FCD34D" },
+  { bg: "var(--red-bg)", text: "var(--red-dim)" },
+  { bg: "rgba(249,115,22,0.15)", text: "#FB923C" },
+  { bg: "rgba(236,72,153,0.15)", text: "#F472B6" },
+];
+
 const CAT_META = {
   "Food & Dining": {
     bg: "var(--accent-bg)",
-    text: "#818CF8",
+    text: "var(--accent-dim)",
     Icon: UtensilsCrossed,
   },
-  Transport: { bg: "var(--green-bg)", text: "#34D399", Icon: Car },
+  Transport: { bg: "var(--green-bg)", text: "var(--green-dim)", Icon: Car },
   Shopping: { bg: "rgba(139,92,246,0.15)", text: "#A78BFA", Icon: ShoppingBag },
   "Bills & Utilities": {
     bg: "rgba(6,182,212,0.15)",
@@ -54,13 +75,32 @@ const CAT_META = {
     text: "#FCD34D",
     Icon: Gamepad2,
   },
-  Health: { bg: "var(--red-bg)", text: "#FCA5A5", Icon: Heart },
+  Health: { bg: "var(--red-bg)", text: "var(--red-dim)", Icon: Heart },
   General: { bg: "rgba(249,115,22,0.15)", text: "#FB923C", Icon: Grid3X3 },
 };
-const DEFAULT_META = {
-  bg: "rgba(100,116,139,0.15)",
-  text: "#94A3B8",
-  Icon: Grid3X3,
+
+// Same category name always gets same icon + color
+export const getCatMeta = (category) => {
+  if (!category)
+    return {
+      bg: COLOR_OPTIONS[0].bg,
+      text: COLOR_OPTIONS[0].text,
+      Icon: Grid3X3,
+    };
+
+  // Exact match first — known categories get correct icon
+  if (CAT_META[category]) return CAT_META[category];
+
+  // Unknown/AI-generated category — hash for consistent color + icon
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) {
+    hash = (hash * 31 + category.charCodeAt(i)) & 0xffffffff;
+  }
+  const idx = Math.abs(hash) % COLOR_OPTIONS.length;
+  return {
+    ...COLOR_OPTIONS[idx],
+    Icon: ICON_OPTIONS[idx % ICON_OPTIONS.length],
+  };
 };
 
 // Highlight search match in text
@@ -163,7 +203,7 @@ const inputStyle = {
 
 // Category badge with icon
 function CatBadge({ category }) {
-  const m = CAT_META[category] || DEFAULT_META;
+  const m = getCatMeta(category);
   return (
     <span
       style={{
@@ -1318,7 +1358,7 @@ export default function TransactionsPage() {
                   }}
                 >
                   {items.map((tx, i) => {
-                    const m = CAT_META[tx.category] || DEFAULT_META;
+                    const m = getCatMeta(tx.category);
                     return (
                       <div
                         key={tx.id}
