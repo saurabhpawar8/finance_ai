@@ -30,6 +30,7 @@ import {
   Smile,
   Dumbbell,
   Tv,
+  Phone,
   Wifi,
   Baby,
   PawPrint,
