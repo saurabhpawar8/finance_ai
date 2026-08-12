@@ -15,6 +15,7 @@ import {
   Trash2,
   Sun,
   Moon,
+  SlidersHorizontal,
   UtensilsCrossed,
   Car,
   ShoppingBag,
@@ -164,9 +165,8 @@ const getCatMeta = (category) => {
     };
   if (CAT_META[category]) return CAT_META[category];
   let hash = 0;
-  for (let i = 0; i < category.length; i++) {
+  for (let i = 0; i < category.length; i++)
     hash = (hash * 31 + category.charCodeAt(i)) & 0xffffffff;
-  }
   const idx = Math.abs(hash) % COLOR_OPTIONS.length;
   return {
     ...COLOR_OPTIONS[idx],
@@ -174,7 +174,6 @@ const getCatMeta = (category) => {
   };
 };
 
-// Highlight search match in text
 function Highlight({ text, query }) {
   if (!query || !text) return <>{text}</>;
   const idx = String(text).toLowerCase().indexOf(query.toLowerCase());
@@ -207,7 +206,6 @@ const fmtDate = (d) =>
 const fmtAmount = (a) =>
   a != null ? `₹${Number(a).toLocaleString("en-IN")}` : "-";
 
-// Returns "Today", "Yesterday", "Monday", "19 Jul" etc.
 const getDateLabel = (dateStr) => {
   const [y, m, d] = dateStr.split("-").map(Number);
   const txDate = new Date(y, m - 1, d);
@@ -217,7 +215,6 @@ const getDateLabel = (dateStr) => {
   yester.setDate(today.getDate() - 1);
   const weekAgo = new Date(today);
   weekAgo.setDate(today.getDate() - 6);
-
   if (txDate.getTime() === today.getTime()) return "Today";
   if (txDate.getTime() === yester.getTime()) return "Yesterday";
   if (txDate >= weekAgo)
@@ -234,7 +231,6 @@ const getDateLabel = (dateStr) => {
   });
 };
 
-// Groups rows by date label, preserving API order
 const groupTransactions = (rows) => {
   const map = new Map();
   rows.forEach((tx) => {
@@ -272,7 +268,6 @@ const inputStyle = {
   outline: "none",
 };
 
-// Category badge with icon
 function CatBadge({ category }) {
   const m = getCatMeta(category);
   return (
@@ -297,7 +292,6 @@ function CatBadge({ category }) {
   );
 }
 
-// Skeleton row for table
 function TableSkeleton() {
   return (
     <div style={{ padding: "16px 20px" }}>
@@ -307,7 +301,6 @@ function TableSkeleton() {
           style={{
             display: "grid",
             gridTemplateColumns: "2fr 1fr 2fr 1fr 1.2fr 32px",
-            gap: "0 20px",
             gap: "16px",
             marginBottom: "16px",
             alignItems: "center",
@@ -376,6 +369,191 @@ function CardSkeleton() {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ── Mobile filter sheet ────────────────────────────────────
+function FilterSheet({
+  category,
+  setCategory,
+  wallet,
+  setWallet,
+  categories,
+  wallets,
+  onClose,
+  onClear,
+  filtersActive,
+}) {
+  return (
+    <div
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        backdropFilter: "blur(4px)",
+        display: "flex",
+        alignItems: "flex-end",
+        zIndex: 50,
+      }}
+    >
+      <div
+        style={{
+          background: "var(--bg-surface)",
+          borderRadius: "20px 20px 0 0",
+          padding: "20px 20px calc(20px + env(safe-area-inset-bottom, 0px))",
+          width: "100%",
+          boxShadow: "var(--shadow-elevated)",
+          maxHeight: "80vh",
+          overflowY: "auto",
+        }}
+      >
+        <div
+          style={{
+            width: "36px",
+            height: "4px",
+            background: "var(--border-strong)",
+            borderRadius: "2px",
+            margin: "0 auto 18px",
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "20px",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "17px",
+              fontWeight: "700",
+              color: "var(--text-1)",
+            }}
+          >
+            Filters
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "8px",
+              boxShadow: "var(--shadow-card)",
+              background: "transparent",
+              color: "var(--text-3)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "none",
+            }}
+          >
+            <X size={15} strokeWidth={2.5} />
+          </button>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: "12px",
+                fontWeight: "600",
+                color: "var(--text-3)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                marginBottom: "8px",
+              }}
+            >
+              Category
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              style={selectStyle}
+            >
+              {categories.map((c) => (
+                <option
+                  key={c}
+                  value={c}
+                  style={{ background: "var(--bg-surface)" }}
+                >
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: "12px",
+                fontWeight: "600",
+                color: "var(--text-3)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                marginBottom: "8px",
+              }}
+            >
+              Wallet
+            </label>
+            <select
+              value={wallet}
+              onChange={(e) => setWallet(e.target.value)}
+              style={selectStyle}
+            >
+              {wallets.map((w) => (
+                <option
+                  key={w}
+                  value={w}
+                  style={{ background: "var(--bg-surface)" }}
+                >
+                  {w}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+            {filtersActive && (
+              <button
+                onClick={onClear}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  background: "var(--red-bg)",
+                  border: "1px solid var(--red-border)",
+                  borderRadius: "10px",
+                  color: "var(--red-dim)",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                }}
+              >
+                Clear filters
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              style={{
+                flex: 2,
+                padding: "12px",
+                background: "var(--accent-gradient)",
+                border: "none",
+                borderRadius: "10px",
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "700",
+                boxShadow: "var(--shadow-accent)",
+              }}
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -465,8 +643,7 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
           padding: "28px",
           width: "100%",
           maxWidth: "460px",
-          boxShadow: "var(--shadow-card)",
-          boxShadow: "0 32px 64px rgba(0,0,0,0.5)",
+          boxShadow: "var(--shadow-elevated)",
           maxHeight: "90vh",
           overflowY: "auto",
         }}
@@ -514,12 +691,12 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              border: "none",
             }}
           >
             <X size={15} strokeWidth={2.5} />
           </button>
         </div>
-
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           <div
             style={{
@@ -694,7 +871,6 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
               }}
             />
           </div>
-
           {error && (
             <div
               style={{
@@ -709,7 +885,6 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
               {error}
             </div>
           )}
-
           {confirmDelete && (
             <div
               style={{
@@ -786,7 +961,6 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
               </div>
             </div>
           )}
-
           <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
             {isEdit && (
               <button
@@ -800,7 +974,7 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
                   background: "transparent",
                   border: "1px solid var(--red-border)",
                   borderRadius: "10px",
-                  color: confirmDelete ? "#334155" : "#F87171",
+                  color: confirmDelete ? "var(--text-4)" : "var(--red-dim)",
                   cursor: confirmDelete ? "not-allowed" : "pointer",
                   display: "flex",
                   alignItems: "center",
@@ -822,6 +996,7 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
                 cursor: "pointer",
                 fontSize: "14px",
                 fontWeight: "600",
+                border: "none",
               }}
             >
               Cancel
@@ -832,10 +1007,12 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
               style={{
                 flex: 2,
                 padding: "12px",
-                background: saving ? "#334155" : "var(--accent-gradient)",
+                background: saving
+                  ? "var(--disabled-bg)"
+                  : "var(--accent-gradient)",
                 border: "none",
                 borderRadius: "10px",
-                color: saving ? "#64748B" : "#fff",
+                color: saving ? "var(--text-3)" : "#fff",
                 cursor: saving ? "not-allowed" : "pointer",
                 fontSize: "14px",
                 fontWeight: "700",
@@ -843,7 +1020,7 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "8px",
-                boxShadow: saving ? "none" : "0 4px 12px rgba(99,102,241,0.35)",
+                boxShadow: saving ? "none" : "var(--shadow-accent)",
               }}
             >
               {saving ? (
@@ -852,8 +1029,8 @@ function TxModal({ tx, categories, wallets, onClose, onSaved, onDeleted }) {
                     style={{
                       width: "14px",
                       height: "14px",
-                      border: "2px solid #475569",
-                      borderTop: "2px solid #94A3B8",
+                      border: "2px solid rgba(255,255,255,0.3)",
+                      borderTop: "2px solid #fff",
                       borderRadius: "50%",
                       animation: "spin 0.8s linear infinite",
                     }}
@@ -881,8 +1058,6 @@ export default function TransactionsPage() {
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [hasPrev, setHasPrev] = useState(false);
-
-  // Skip initial run of filter + page effects (prevent triple API call on mount)
   const filterMounted = useRef(false);
   const pageMounted = useRef(false);
   const [search, setSearch] = useState("");
@@ -891,7 +1066,8 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState(["All"]);
   const [wallets, setWallets] = useState(["All"]);
-  const [modalTx, setModalTx] = useState(null); // null=closed, {}=add, tx=edit
+  const [modalTx, setModalTx] = useState(null);
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
 
   const fetchData = async (pg, q, cat, wal) => {
     setLoading(true);
@@ -937,9 +1113,7 @@ export default function TransactionsPage() {
   }, [search, category, wallet]);
 
   useEffect(() => {
-    if (!pageMounted.current) {
-      pageMounted.current = true;
-    }
+    if (!pageMounted.current) pageMounted.current = true;
     fetchData(page, search, category, wallet);
   }, [page]);
 
@@ -950,6 +1124,9 @@ export default function TransactionsPage() {
     setCount((c) => c - 1);
   };
   const filtersActive = search || category !== "All" || wallet !== "All";
+  const chipFiltersActive = category !== "All" || wallet !== "All";
+  const activeChipCount =
+    (category !== "All" ? 1 : 0) + (wallet !== "All" ? 1 : 0);
   const handleLogout = () => {
     removeTokens();
     router.push("/auth");
@@ -960,7 +1137,7 @@ export default function TransactionsPage() {
     <div style={{ padding: "60px 20px", textAlign: "center" }}>
       <Search
         size={36}
-        color="#334155"
+        color="var(--text-4)"
         strokeWidth={1.5}
         style={{ margin: "0 auto 12px" }}
       />
@@ -1022,18 +1199,17 @@ export default function TransactionsPage() {
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div className="hide-mobile" style={{ gap: "10px" }}>
+          <div className="hide-mobile" style={{ gap: "10px", display: "flex" }}>
             <Link
               href="/dashboard"
               style={{
                 padding: "7px 14px",
-                background: "var(--border-subtle)",
-                boxShadow: "var(--shadow-card)",
+                background: "transparent",
                 borderRadius: "8px",
-                color: "var(--text-2)",
+                color: "var(--text-3)",
                 textDecoration: "none",
                 fontSize: "13px",
-                fontWeight: "600",
+                fontWeight: "500",
                 display: "flex",
                 alignItems: "center",
                 gap: "6px",
@@ -1046,13 +1222,12 @@ export default function TransactionsPage() {
               href="/report"
               style={{
                 padding: "7px 14px",
-                background: "var(--accent-bg)",
-                border: "1px solid var(--accent-border)",
+                background: "transparent",
                 borderRadius: "8px",
-                color: "var(--accent-dim)",
+                color: "var(--text-3)",
                 textDecoration: "none",
                 fontSize: "13px",
-                fontWeight: "600",
+                fontWeight: "500",
                 display: "flex",
                 alignItems: "center",
                 gap: "6px",
@@ -1061,26 +1236,25 @@ export default function TransactionsPage() {
               <BarChart3 size={14} strokeWidth={2} />
               Reports
             </Link>
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: "7px 14px",
+                background: "transparent",
+                border: "none",
+                borderRadius: "8px",
+                color: "var(--text-3)",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontWeight: "500",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <LogOut size={14} strokeWidth={2} />
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: "7px 14px",
-              background: "transparent",
-              border: "1px solid var(--border-strong)",
-              borderRadius: "8px",
-              color: "var(--text-2)",
-              cursor: "pointer",
-              fontSize: "13px",
-              fontWeight: "500",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
-            <LogOut size={14} strokeWidth={2} />
-            Sign Out
-          </button>
           <button
             onClick={toggleTheme}
             title="Toggle theme"
@@ -1088,9 +1262,9 @@ export default function TransactionsPage() {
               width: "32px",
               height: "32px",
               borderRadius: "8px",
-              background: "var(--bg-inset)",
-              boxShadow: "var(--shadow-card)",
-              color: "var(--text-2)",
+              background: "var(--bg-elevated)",
+              border: "none",
+              color: "var(--text-3)",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -1129,7 +1303,7 @@ export default function TransactionsPage() {
           </p>
         </div>
 
-        {/* FILTERS */}
+        {/* FILTERS — Desktop: full row. Mobile: search + Filters button */}
         <div
           style={{
             background: "var(--bg-surface)",
@@ -1139,11 +1313,12 @@ export default function TransactionsPage() {
             marginBottom: "20px",
           }}
         >
-          <div className="filter-bar">
+          {/* Desktop filter row */}
+          <div className="hide-mobile filter-bar">
             <div style={{ position: "relative", flex: 1, minWidth: "180px" }}>
               <Search
                 size={14}
-                color="#475569"
+                color="var(--text-4)"
                 style={{
                   position: "absolute",
                   left: "13px",
@@ -1224,6 +1399,82 @@ export default function TransactionsPage() {
               </button>
             )}
           </div>
+
+          {/* Mobile: search + Filters button */}
+          <div
+            className="show-mobile"
+            style={{ gap: "10px", alignItems: "center" }}
+          >
+            <div style={{ position: "relative", flex: 1 }}>
+              <Search
+                size={14}
+                color="var(--text-4)"
+                style={{
+                  position: "absolute",
+                  left: "13px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  pointerEvents: "none",
+                }}
+              />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name…"
+                style={{
+                  ...selectStyle,
+                  padding: "10px 14px 10px 36px",
+                  background: "var(--bg-inset)",
+                }}
+              />
+            </div>
+            <button
+              onClick={() => setShowFilterSheet(true)}
+              style={{
+                position: "relative",
+                padding: "10px 14px",
+                background: chipFiltersActive
+                  ? "var(--accent-bg)"
+                  : "var(--bg-inset)",
+                boxShadow: "var(--shadow-card)",
+                border: chipFiltersActive
+                  ? "1px solid var(--accent-border)"
+                  : "none",
+                borderRadius: "10px",
+                color: chipFiltersActive
+                  ? "var(--accent-dim)"
+                  : "var(--text-2)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "13px",
+                fontWeight: "600",
+                flexShrink: 0,
+              }}
+            >
+              <SlidersHorizontal size={14} strokeWidth={2} />
+              Filters
+              {activeChipCount > 0 && (
+                <span
+                  style={{
+                    width: "16px",
+                    height: "16px",
+                    borderRadius: "50%",
+                    background: "var(--accent)",
+                    color: "#fff",
+                    fontSize: "10px",
+                    fontWeight: "700",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {activeChipCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* DESKTOP TABLE */}
@@ -1271,7 +1522,6 @@ export default function TransactionsPage() {
           ) : (
             groupTransactions(rows).map(({ label, items }) => (
               <div key={label}>
-                {/* Monzo-style date group header */}
                 <div
                   style={{
                     display: "flex",
@@ -1309,13 +1559,12 @@ export default function TransactionsPage() {
                       alignItems: "center",
                       borderBottom:
                         i < items.length - 1
-                          ? "1px solid rgba(255,255,255,0.04)"
+                          ? "1px solid var(--border-subtle)"
                           : "none",
                       cursor: "pointer",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background =
-                        "rgba(99,102,241,0.04)";
+                      e.currentTarget.style.background = "var(--accent-bg)";
                       e.currentTarget.querySelector(
                         ".row-action"
                       ).style.opacity = "1";
@@ -1368,7 +1617,11 @@ export default function TransactionsPage() {
                         border: "1px solid var(--accent-border)",
                       }}
                     >
-                      <Pencil size={12} color="#818CF8" strokeWidth={2} />
+                      <Pencil
+                        size={12}
+                        color="var(--accent-dim)"
+                        strokeWidth={2}
+                      />
                     </div>
                   </div>
                 ))}
@@ -1394,7 +1647,6 @@ export default function TransactionsPage() {
           ) : (
             groupTransactions(rows).map(({ label, items }, gi) => (
               <div key={label}>
-                {/* Monzo-style date group header */}
                 <div
                   style={{
                     display: "flex",
@@ -1419,7 +1671,6 @@ export default function TransactionsPage() {
                     {items.length}
                   </span>
                 </div>
-                {/* Monzo-style flat list inside a single card */}
                 <div
                   style={{
                     background: "var(--bg-surface)",
@@ -1454,7 +1705,6 @@ export default function TransactionsPage() {
                           (e.currentTarget.style.background = "transparent")
                         }
                       >
-                        {/* Category circle icon */}
                         <div
                           style={{
                             width: "42px",
@@ -1469,7 +1719,6 @@ export default function TransactionsPage() {
                         >
                           <m.Icon size={18} color={m.text} strokeWidth={1.8} />
                         </div>
-                        {/* Name + category */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p
                             style={{
@@ -1494,7 +1743,6 @@ export default function TransactionsPage() {
                             {tx.notes ? ` · ${tx.notes}` : ""}
                           </p>
                         </div>
-                        {/* Amount + date aligned right */}
                         <div style={{ textAlign: "right", flexShrink: 0 }}>
                           <p
                             style={{
@@ -1549,12 +1797,14 @@ export default function TransactionsPage() {
                   disabled={disabled || loading}
                   style={{
                     padding: "10px 20px",
-                    background: disabled ? "#1E293B" : "var(--accent-bg)",
+                    background: disabled
+                      ? "var(--disabled-bg)"
+                      : "var(--accent-bg)",
                     border: `1px solid ${
-                      disabled ? "var(--border)" : "var(--accent-glow)"
+                      disabled ? "var(--border)" : "var(--accent-border)"
                     }`,
                     borderRadius: "8px",
-                    color: disabled ? "#475569" : "#818CF8",
+                    color: disabled ? "var(--text-4)" : "var(--accent-dim)",
                     cursor: disabled ? "not-allowed" : "pointer",
                     fontSize: "14px",
                     fontWeight: "600",
@@ -1566,7 +1816,6 @@ export default function TransactionsPage() {
             </div>
           </div>
         )}
-        {/* Spacer - keeps pagination above the fixed tab bar on mobile */}
         <div style={{ height: "80px" }} />
       </main>
 
@@ -1600,6 +1849,25 @@ export default function TransactionsPage() {
           );
         })}
       </nav>
+
+      {/* MOBILE FILTER SHEET */}
+      {showFilterSheet && (
+        <FilterSheet
+          category={category}
+          setCategory={setCategory}
+          wallet={wallet}
+          setWallet={setWallet}
+          categories={categories}
+          wallets={wallets}
+          onClose={() => setShowFilterSheet(false)}
+          onClear={() => {
+            setCategory("All");
+            setWallet("All");
+            setShowFilterSheet(false);
+          }}
+          filtersActive={chipFiltersActive}
+        />
+      )}
 
       {/* MODAL */}
       {modalTx !== null && (

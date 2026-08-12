@@ -45,15 +45,6 @@ const RANGES = [
 ];
 const currentYear = new Date().getFullYear();
 const YEARS = [currentYear - 2, currentYear - 1, currentYear];
-const COLORS = [
-  "#6366F1",
-  "var(--green)",
-  "#F59E0B",
-  "#EF4444",
-  "#8B5CF6",
-  "#06B6D4",
-  "#F97316",
-];
 
 // ── Parse and display plain text report ──────────────────
 function ReportDisplay({ text }) {
@@ -62,17 +53,15 @@ function ReportDisplay({ text }) {
     const result = [];
     let currentTitle = null;
     let currentLines = [];
-
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const nextTrimmed = (lines[i + 1] || "").trim();
-
       if (nextTrimmed.match(/^[-=]{3,}$/)) {
         if (currentTitle !== null)
           result.push({ title: currentTitle, lines: [...currentLines] });
         currentTitle = line.trim();
         currentLines = [];
-        i++; // skip divider
+        i++;
       } else {
         currentLines.push(line);
       }
@@ -94,8 +83,6 @@ function ReportDisplay({ text }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       {sections.map(({ title, lines }, i) => {
         const content = lines.filter((l) => l.trim());
-
-        // First section = report title/header
         if (i === 0) {
           return (
             <div
@@ -145,14 +132,12 @@ function ReportDisplay({ text }) {
             </div>
           );
         }
-
         if (!content.length) return null;
         const meta = SECTION_META[title] || {
           icon: Activity,
           color: "var(--accent-dim)",
         };
         const Icon = meta.icon;
-
         return (
           <div
             key={i}
@@ -163,7 +148,6 @@ function ReportDisplay({ text }) {
               boxShadow: "var(--shadow-card)",
             }}
           >
-            {/* Section header */}
             <div
               style={{
                 display: "flex",
@@ -198,15 +182,12 @@ function ReportDisplay({ text }) {
                 {title}
               </p>
             </div>
-
-            {/* Section content */}
             <div
               style={{ display: "flex", flexDirection: "column", gap: "6px" }}
             >
               {content.map((line, j) => {
                 const t = line.trim();
                 if (!t || t.match(/^-{3,}$/)) return null;
-
                 const isPositive = t.startsWith("✅");
                 const isWarning = t.startsWith("⚠️");
                 const isAdvice =
@@ -219,7 +200,6 @@ function ReportDisplay({ text }) {
                   : isWarning
                   ? "var(--red)"
                   : "var(--yellow)";
-
                 if (isBullet) {
                   return (
                     <div
@@ -244,8 +224,6 @@ function ReportDisplay({ text }) {
                     </div>
                   );
                 }
-
-                // Table rows (contain ₹ or ↓ ↑)
                 const isTableRow =
                   t.includes("₹") ||
                   t.includes("↓") ||
@@ -278,20 +256,10 @@ function ReportDisplay({ text }) {
   );
 }
 
-// Skeleton for report sections
 function ReportSkeleton() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      <div className="report-top-grid">
-        {[140, 140].map((h, i) => (
-          <div
-            key={i}
-            className="skeleton"
-            style={{ height: h, borderRadius: "16px" }}
-          />
-        ))}
-      </div>
-      {[200, 120, 100, 100].map((h, i) => (
+      {[140, 200, 120, 100, 100].map((h, i) => (
         <div
           key={i}
           className="skeleton"
@@ -319,6 +287,54 @@ const selectStyle = {
   backgroundPosition: "right 14px center",
 };
 
+// ── Tab switcher (Download / AI Analysis) ─────────────────
+function ReportTabs({ active, onChange }) {
+  const tabs = [
+    { id: "download", label: "Download", Icon: Download },
+    { id: "ai", label: "AI Analysis", Icon: Sparkles },
+  ];
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        background: "var(--bg-surface)",
+        borderRadius: "12px",
+        padding: "4px",
+        boxShadow: "var(--shadow-card)",
+        marginBottom: "20px",
+      }}
+    >
+      {tabs.map(({ id, label, Icon }) => {
+        const isActive = active === id;
+        return (
+          <button
+            key={id}
+            onClick={() => onChange(id)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: "none",
+              background: isActive ? "var(--accent-gradient)" : "transparent",
+              color: isActive ? "#fff" : "var(--text-3)",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 150ms ease",
+              boxShadow: isActive ? "var(--shadow-accent)" : "none",
+            }}
+          >
+            <Icon size={14} strokeWidth={2} />
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ReportPage() {
   const router = useRouter();
   const now = new Date();
@@ -329,6 +345,7 @@ export default function ReportPage() {
   const [error, setError] = useState("");
   const [range, setRange] = useState("this_month");
   const [downloading, setDownloading] = useState(false);
+  const [activeTab, setActiveTab] = useState("download");
 
   useEffect(() => {
     if (!localStorage.getItem("access_token")) router.push("/auth");
@@ -340,7 +357,7 @@ export default function ReportPage() {
     setLoading(true);
     try {
       const res = await getReport(month, year);
-      if (res?.success && res?.data) setReport(res.data); // plain text string
+      if (res?.success && res?.data) setReport(res.data);
       else setError(res?.message || "No data found for the selected period.");
     } catch {
       setError("Could not connect. Make sure your backend is running.");
@@ -387,7 +404,6 @@ export default function ReportPage() {
     router.push("/auth");
   };
   const { theme, toggleTheme } = useTheme();
-  const selectedMonthLabel = MONTHS.find((m) => m.value === month)?.label;
 
   return (
     <div
@@ -436,18 +452,17 @@ export default function ReportPage() {
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div className="hide-mobile" style={{ gap: "10px" }}>
+          <div className="hide-mobile" style={{ gap: "10px", display: "flex" }}>
             <Link
               href="/dashboard"
               style={{
                 padding: "7px 14px",
-                background: "var(--border-subtle)",
-                boxShadow: "var(--shadow-card)",
+                background: "transparent",
                 borderRadius: "8px",
-                color: "var(--text-2)",
+                color: "var(--text-3)",
                 textDecoration: "none",
                 fontSize: "13px",
-                fontWeight: "600",
+                fontWeight: "500",
                 display: "flex",
                 alignItems: "center",
                 gap: "6px",
@@ -456,26 +471,25 @@ export default function ReportPage() {
               <ArrowLeft size={14} strokeWidth={2} />
               Dashboard
             </Link>
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: "7px 14px",
+                background: "transparent",
+                border: "none",
+                borderRadius: "8px",
+                color: "var(--text-3)",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontWeight: "500",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <LogOut size={14} strokeWidth={2} />
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: "7px 14px",
-              background: "transparent",
-              border: "1px solid var(--border-strong)",
-              borderRadius: "8px",
-              color: "var(--text-2)",
-              cursor: "pointer",
-              fontSize: "13px",
-              fontWeight: "500",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
-            <LogOut size={14} strokeWidth={2} />
-            Sign Out
-          </button>
           <button
             onClick={toggleTheme}
             title="Toggle theme"
@@ -483,9 +497,9 @@ export default function ReportPage() {
               width: "32px",
               height: "32px",
               borderRadius: "8px",
-              background: "var(--bg-inset)",
-              boxShadow: "var(--shadow-card)",
-              color: "var(--text-2)",
+              background: "var(--bg-elevated)",
+              border: "none",
+              color: "var(--text-3)",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -505,7 +519,7 @@ export default function ReportPage() {
         className="mobile-main"
         style={{ maxWidth: "720px", margin: "0 auto", padding: "24px 20px" }}
       >
-        <div style={{ marginBottom: "24px" }}>
+        <div style={{ marginBottom: "20px" }}>
           <h1
             className="page-title"
             style={{
@@ -522,279 +536,301 @@ export default function ReportPage() {
           </p>
         </div>
 
-        {/* DOWNLOAD */}
-        <div
-          style={{
-            background: "var(--bg-surface)",
-            borderRadius: "16px",
-            padding: "20px",
-            boxShadow: "var(--shadow-card)",
-            marginBottom: "16px",
-          }}
-        >
+        {/* TAB SWITCHER */}
+        <ReportTabs active={activeTab} onChange={setActiveTab} />
+
+        {/* DOWNLOAD TAB */}
+        {activeTab === "download" && (
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginBottom: "16px",
+              background: "var(--bg-surface)",
+              borderRadius: "16px",
+              padding: "20px",
+              boxShadow: "var(--shadow-card)",
             }}
           >
             <div
               style={{
-                width: "34px",
-                height: "34px",
-                borderRadius: "8px",
-                background: "var(--accent-bg)",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
+                gap: "10px",
+                marginBottom: "16px",
               }}
             >
-              <Download size={17} color="#10B981" strokeWidth={1.8} />
-            </div>
-            <div>
-              <p
+              <div
                 style={{
+                  width: "34px",
+                  height: "34px",
+                  borderRadius: "8px",
+                  background: "var(--accent-bg)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Download
+                  size={17}
+                  color="var(--accent-dim)"
+                  strokeWidth={1.8}
+                />
+              </div>
+              <div>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    color: "var(--text-1)",
+                  }}
+                >
+                  Download Excel Report
+                </p>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--text-3)",
+                    marginTop: "2px",
+                  }}
+                >
+                  Export transactions as a spreadsheet
+                </p>
+              </div>
+            </div>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+            >
+              <select
+                value={range}
+                onChange={(e) => setRange(e.target.value)}
+                style={selectStyle}
+              >
+                {RANGES.map((r) => (
+                  <option
+                    key={r.value}
+                    value={r.value}
+                    style={{ background: "var(--bg-surface)" }}
+                  >
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleDownload}
+                disabled={downloading}
+                style={{
+                  padding: "13px",
+                  background: downloading
+                    ? "var(--disabled-bg)"
+                    : "var(--accent-gradient)",
+                  border: "none",
+                  borderRadius: "10px",
+                  color: downloading ? "var(--text-3)" : "#fff",
                   fontSize: "14px",
                   fontWeight: "700",
-                  color: "var(--text-1)",
+                  cursor: downloading ? "not-allowed" : "pointer",
+                  boxShadow: downloading ? "none" : "var(--shadow-accent)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
                 }}
               >
-                Download Excel Report
-              </p>
-              <p
-                style={{
-                  fontSize: "12px",
-                  color: "var(--text-3)",
-                  marginTop: "2px",
-                }}
-              >
-                Export transactions as a spreadsheet
-              </p>
+                {downloading ? (
+                  <>
+                    <div
+                      style={{
+                        width: "14px",
+                        height: "14px",
+                        border: "2px solid rgba(255,255,255,0.3)",
+                        borderTop: "2px solid #fff",
+                        borderRadius: "50%",
+                        animation: "spin 0.8s linear infinite",
+                      }}
+                    />
+                    Downloading…
+                  </>
+                ) : (
+                  <>
+                    <Download size={15} strokeWidth={2.5} />
+                    Download .xlsx
+                  </>
+                )}
+              </button>
             </div>
-          </div>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "10px" }}
-          >
-            <select
-              value={range}
-              onChange={(e) => setRange(e.target.value)}
-              style={selectStyle}
-            >
-              {RANGES.map((r) => (
-                <option
-                  key={r.value}
-                  value={r.value}
-                  style={{ background: "var(--bg-surface)" }}
-                >
-                  {r.label}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={handleDownload}
-              disabled={downloading}
-              style={{
-                padding: "13px",
-                background: downloading
-                  ? "var(--disabled-bg)"
-                  : "var(--accent-gradient)",
-                border: "none",
-                borderRadius: "10px",
-                color: downloading ? "var(--text-3)" : "#fff",
-                fontSize: "14px",
-                fontWeight: "700",
-                cursor: downloading ? "not-allowed" : "pointer",
-                boxShadow: downloading ? "none" : "var(--shadow-accent)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-              }}
-            >
-              {downloading ? (
-                <>
-                  <div
-                    style={{
-                      width: "14px",
-                      height: "14px",
-                      border: "2px solid #475569",
-                      borderTop: "2px solid #94A3B8",
-                      borderRadius: "50%",
-                      animation: "spin 0.8s linear infinite",
-                    }}
-                  />
-                  Downloading…
-                </>
-              ) : (
-                <>
-                  <Download size={15} strokeWidth={2.5} />
-                  Download .xlsx
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* AI REPORT */}
-        <div
-          style={{
-            background: "var(--bg-surface)",
-            borderRadius: "16px",
-            padding: "20px",
-            boxShadow: "var(--shadow-card)",
-            marginBottom: "24px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginBottom: "16px",
-            }}
-          >
-            <div
-              style={{
-                width: "34px",
-                height: "34px",
-                borderRadius: "8px",
-                background: "var(--accent-bg)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Sparkles size={17} color="#818CF8" strokeWidth={1.8} />
-            </div>
-            <div>
-              <p
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "700",
-                  color: "var(--text-1)",
-                }}
-              >
-                AI Financial Analysis
-              </p>
-              <p
-                style={{
-                  fontSize: "12px",
-                  color: "var(--text-3)",
-                  marginTop: "2px",
-                }}
-              >
-                Detailed AI breakdown for any month
-              </p>
-            </div>
-          </div>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "10px" }}
-          >
-            <select
-              value={month}
-              onChange={(e) => setMonth(Number(e.target.value))}
-              style={selectStyle}
-            >
-              {MONTHS.map((m) => (
-                <option
-                  key={m.value}
-                  value={m.value}
-                  style={{ background: "var(--bg-surface)" }}
-                >
-                  {m.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              style={selectStyle}
-            >
-              {YEARS.map((y) => (
-                <option
-                  key={y}
-                  value={y}
-                  style={{ background: "var(--bg-surface)" }}
-                >
-                  {y}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={handleGenerate}
-              disabled={loading}
-              style={{
-                padding: "13px",
-                background: loading ? "#334155" : "var(--accent-gradient)",
-                border: "none",
-                borderRadius: "10px",
-                color: loading ? "#64748B" : "#fff",
-                fontSize: "14px",
-                fontWeight: "700",
-                cursor: loading ? "not-allowed" : "pointer",
-                boxShadow: loading
-                  ? "none"
-                  : "0 6px 20px rgba(99,102,241,0.35)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-              }}
-            >
-              <Sparkles size={15} strokeWidth={2} />
-              {loading ? "Generating…" : "Generate Report"}
-            </button>
-          </div>
-          {error && (
-            <div
-              style={{
-                marginTop: "12px",
-                padding: "12px 16px",
-                borderRadius: "10px",
-                background: "var(--red-bg)",
-                border: "1px solid var(--red-border)",
-                color: "var(--red-dim)",
-                fontSize: "14px",
-              }}
-            >
-              {error}
-            </div>
-          )}
-        </div>
-
-        {loading && <ReportSkeleton />}
-
-        {report && !loading && <ReportDisplay text={report} />}
-
-        {!report && !loading && !error && (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "60px 20px",
-              color: "var(--text-3)",
-            }}
-          >
-            <BarChart3
-              size={48}
-              color="#1E293B"
-              strokeWidth={1}
-              style={{ margin: "0 auto 16px" }}
-            />
-            <p
-              style={{
-                fontSize: "15px",
-                fontWeight: "600",
-                color: "var(--text-3)",
-                marginBottom: "6px",
-              }}
-            >
-              Select a month and generate a report
-            </p>
-            <p style={{ fontSize: "13px" }}>Or download your statement above</p>
           </div>
         )}
+
+        {/* AI ANALYSIS TAB */}
+        {activeTab === "ai" && (
+          <>
+            <div
+              style={{
+                background: "var(--bg-surface)",
+                borderRadius: "16px",
+                padding: "20px",
+                boxShadow: "var(--shadow-card)",
+                marginBottom: "20px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  marginBottom: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "8px",
+                    background: "var(--accent-bg)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Sparkles
+                    size={17}
+                    color="var(--accent-dim)"
+                    strokeWidth={1.8}
+                  />
+                </div>
+                <div>
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "700",
+                      color: "var(--text-1)",
+                    }}
+                  >
+                    AI Financial Analysis
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      color: "var(--text-3)",
+                      marginTop: "2px",
+                    }}
+                  >
+                    Detailed AI breakdown for any month
+                  </p>
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                }}
+              >
+                <select
+                  value={month}
+                  onChange={(e) => setMonth(Number(e.target.value))}
+                  style={selectStyle}
+                >
+                  {MONTHS.map((m) => (
+                    <option
+                      key={m.value}
+                      value={m.value}
+                      style={{ background: "var(--bg-surface)" }}
+                    >
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={year}
+                  onChange={(e) => setYear(Number(e.target.value))}
+                  style={selectStyle}
+                >
+                  {YEARS.map((y) => (
+                    <option
+                      key={y}
+                      value={y}
+                      style={{ background: "var(--bg-surface)" }}
+                    >
+                      {y}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleGenerate}
+                  disabled={loading}
+                  style={{
+                    padding: "13px",
+                    background: loading
+                      ? "var(--disabled-bg)"
+                      : "var(--accent-gradient)",
+                    border: "none",
+                    borderRadius: "10px",
+                    color: loading ? "var(--text-3)" : "#fff",
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    cursor: loading ? "not-allowed" : "pointer",
+                    boxShadow: loading ? "none" : "var(--shadow-accent)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <Sparkles size={15} strokeWidth={2} />
+                  {loading ? "Generating…" : "Generate Report"}
+                </button>
+              </div>
+              {error && (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "12px 16px",
+                    borderRadius: "10px",
+                    background: "var(--red-bg)",
+                    border: "1px solid var(--red-border)",
+                    color: "var(--red-dim)",
+                    fontSize: "14px",
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+            </div>
+
+            {loading && <ReportSkeleton />}
+            {report && !loading && <ReportDisplay text={report} />}
+            {!report && !loading && !error && (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "60px 20px",
+                  color: "var(--text-3)",
+                }}
+              >
+                <BarChart3
+                  size={48}
+                  color="var(--text-4)"
+                  strokeWidth={1}
+                  style={{ margin: "0 auto 16px" }}
+                />
+                <p
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: "600",
+                    color: "var(--text-3)",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Select a month and generate a report
+                </p>
+                <p style={{ fontSize: "13px" }}>
+                  AI will analyze your spending and give insights
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        <div style={{ height: "40px" }} />
       </main>
 
       {/* BOTTOM TABS */}
