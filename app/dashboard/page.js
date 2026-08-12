@@ -11,6 +11,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ComposedChart,
+  Line,
 } from "recharts";
 import {
   Wallet,
@@ -39,6 +41,7 @@ import {
   sendChat,
   removeTokens,
   getHeatmap,
+  getMonthlyTotals,
 } from "@/lib/api";
 import Toast, { showToast } from "@/components/Toast";
 import { useTheme } from "@/lib/ThemeContext";
@@ -88,7 +91,6 @@ const STEPS = [
 // ── Insight generator ────────────────────────────────────
 const generateInsights = (summary, pieData, heatmapData) => {
   if (!summary || !summary.total_expense) return [];
-
   const now = new Date();
   const dayOfMonth = now.getDate();
   const daysInMonth = new Date(
@@ -101,7 +103,6 @@ const generateInsights = (summary, pieData, heatmapData) => {
   const monthName = summary.month?.split(" ")[0] || "month end";
   const results = [];
 
-  // Daily average + projection
   results.push({
     icon: TrendingUp,
     color: "var(--yellow)",
@@ -113,7 +114,6 @@ const generateInsights = (summary, pieData, heatmapData) => {
     )} by ${monthName} end`,
   });
 
-  // Top category %
   if (summary.top_category && summary.category_amount) {
     const pct = Math.round(
       (summary.category_amount / summary.total_expense) * 100
@@ -126,7 +126,6 @@ const generateInsights = (summary, pieData, heatmapData) => {
     });
   }
 
-  // Days since last spending
   if (heatmapData?.length > 0) {
     const sorted = [...heatmapData].sort(
       (a, b) => new Date(b.date_only) - new Date(a.date_only)
@@ -141,8 +140,6 @@ const generateInsights = (summary, pieData, heatmapData) => {
         text: `No spending for ${daysSince} days straight - you're on a great streak!`,
       });
     }
-
-    // Biggest spending day
     const maxDay = heatmapData.reduce(
       (max, d) => (d.total > max.total ? d : max),
       heatmapData[0]
@@ -164,7 +161,6 @@ const generateInsights = (summary, pieData, heatmapData) => {
     }
   }
 
-  // Category diversity
   if (pieData?.length > 1) {
     const smallest = [...pieData].sort((a, b) => a.total - b.total)[0];
     results.push({
@@ -184,7 +180,6 @@ const generateInsights = (summary, pieData, heatmapData) => {
 function SpendingInsights({ summary, pieData, heatmapData }) {
   const insights = generateInsights(summary, pieData, heatmapData);
   if (!insights.length) return null;
-
   return (
     <div
       style={{
@@ -277,24 +272,20 @@ function CountUp({ to, prefix = "", decimals = 0, duration = 1600 }) {
   );
 }
 
-// ── Spending Heatmap ─────────────────────────────────────
 // ── Spending Calendar Heatmap ─────────────────────────────
 function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
   const [tooltip, setTooltip] = useState(null);
-
   const now = new Date();
   const year = selectedYear || now.getFullYear();
   const month = selectedMonth ? selectedMonth - 1 : now.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
   const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-
   const dataMap = {};
   (data || []).forEach((d) => {
     dataMap[d.date_only] = d.total;
   });
   const maxTotal = Math.max(...(data || []).map((d) => d.total), 1);
-
   const cells = [];
   for (let i = 0; i < startOffset; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) {
@@ -303,7 +294,6 @@ function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
     ).padStart(2, "0")}`;
     cells.push({ day: d, date: dateStr, total: dataMap[dateStr] || 0 });
   }
-
   const getColor = (total) => {
     if (!total) return "rgba(255,255,255,0.06)";
     const t = Math.min(total / maxTotal, 1);
@@ -312,7 +302,6 @@ function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
     if (t < 0.75) return "rgba(239,68,68,0.78)";
     return "rgba(239,68,68,0.96)";
   };
-
   const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
   const todayDay = isCurrentMonth ? now.getDate() : -1;
@@ -355,8 +344,6 @@ function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
           {monthLabel}
         </span>
       </div>
-
-      {/* Day headers */}
       <div
         style={{
           display: "grid",
@@ -379,8 +366,6 @@ function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
           </div>
         ))}
       </div>
-
-      {/* Cells */}
       <div
         style={{
           display: "grid",
@@ -392,8 +377,6 @@ function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
         {cells.map((cell, i) => (
           <div
             key={i}
-            onMouseEnter={() => cell && setTooltip(cell)}
-            onMouseLeave={() => setTooltip(null)}
             style={{
               aspectRatio: "1",
               borderRadius: "4px",
@@ -434,8 +417,6 @@ function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
           </div>
         ))}
       </div>
-
-      {/* Tooltip bar */}
       <div style={{ marginTop: "10px", minHeight: "34px" }}>
         {tooltip ? (
           <div
@@ -518,7 +499,6 @@ function TrendTooltip({ active, payload, label }) {
 function SpendingTrend({ data, selectedMonth, selectedYear }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-
   const now = new Date();
   const year = selectedYear || now.getFullYear();
   const month = selectedMonth ? selectedMonth - 1 : now.getMonth();
@@ -527,13 +507,10 @@ function SpendingTrend({ data, selectedMonth, selectedYear }) {
     year === now.getFullYear() && month === now.getMonth()
       ? now.getDate()
       : daysInMonth;
-
-  // Build full month data — fill missing days with 0
   const dataMap = {};
   (data || []).forEach((d) => {
     dataMap[d.date_only] = d.total;
   });
-
   const chartData = [];
   for (let d = 1; d <= today; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
@@ -541,7 +518,6 @@ function SpendingTrend({ data, selectedMonth, selectedYear }) {
     ).padStart(2, "0")}`;
     chartData.push({ day: d, amount: dataMap[dateStr] || 0 });
   }
-
   const monthLabel = new Date(year, month, 1).toLocaleDateString("en-IN", {
     month: "long",
     year: "numeric",
@@ -549,7 +525,6 @@ function SpendingTrend({ data, selectedMonth, selectedYear }) {
   const totalSpend = (data || []).reduce((s, d) => s + d.total, 0);
   const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
   const tickColor = isDark ? "#44445A" : "#6C6C70";
-
   const fmtY = (v) =>
     v === 0 ? "" : v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`;
 
@@ -601,7 +576,6 @@ function SpendingTrend({ data, selectedMonth, selectedYear }) {
           {monthLabel}
         </span>
       </div>
-
       <ResponsiveContainer width="100%" height={180}>
         <AreaChart
           data={chartData}
@@ -664,6 +638,376 @@ function SpendingTrend({ data, selectedMonth, selectedYear }) {
   );
 }
 
+// ── Velocity tooltip ──────────────────────────────────────
+function VelocityTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  const actual = payload.find((p) => p.dataKey === "actual");
+  const projected = payload.find((p) => p.dataKey === "projected");
+  const value = actual?.value ?? projected?.value;
+  const isProj = !actual?.value && !!projected?.value;
+  if (!value) return null;
+  return (
+    <div
+      style={{
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+        borderRadius: "10px",
+        padding: "10px 14px",
+        boxShadow: "var(--shadow-elevated)",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "11px",
+          color: "var(--text-3)",
+          marginBottom: "4px",
+        }}
+      >
+        Day {label}
+        {isProj ? " · projected" : ""}
+      </p>
+      <p
+        style={{
+          fontSize: "15px",
+          fontWeight: "700",
+          color: isProj ? "var(--accent-dim)" : "var(--red)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        ₹{Number(value).toLocaleString("en-IN")}
+      </p>
+    </div>
+  );
+}
+
+// ── Spending Velocity ─────────────────────────────────────
+function SpendingVelocity({
+  data,
+  selectedMonth,
+  selectedYear,
+  monthlyTotals = [],
+}) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const now = new Date();
+  const year = selectedYear || now.getFullYear();
+  const month = selectedMonth ? selectedMonth - 1 : now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+  const today = isCurrentMonth ? now.getDate() : daysInMonth;
+  const dataMap = {};
+  (data || []).forEach((d) => {
+    dataMap[d.date_only] = d.total;
+  });
+
+  // Cumulative chart data
+  let cumulative = 0;
+  const chartData = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+      d
+    ).padStart(2, "0")}`;
+    cumulative += dataMap[dateStr] || 0;
+    chartData.push({
+      day: d,
+      actual: d <= today ? cumulative : null,
+      projected: null,
+      daySpend: dataMap[dateStr] || 0,
+    });
+  }
+
+  const totalSoFar = chartData[today - 1]?.actual || 0;
+  const daysRemaining = daysInMonth - today;
+
+  // Historical projection
+  const currentMonthLabel = new Date(year, month, 1).toLocaleDateString(
+    "en-IN",
+    { month: "short", year: "numeric" }
+  );
+  const historicalMonths = (monthlyTotals || [])
+    .filter((m) => m.month !== currentMonthLabel)
+    .slice(-3);
+  const historicalAvg =
+    historicalMonths.length > 0
+      ? historicalMonths.reduce((s, m) => s + m.total, 0) /
+        historicalMonths.length
+      : 0;
+  const completionRatio = today / daysInMonth;
+  const expectedSoFar = historicalAvg * completionRatio;
+  const deviation = expectedSoFar > 0 ? totalSoFar / expectedSoFar : 1;
+  const historicalDailyAvg =
+    historicalAvg > 0 ? historicalAvg / daysInMonth : totalSoFar / (today || 1);
+  const projectedRemaining = historicalDailyAvg * daysRemaining * deviation;
+  const projectedTotal = Math.round(totalSoFar + projectedRemaining);
+  const rangeLow = Math.round(projectedTotal * 0.87);
+  const rangeHigh = Math.round(projectedTotal * 1.13);
+
+  // Build projected line
+  if (isCurrentMonth && daysRemaining > 0) {
+    chartData[today - 1].projected = chartData[today - 1].actual;
+    let projCum = totalSoFar;
+    const dailyStep =
+      daysRemaining > 0 ? projectedRemaining / daysRemaining : 0;
+    for (let d = today + 1; d <= daysInMonth; d++) {
+      projCum += dailyStep;
+      chartData[d - 1].projected = Math.round(projCum);
+    }
+  }
+
+  const maxDaySpend = Math.max(...(data || []).map((d) => d.total), 0);
+  const maxDay = (data || []).find((d) => d.total === maxDaySpend);
+  const deviationPct = Math.round(Math.abs(deviation - 1) * 100);
+  const deviationUp = deviation > 1;
+  const tickColor = isDark ? "#44445A" : "#6C6C70";
+  const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
+  const fmtY = (v) =>
+    v >= 100000
+      ? `₹${(v / 100000).toFixed(1)}L`
+      : v >= 1000
+      ? `₹${(v / 1000).toFixed(0)}k`
+      : `₹${v}`;
+
+  return (
+    <div
+      style={{
+        background: "var(--bg-surface)",
+        borderRadius: "16px",
+        padding: "20px",
+        boxShadow: "var(--shadow-card)",
+        marginTop: "12px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          marginBottom: "20px",
+        }}
+      >
+        <div>
+          <p
+            style={{
+              fontSize: "11px",
+              fontWeight: "700",
+              color: "var(--text-3)",
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+              marginBottom: "6px",
+            }}
+          >
+            Spending Velocity
+          </p>
+          <p
+            style={{
+              fontSize: "28px",
+              fontWeight: "800",
+              color: "var(--text-1)",
+              letterSpacing: "-1.5px",
+              fontVariantNumeric: "tabular-nums",
+              lineHeight: 1,
+            }}
+          >
+            ₹{totalSoFar.toLocaleString("en-IN")}
+          </p>
+          {isCurrentMonth && daysRemaining > 0 && (
+            <div style={{ marginTop: "8px" }}>
+              <p style={{ fontSize: "13px", color: "var(--text-3)" }}>
+                Projected{" "}
+                <span
+                  style={{
+                    color: "var(--accent-dim)",
+                    fontWeight: "700",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  ₹{rangeLow.toLocaleString("en-IN")} – ₹
+                  {rangeHigh.toLocaleString("en-IN")}
+                </span>
+              </p>
+              {historicalMonths.length > 0 && deviationPct > 0 && (
+                <p
+                  style={{
+                    fontSize: "12px",
+                    marginTop: "3px",
+                    color: deviationUp ? "var(--red)" : "var(--green)",
+                    fontWeight: "600",
+                  }}
+                >
+                  {deviationUp ? "↑" : "↓"} {deviationPct}%{" "}
+                  {deviationUp ? "above" : "below"} your usual pace
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+        {maxDay && maxDaySpend > 0 && (
+          <div
+            style={{
+              textAlign: "right",
+              padding: "10px 14px",
+              background: "var(--red-bg)",
+              borderRadius: "10px",
+              border: "1px solid var(--red-border)",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "10px",
+                color: "var(--text-3)",
+                fontWeight: "600",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                marginBottom: "3px",
+              }}
+            >
+              Biggest day
+            </p>
+            <p
+              style={{
+                fontSize: "14px",
+                fontWeight: "800",
+                color: "var(--red)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              ₹{Number(maxDaySpend).toLocaleString("en-IN")}
+            </p>
+            <p
+              style={{
+                fontSize: "11px",
+                color: "var(--text-4)",
+                marginTop: "2px",
+              }}
+            >
+              {new Date(maxDay.date_only + "T00:00:00").toLocaleDateString(
+                "en-IN",
+                { day: "numeric", month: "short" }
+              )}
+            </p>
+          </div>
+        )}
+      </div>
+      <ResponsiveContainer width="100%" height={200}>
+        <ComposedChart
+          data={chartData}
+          margin={{ top: 5, right: 5, left: 0, bottom: 0 }}
+        >
+          <defs>
+            <linearGradient id="velGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop
+                offset="5%"
+                stopColor="#FF4D6D"
+                stopOpacity={isDark ? 0.25 : 0.12}
+              />
+              <stop offset="95%" stopColor="#FF4D6D" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={gridColor}
+            vertical={false}
+          />
+          <XAxis
+            dataKey="day"
+            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
+            tickLine={false}
+            axisLine={false}
+            interval={Math.floor(daysInMonth / 6)}
+          />
+          <YAxis
+            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={fmtY}
+            width={45}
+          />
+          <Tooltip
+            content={<VelocityTooltip />}
+            cursor={{
+              stroke: "var(--border-strong)",
+              strokeWidth: 1,
+              strokeDasharray: "4 4",
+            }}
+          />
+          <Area
+            type="monotone"
+            dataKey="actual"
+            stroke="#FF4D6D"
+            strokeWidth={2.5}
+            fill="url(#velGradient)"
+            dot={false}
+            activeDot={{
+              r: 4,
+              fill: "#FF4D6D",
+              stroke: isDark ? "#111115" : "#fff",
+              strokeWidth: 2,
+            }}
+            connectNulls={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="projected"
+            stroke="var(--accent-dim)"
+            strokeWidth={1.5}
+            strokeDasharray="5 5"
+            dot={false}
+            activeDot={{ r: 3, fill: "var(--accent-dim)" }}
+            connectNulls={false}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginTop: "12px",
+          flexWrap: "wrap",
+          gap: "8px",
+        }}
+      >
+        <div style={{ display: "flex", gap: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <div
+              style={{
+                width: "20px",
+                height: "2.5px",
+                background: "#FF4D6D",
+                borderRadius: "2px",
+              }}
+            />
+            <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
+              Actual
+            </span>
+          </div>
+          {isCurrentMonth && daysRemaining > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div
+                style={{
+                  width: "20px",
+                  height: "0",
+                  borderTop: "2px dashed var(--accent-dim)",
+                }}
+              />
+              <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
+                Projected
+              </span>
+            </div>
+          )}
+        </div>
+        {historicalMonths.length > 0 && (
+          <span style={{ fontSize: "11px", color: "var(--text-4)" }}>
+            Based on {historicalMonths.length} month
+            {historicalMonths.length > 1 ? "s" : ""} history · avg ₹
+            {Math.round(historicalAvg).toLocaleString("en-IN")}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Shared components (outside parent to avoid remount) ───
 function AppHeader({
   onLogout,
@@ -693,7 +1037,6 @@ function AppHeader({
         zIndex: 10,
       }}
     >
-      {/* Left: Logo */}
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
         <img
           src="/icons/icon-192.png"
@@ -715,8 +1058,6 @@ function AppHeader({
           Outgo
         </span>
       </div>
-
-      {/* Centre: Month switcher — desktop only */}
       <div
         className="hide-mobile"
         style={{ display: "flex", alignItems: "center", gap: "8px" }}
@@ -809,8 +1150,6 @@ function AppHeader({
           </button>
         )}
       </div>
-
-      {/* Right: Nav + actions */}
       <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
         <div className="hide-mobile" style={{ display: "flex", gap: "0" }}>
           <Link
@@ -1154,6 +1493,7 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState(null);
   const [pieData, setPieData] = useState([]);
   const [heatmapData, setHeatmapData] = useState([]);
+  const [monthlyTotals, setMonthlyTotals] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [messages, setMessages] = useState([
     {
@@ -1166,16 +1506,20 @@ export default function DashboardPage() {
   const messagesEndRef = useRef(null);
 
   const loadData = useCallback(async (month, year) => {
-    try {
-      const [sumRes, pieRes, heatRes] = await Promise.all([
-        getSummary(month, year),
-        getPieSummary(month, year),
-        getHeatmap(month, year),
-      ]);
-      if (sumRes?.success) setSummary(sumRes.data);
-      if (pieRes?.success) setPieData(pieRes.data);
-      if (heatRes?.success) setHeatmapData(heatRes.data);
-    } catch {}
+    const [sumRes, pieRes, heatRes, totalsRes] = await Promise.allSettled([
+      getSummary(month, year),
+      getPieSummary(month, year),
+      getHeatmap(month, year),
+      getMonthlyTotals(),
+    ]);
+    if (sumRes.status === "fulfilled" && sumRes.value?.success)
+      setSummary(sumRes.value.data);
+    if (pieRes.status === "fulfilled" && pieRes.value?.success)
+      setPieData(pieRes.value.data);
+    if (heatRes.status === "fulfilled" && heatRes.value?.success)
+      setHeatmapData(heatRes.value.data);
+    if (totalsRes.status === "fulfilled" && totalsRes.value?.success)
+      setMonthlyTotals(totalsRes.value.data);
     setDataLoading(false);
   }, []);
 
@@ -1188,7 +1532,6 @@ export default function DashboardPage() {
     loadData(selectedMonth, selectedYear);
   }, [loadData, router]);
 
-  // Reload when month/year changes
   useEffect(() => {
     setDataLoading(true);
     setSummary(null);
@@ -1260,7 +1603,6 @@ export default function DashboardPage() {
       setSelectedYear((y) => y - 1);
     } else setSelectedMonth((m) => m - 1);
   };
-
   const goForward = () => {
     if (isCurrentMonthSelected) return;
     if (selectedMonth === 12) {
@@ -1269,14 +1611,12 @@ export default function DashboardPage() {
     } else setSelectedMonth((m) => m + 1);
   };
 
-  const fmt = (n) => (n ? `₹${Number(n).toLocaleString("en-IN")}` : "₹0");
   const isCurrentMonthSelected =
     selectedMonth === now.getMonth() + 1 && selectedYear === now.getFullYear();
-  // Mark user as returning once they have any transaction ever
+
   useEffect(() => {
-    if (summary?.total_transactions > 0) {
+    if (summary?.total_transactions > 0)
       localStorage.setItem("has_transactions", "true");
-    }
   }, [summary]);
 
   const isReturningUser =
@@ -1521,7 +1861,7 @@ export default function DashboardPage() {
         className="mobile-main"
         style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 20px" }}
       >
-        {/* Mobile month switcher — shown below header on mobile only */}
+        {/* Mobile month switcher */}
         <div
           className="show-mobile"
           style={{
@@ -1606,7 +1946,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Summary cards */}
         {isEmptyMonth ? (
           <div
             style={{
@@ -1660,8 +1999,8 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
+            {/* KPI Cards */}
             <div className="cards-grid">
-              {/* Total Spent */}
               <div
                 style={{
                   background: "var(--bg-surface)",
@@ -1706,7 +2045,6 @@ export default function DashboardPage() {
                   {MONTHS[selectedMonth - 1]} {selectedYear}
                 </p>
               </div>
-              {/* Transactions */}
               <div
                 style={{
                   background: "var(--bg-surface)",
@@ -1751,7 +2089,6 @@ export default function DashboardPage() {
                   this month
                 </p>
               </div>
-              {/* Top Category */}
               <div
                 style={{
                   background: "var(--bg-surface)",
@@ -1811,7 +2148,7 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* Row 3: Pie Chart | Heatmap */}
+            {/* Row 3: Pie Chart | Trend */}
             <div className="bottom-grid">
               <div
                 style={{
@@ -1853,6 +2190,14 @@ export default function DashboardPage() {
                 selectedYear={selectedYear}
               />
             </div>
+
+            {/* Spending Velocity — full width */}
+            <SpendingVelocity
+              data={heatmapData}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              monthlyTotals={monthlyTotals}
+            />
           </>
         )}
       </main>
