@@ -6,9 +6,6 @@ import dynamic from "next/dynamic";
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -18,7 +15,6 @@ import {
   Line,
 } from "recharts";
 import {
-  Wallet,
   LayoutDashboard,
   Receipt,
   BarChart3,
@@ -28,11 +24,6 @@ import {
   PieChart,
   Sparkles,
   ArrowRight,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
-  Activity,
-  Zap,
   ChevronLeft,
   ChevronRight,
   Sun,
@@ -845,181 +836,6 @@ function SpendingVelocity({
             {Math.round(historicalAvg).toLocaleString("en-IN")}
           </span>
         )}
-      </div>
-    </div>
-  );
-}
-
-// ── Monthly bar tooltip ───────────────────────────────────
-function MonthlyBarTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  const value = payload[0].value;
-  return (
-    <div
-      style={{
-        background: "var(--bg-elevated)",
-        border: "1px solid var(--border)",
-        borderRadius: "10px",
-        padding: "10px 14px",
-        boxShadow: "var(--shadow-elevated)",
-      }}
-    >
-      <p
-        style={{
-          fontSize: "11px",
-          color: "var(--text-3)",
-          marginBottom: "4px",
-        }}
-      >
-        {label}
-      </p>
-      <p
-        style={{
-          fontSize: "15px",
-          fontWeight: "700",
-          color: "var(--red)",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        ₹{Number(value).toLocaleString("en-IN")}
-      </p>
-    </div>
-  );
-}
-
-// ── Monthly Overview bar chart (last 12 months) ───────────
-function MonthlyOverview({ monthlyTotals = [], selectedMonth, selectedYear }) {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-  const now = new Date();
-  const currentMonthLabel = new Date(
-    selectedYear || now.getFullYear(),
-    (selectedMonth || now.getMonth() + 1) - 1,
-    1
-  ).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
-
-  const data = (monthlyTotals || []).map((m) => ({
-    month: m.month,
-    total: m.total,
-    isCurrent: m.month === currentMonthLabel,
-  }));
-
-  if (!data.length) return null;
-
-  const avg = data.reduce((s, d) => s + d.total, 0) / data.length;
-  const highest = data.reduce(
-    (max, d) => (d.total > max.total ? d : max),
-    data[0]
-  );
-  const tickColor = isDark ? "#44445A" : "#6C6C70";
-  const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
-  const fmtY = (v) =>
-    v >= 100000
-      ? `₹${(v / 100000).toFixed(1)}L`
-      : v >= 1000
-      ? `₹${(v / 1000).toFixed(0)}k`
-      : `₹${v}`;
-
-  return (
-    <div
-      style={{
-        background: "var(--bg-surface)",
-        borderRadius: "16px",
-        padding: "20px",
-        boxShadow: "var(--shadow-card)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          marginBottom: "16px",
-        }}
-      >
-        <div>
-          <p
-            style={{
-              fontSize: "11px",
-              fontWeight: "700",
-              color: "var(--text-3)",
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-              marginBottom: "6px",
-            }}
-          >
-            Monthly Overview
-          </p>
-          <p style={{ fontSize: "12px", color: "var(--text-4)" }}>
-            Avg ₹{Math.round(avg).toLocaleString("en-IN")}/month · Highest{" "}
-            {highest.month}
-          </p>
-        </div>
-      </div>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke={gridColor}
-            vertical={false}
-          />
-          <XAxis
-            dataKey="month"
-            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
-            tickLine={false}
-            axisLine={false}
-            interval={data.length > 8 ? 1 : 0}
-          />
-          <YAxis
-            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={fmtY}
-            width={45}
-          />
-          <Tooltip
-            content={<MonthlyBarTooltip />}
-            cursor={{ fill: "var(--bg-inset)" }}
-          />
-          <Bar dataKey="total" radius={[6, 6, 0, 0]} maxBarSize={36}>
-            {data.map((entry, i) => (
-              <Cell
-                key={i}
-                fill={entry.isCurrent ? "var(--accent)" : "#FF4D6D"}
-                fillOpacity={entry.isCurrent ? 1 : isDark ? 0.55 : 0.4}
-              />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-      <div style={{ display: "flex", gap: "16px", marginTop: "12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <div
-            style={{
-              width: "10px",
-              height: "10px",
-              borderRadius: "3px",
-              background: "var(--accent)",
-            }}
-          />
-          <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
-            Selected month
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <div
-            style={{
-              width: "10px",
-              height: "10px",
-              borderRadius: "3px",
-              background: "#FF4D6D",
-              opacity: 0.5,
-            }}
-          />
-          <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
-            Other months
-          </span>
-        </div>
       </div>
     </div>
   );
@@ -2245,11 +2061,6 @@ export default function DashboardPage() {
                   selectedMonth={selectedMonth}
                   selectedYear={selectedYear}
                   monthlyTotals={monthlyTotals}
-                />
-                <MonthlyOverview
-                  monthlyTotals={monthlyTotals}
-                  selectedMonth={selectedMonth}
-                  selectedYear={selectedYear}
                 />
               </div>
             )}
