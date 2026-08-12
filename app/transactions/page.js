@@ -37,6 +37,7 @@ import {
   Gift,
   HandHeart,
   PiggyBank,
+  TrendingUp,
   CreditCard,
   Briefcase,
   Printer,
