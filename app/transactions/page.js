@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Wallet,
   LayoutDashboard,
   Receipt,
   BarChart3,
@@ -14,6 +13,8 @@ import {
   Pencil,
   Check,
   Trash2,
+  Sun,
+  Moon,
   UtensilsCrossed,
   Car,
   ShoppingBag,
@@ -21,8 +22,26 @@ import {
   Gamepad2,
   Heart,
   Grid3X3,
-  Sun,
-  Moon,
+  Home,
+  Zap,
+  ShoppingCart,
+  Plane,
+  Shirt,
+  Smile,
+  Dumbbell,
+  Tv,
+  Wifi,
+  Baby,
+  PawPrint,
+  Gift,
+  HandHeart,
+  PiggyBank,
+  CreditCard,
+  Briefcase,
+  Printer,
+  Monitor,
+  Wrench,
+  MoreHorizontal,
 } from "lucide-react";
 import {
   getTransactions,
@@ -35,63 +54,113 @@ import {
 import Toast, { showToast } from "@/components/Toast";
 import { useTheme } from "@/lib/ThemeContext";
 
-const ICON_OPTIONS = [
-  UtensilsCrossed,
-  Car,
-  ShoppingBag,
-  FileText,
-  Gamepad2,
-  Heart,
-  Grid3X3,
-  Wallet,
-];
-
-const COLOR_OPTIONS = [
-  { bg: "var(--accent-bg)", text: "var(--accent-dim)" },
-  { bg: "var(--green-bg)", text: "var(--green-dim)" },
-  { bg: "rgba(139,92,246,0.15)", text: "#A78BFA" },
-  { bg: "rgba(6,182,212,0.15)", text: "#22D3EE" },
-  { bg: "rgba(245,158,11,0.15)", text: "#FCD34D" },
-  { bg: "var(--red-bg)", text: "var(--red-dim)" },
-  { bg: "rgba(249,115,22,0.15)", text: "#FB923C" },
-  { bg: "rgba(236,72,153,0.15)", text: "#F472B6" },
-];
-
 const CAT_META = {
-  "Food & Dining": {
-    bg: "var(--accent-bg)",
-    text: "var(--accent-dim)",
+  Housing: { bg: "rgba(99,102,241,0.15)", text: "#818CF8", Icon: Home },
+  Utilities: { bg: "rgba(6,182,212,0.15)", text: "#22D3EE", Icon: Zap },
+  Groceries: {
+    bg: "rgba(16,185,129,0.15)",
+    text: "#34D399",
+    Icon: ShoppingCart,
+  },
+  "Dining Out": {
+    bg: "rgba(99,102,241,0.15)",
+    text: "#818CF8",
     Icon: UtensilsCrossed,
   },
-  Transport: { bg: "var(--green-bg)", text: "var(--green-dim)", Icon: Car },
-  Shopping: { bg: "rgba(139,92,246,0.15)", text: "#A78BFA", Icon: ShoppingBag },
-  "Bills & Utilities": {
-    bg: "rgba(6,182,212,0.15)",
-    text: "#22D3EE",
-    Icon: FileText,
+  Transportation: { bg: "rgba(16,185,129,0.15)", text: "#34D399", Icon: Car },
+  Fuel: { bg: "rgba(245,158,11,0.15)", text: "#FCD34D", Icon: Car },
+  "Health & Medical": {
+    bg: "rgba(239,68,68,0.15)",
+    text: "#FCA5A5",
+    Icon: Heart,
   },
+  Insurance: { bg: "rgba(6,182,212,0.15)", text: "#22D3EE", Icon: FileText },
+  Education: { bg: "rgba(99,102,241,0.15)", text: "#818CF8", Icon: FileText },
   Entertainment: {
     bg: "rgba(245,158,11,0.15)",
     text: "#FCD34D",
     Icon: Gamepad2,
   },
-  Health: { bg: "var(--red-bg)", text: "var(--red-dim)", Icon: Heart },
-  General: { bg: "rgba(249,115,22,0.15)", text: "#FB923C", Icon: Grid3X3 },
+  Travel: { bg: "rgba(6,182,212,0.15)", text: "#22D3EE", Icon: Plane },
+  Clothing: { bg: "rgba(139,92,246,0.15)", text: "#A78BFA", Icon: Shirt },
+  "Personal Care": {
+    bg: "rgba(236,72,153,0.15)",
+    text: "#F472B6",
+    Icon: Smile,
+  },
+  Fitness: { bg: "rgba(16,185,129,0.15)", text: "#34D399", Icon: Dumbbell },
+  Subscriptions: { bg: "rgba(245,158,11,0.15)", text: "#FCD34D", Icon: Tv },
+  Phone: { bg: "rgba(6,182,212,0.15)", text: "#22D3EE", Icon: Phone },
+  Internet: { bg: "rgba(6,182,212,0.15)", text: "#22D3EE", Icon: Wifi },
+  Childcare: { bg: "rgba(236,72,153,0.15)", text: "#F472B6", Icon: Baby },
+  Pets: { bg: "rgba(16,185,129,0.15)", text: "#34D399", Icon: PawPrint },
+  Gifts: { bg: "rgba(236,72,153,0.15)", text: "#F472B6", Icon: Gift },
+  Donations: { bg: "rgba(16,185,129,0.15)", text: "#34D399", Icon: HandHeart },
+  Savings: { bg: "rgba(99,102,241,0.15)", text: "#818CF8", Icon: PiggyBank },
+  Investments: {
+    bg: "rgba(16,185,129,0.15)",
+    text: "#34D399",
+    Icon: TrendingUp,
+  },
+  Taxes: { bg: "rgba(239,68,68,0.15)", text: "#FCA5A5", Icon: Receipt },
+  "Loan Repayments": {
+    bg: "rgba(239,68,68,0.15)",
+    text: "#FCA5A5",
+    Icon: CreditCard,
+  },
+  "Business Expenses": {
+    bg: "rgba(99,102,241,0.15)",
+    text: "#818CF8",
+    Icon: Briefcase,
+  },
+  "Office Supplies": {
+    bg: "rgba(245,158,11,0.15)",
+    text: "#FCD34D",
+    Icon: Printer,
+  },
+  Electronics: { bg: "rgba(6,182,212,0.15)", text: "#22D3EE", Icon: Monitor },
+  "Home Maintenance": {
+    bg: "rgba(245,158,11,0.15)",
+    text: "#FCD34D",
+    Icon: Wrench,
+  },
+  Miscellaneous: {
+    bg: "rgba(100,116,139,0.15)",
+    text: "#94A3B8",
+    Icon: MoreHorizontal,
+  },
 };
 
-// Same category name always gets same icon + color
-export const getCatMeta = (category) => {
+const COLOR_OPTIONS = [
+  { bg: "rgba(99,102,241,0.15)", text: "#818CF8" },
+  { bg: "rgba(16,185,129,0.15)", text: "#34D399" },
+  { bg: "rgba(139,92,246,0.15)", text: "#A78BFA" },
+  { bg: "rgba(6,182,212,0.15)", text: "#22D3EE" },
+  { bg: "rgba(245,158,11,0.15)", text: "#FCD34D" },
+  { bg: "rgba(239,68,68,0.15)", text: "#FCA5A5" },
+  { bg: "rgba(249,115,22,0.15)", text: "#FB923C" },
+  { bg: "rgba(236,72,153,0.15)", text: "#F472B6" },
+];
+
+const ICON_OPTIONS = [
+  UtensilsCrossed,
+  Car,
+  ShoppingCart,
+  FileText,
+  Gamepad2,
+  Heart,
+  Grid3X3,
+  MoreHorizontal,
+];
+
+const getCatMeta = (category) => {
   if (!category)
     return {
-      bg: COLOR_OPTIONS[0].bg,
-      text: COLOR_OPTIONS[0].text,
-      Icon: Grid3X3,
+      bg: "rgba(100,116,139,0.15)",
+      text: "#94A3B8",
+      Icon: MoreHorizontal,
     };
-
-  // Exact match first — known categories get correct icon
   if (CAT_META[category]) return CAT_META[category];
-
-  // Unknown/AI-generated category — hash for consistent color + icon
   let hash = 0;
   for (let i = 0; i < category.length; i++) {
     hash = (hash * 31 + category.charCodeAt(i)) & 0xffffffff;
