@@ -1437,32 +1437,33 @@ function AppHeader({
             <BarChart3 size={14} strokeWidth={2} />
             Reports
           </Link>
-          <button
-            onClick={onLogout}
-            style={{
-              padding: "7px 12px",
-              background: "transparent",
-              border: "none",
-              borderRadius: "8px",
-              color: "var(--text-3)",
-              cursor: "pointer",
-              fontSize: "13px",
-              fontWeight: "500",
-              display: "flex",
-              alignItems: "center",
-              gap: "5px",
-              transition: "color 100ms ease",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.color = "var(--text-1)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.color = "var(--text-3)")
-            }
-          >
-            <LogOut size={14} strokeWidth={2} />
-          </button>
+          
         </div>
+        <button
+          onClick={onLogout}
+          style={{
+            padding: "7px 12px",
+            background: "transparent",
+            border: "none",
+            borderRadius: "8px",
+            color: "var(--text-3)",
+            cursor: "pointer",
+            fontSize: "13px",
+            fontWeight: "500",
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+            transition: "color 100ms ease",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.color = "var(--text-1)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.color = "var(--text-3)")
+          }
+        >
+          <LogOut size={14} strokeWidth={2} />
+        </button>
         <button
           onClick={toggleTheme}
           style={{

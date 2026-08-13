@@ -1255,25 +1255,25 @@ export default function TransactionsPage() {
               <BarChart3 size={14} strokeWidth={2} />
               Reports
             </Link>
-            <button
-              onClick={handleLogout}
-              style={{
-                padding: "7px 14px",
-                background: "transparent",
-                border: "none",
-                borderRadius: "8px",
-                color: "var(--text-3)",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: "500",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-            >
-              <LogOut size={14} strokeWidth={2} />
-            </button>
           </div>
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: "7px 14px",
+              background: "transparent",
+              border: "none",
+              borderRadius: "8px",
+              color: "var(--text-3)",
+              cursor: "pointer",
+              fontSize: "13px",
+              fontWeight: "500",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <LogOut size={14} strokeWidth={2} />
+          </button>
           <button
             onClick={toggleTheme}
             title="Toggle theme"
