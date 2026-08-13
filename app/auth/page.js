@@ -25,6 +25,7 @@ export default function AuthPage() {
     if (!msg) return "";
     if (typeof msg === "string") return msg;
     if (typeof msg === "object") {
+      if (msg.detail) return msg.detail;
       const first = Object.values(msg)[0];
       return Array.isArray(first) ? first[0] : String(first);
     }
@@ -48,7 +49,8 @@ export default function AuthPage() {
           router.push("/dashboard");
         } else {
           setError(
-            parseMessage(res.message) || "Login failed. Check your credentials."
+            parseMessage(res.message || res.detail) ||
+              "Login failed. Check your credentials."
           );
         }
       } else {
