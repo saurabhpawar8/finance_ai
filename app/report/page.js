@@ -17,6 +17,7 @@ import {
   Sun,
   Moon,
   AlertCircle,
+  Wallet2,
 } from "lucide-react";
 import { getReport, fetchMonthlyReport, removeTokens } from "@/lib/api";
 import Toast, { showToast } from "@/components/Toast";
@@ -471,6 +472,24 @@ export default function ReportPage() {
               <ArrowLeft size={14} strokeWidth={2} />
               Dashboard
             </Link>
+            <Link
+              href="/budgets"
+              style={{
+                padding: "7px 14px",
+                background: "transparent",
+                borderRadius: "8px",
+                color: "var(--text-3)",
+                textDecoration: "none",
+                fontSize: "13px",
+                fontWeight: "500",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <Wallet2 size={14} strokeWidth={2} />
+              Budgets
+            </Link>
             <button
               onClick={handleLogout}
               style={{
@@ -838,6 +857,7 @@ export default function ReportPage() {
         {[
           { href: "/dashboard", Icon: LayoutDashboard, label: "Dashboard" },
           { href: "/transactions", Icon: Receipt, label: "Transactions" },
+          { href: "/budgets", Icon: Wallet2, label: "Budgets" },
           { href: "/report", Icon: BarChart3, label: "Reports" },
         ].map(({ href, Icon, label }) => {
           const active = label === "Reports";

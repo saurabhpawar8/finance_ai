@@ -6,6 +6,9 @@ import dynamic from "next/dynamic";
 import {
   AreaChart,
   Area,
+  BarChart,
+  Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -15,6 +18,7 @@ import {
   Line,
 } from "recharts";
 import {
+  Wallet,
   LayoutDashboard,
   Receipt,
   BarChart3,
@@ -24,12 +28,18 @@ import {
   PieChart,
   Sparkles,
   ArrowRight,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  Activity,
+  Zap,
   ChevronLeft,
   ChevronRight,
   Sun,
   Moon,
   LayoutGrid,
   BarChart2,
+  Wallet2,
 } from "lucide-react";
 import {
   getSummary,
@@ -38,6 +48,7 @@ import {
   removeTokens,
   getHeatmap,
   getMonthlyTotals,
+  getBudgets,
 } from "@/lib/api";
 import Toast, { showToast } from "@/components/Toast";
 import { useTheme } from "@/lib/ThemeContext";
@@ -841,6 +852,372 @@ function SpendingVelocity({
   );
 }
 
+// ── Monthly bar tooltip ───────────────────────────────────
+function MonthlyBarTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  const value = payload[0].value;
+  return (
+    <div
+      style={{
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+        borderRadius: "10px",
+        padding: "10px 14px",
+        boxShadow: "var(--shadow-elevated)",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "11px",
+          color: "var(--text-3)",
+          marginBottom: "4px",
+        }}
+      >
+        {label}
+      </p>
+      <p
+        style={{
+          fontSize: "15px",
+          fontWeight: "700",
+          color: "var(--red)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        ₹{Number(value).toLocaleString("en-IN")}
+      </p>
+    </div>
+  );
+}
+
+// ── Monthly Overview bar chart (last 12 months) ───────────
+function MonthlyOverview({ monthlyTotals = [], selectedMonth, selectedYear }) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const now = new Date();
+  const currentMonthLabel = new Date(
+    selectedYear || now.getFullYear(),
+    (selectedMonth || now.getMonth() + 1) - 1,
+    1
+  ).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+
+  const data = (monthlyTotals || []).map((m) => ({
+    month: m.month,
+    total: m.total,
+    isCurrent: m.month === currentMonthLabel,
+  }));
+
+  if (!data.length) return null;
+
+  const avg = data.reduce((s, d) => s + d.total, 0) / data.length;
+  const highest = data.reduce(
+    (max, d) => (d.total > max.total ? d : max),
+    data[0]
+  );
+  const tickColor = isDark ? "#44445A" : "#6C6C70";
+  const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
+  const fmtY = (v) =>
+    v >= 100000
+      ? `₹${(v / 100000).toFixed(1)}L`
+      : v >= 1000
+      ? `₹${(v / 1000).toFixed(0)}k`
+      : `₹${v}`;
+
+  return (
+    <div
+      style={{
+        background: "var(--bg-surface)",
+        borderRadius: "16px",
+        padding: "20px",
+        boxShadow: "var(--shadow-card)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          marginBottom: "16px",
+        }}
+      >
+        <div>
+          <p
+            style={{
+              fontSize: "11px",
+              fontWeight: "700",
+              color: "var(--text-3)",
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+              marginBottom: "6px",
+            }}
+          >
+            Monthly Overview
+          </p>
+          <p style={{ fontSize: "12px", color: "var(--text-4)" }}>
+            Avg ₹{Math.round(avg).toLocaleString("en-IN")}/month · Highest{" "}
+            {highest.month}
+          </p>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={gridColor}
+            vertical={false}
+          />
+          <XAxis
+            dataKey="month"
+            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
+            tickLine={false}
+            axisLine={false}
+            interval={data.length > 8 ? 1 : 0}
+          />
+          <YAxis
+            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={fmtY}
+            width={45}
+          />
+          <Tooltip
+            content={<MonthlyBarTooltip />}
+            cursor={{ fill: "var(--bg-inset)" }}
+          />
+          <Bar dataKey="total" radius={[6, 6, 0, 0]} maxBarSize={36}>
+            {data.map((entry, i) => (
+              <Cell
+                key={i}
+                fill={entry.isCurrent ? "var(--accent)" : "#FF4D6D"}
+                fillOpacity={entry.isCurrent ? 1 : isDark ? 0.55 : 0.4}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <div style={{ display: "flex", gap: "16px", marginTop: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div
+            style={{
+              width: "10px",
+              height: "10px",
+              borderRadius: "3px",
+              background: "var(--accent)",
+            }}
+          />
+          <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
+            Selected month
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div
+            style={{
+              width: "10px",
+              height: "10px",
+              borderRadius: "3px",
+              background: "#FF4D6D",
+              opacity: 0.5,
+            }}
+          />
+          <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
+            Other months
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Budget widget (top urgent budgets) ────────────────────
+function BudgetWidget({ budgets, spendMap }) {
+  if (!budgets || budgets.length === 0) {
+    return (
+      <div
+        style={{
+          background: "var(--bg-surface)",
+          borderRadius: "16px",
+          padding: "20px",
+          boxShadow: "var(--shadow-card)",
+        }}
+      >
+        <p
+          style={{
+            fontSize: "11px",
+            fontWeight: "700",
+            color: "var(--text-3)",
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+            marginBottom: "10px",
+          }}
+        >
+          Budgets
+        </p>
+        <p
+          style={{
+            fontSize: "13px",
+            color: "var(--text-3)",
+            marginBottom: "14px",
+            lineHeight: "1.6",
+          }}
+        >
+          Set spending limits per category to stay on track.
+        </p>
+        <Link
+          href="/budgets"
+          style={{
+            fontSize: "13px",
+            color: "var(--accent-dim)",
+            fontWeight: "600",
+            textDecoration: "none",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "4px",
+          }}
+        >
+          Create a budget <ArrowRight size={13} strokeWidth={2} />
+        </Link>
+      </div>
+    );
+  }
+
+  // Sort by urgency: over-budget first, then by % used descending
+  const withStatus = budgets.map((b) => {
+    const spent = spendMap[b.category] || 0;
+    const pct = b.budget_amount > 0 ? (spent / b.budget_amount) * 100 : 0;
+    return { ...b, spent, pct };
+  });
+  const sorted = [...withStatus].sort((a, b) => b.pct - a.pct).slice(0, 3);
+  const overCount = withStatus.filter((b) => b.pct >= 100).length;
+
+  return (
+    <div
+      style={{
+        background: "var(--bg-surface)",
+        borderRadius: "16px",
+        padding: "20px",
+        boxShadow: "var(--shadow-card)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "14px",
+        }}
+      >
+        <p
+          style={{
+            fontSize: "11px",
+            fontWeight: "700",
+            color: "var(--text-3)",
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+          }}
+        >
+          Budgets
+        </p>
+        {overCount > 0 && (
+          <span
+            style={{
+              fontSize: "11px",
+              color: "var(--red)",
+              fontWeight: "700",
+              background: "var(--red-bg)",
+              padding: "2px 8px",
+              borderRadius: "10px",
+            }}
+          >
+            {overCount} over limit
+          </span>
+        )}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+          marginBottom: "16px",
+        }}
+      >
+        {sorted.map((b) => {
+          const color =
+            b.pct >= 100
+              ? "var(--red)"
+              : b.pct >= 80
+              ? "var(--yellow)"
+              : "var(--green)";
+          const pct = Math.min(b.pct, 100);
+          return (
+            <div key={b.id}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "6px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "var(--text-1)",
+                  }}
+                >
+                  {b.category}
+                </span>
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--text-3)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  ₹{b.spent.toLocaleString("en-IN")} / ₹
+                  {b.budget_amount.toLocaleString("en-IN")}
+                </span>
+              </div>
+              <div
+                style={{
+                  height: "6px",
+                  background: "var(--border-subtle)",
+                  borderRadius: "3px",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${pct}%`,
+                    background: color,
+                    borderRadius: "3px",
+                    transition: "width 0.6s ease",
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <Link
+        href="/budgets"
+        style={{
+          fontSize: "13px",
+          color: "var(--accent-dim)",
+          fontWeight: "600",
+          textDecoration: "none",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "4px",
+        }}
+      >
+        Manage budgets <ArrowRight size={13} strokeWidth={2} />
+      </Link>
+    </div>
+  );
+}
+
 // ── Shared components (outside parent to avoid remount) ───
 function AppHeader({
   onLogout,
@@ -1009,6 +1386,31 @@ function AppHeader({
           >
             <Receipt size={14} strokeWidth={2} />
             Transactions
+          </Link>
+          <Link
+            href="/budgets"
+            style={{
+              padding: "7px 12px",
+              background: "transparent",
+              borderRadius: "8px",
+              color: "var(--text-3)",
+              textDecoration: "none",
+              fontSize: "13px",
+              fontWeight: "500",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              transition: "color 100ms ease",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--text-1)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-3)")
+            }
+          >
+            <Wallet2 size={14} strokeWidth={2} />
+            Budgets
           </Link>
           <Link
             href="/report"
@@ -1275,6 +1677,7 @@ function BottomTabs({ active }) {
       {[
         { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
         { href: "/transactions", icon: Receipt, label: "Transactions" },
+        { href: "/budgets", icon: Wallet2, label: "Budgets" },
         { href: "/report", icon: BarChart3, label: "Reports" },
       ].map(({ href, icon: Icon, label }) => {
         const isActive = active === label.toLowerCase();
@@ -1361,6 +1764,7 @@ export default function DashboardPage() {
   const [pieData, setPieData] = useState([]);
   const [heatmapData, setHeatmapData] = useState([]);
   const [monthlyTotals, setMonthlyTotals] = useState([]);
+  const [budgets, setBudgets] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [messages, setMessages] = useState([
@@ -1374,12 +1778,14 @@ export default function DashboardPage() {
   const messagesEndRef = useRef(null);
 
   const loadData = useCallback(async (month, year) => {
-    const [sumRes, pieRes, heatRes, totalsRes] = await Promise.allSettled([
-      getSummary(month, year),
-      getPieSummary(month, year),
-      getHeatmap(month, year),
-      getMonthlyTotals(),
-    ]);
+    const [sumRes, pieRes, heatRes, totalsRes, budRes] =
+      await Promise.allSettled([
+        getSummary(month, year),
+        getPieSummary(month, year),
+        getHeatmap(month, year),
+        getMonthlyTotals(),
+        getBudgets(),
+      ]);
     if (sumRes.status === "fulfilled" && sumRes.value?.success)
       setSummary(sumRes.value.data);
     if (pieRes.status === "fulfilled" && pieRes.value?.success)
@@ -1388,7 +1794,7 @@ export default function DashboardPage() {
       setHeatmapData(heatRes.value.data);
     if (totalsRes.status === "fulfilled" && totalsRes.value?.success)
       setMonthlyTotals(totalsRes.value.data);
-    else console.log("monthlyTotals issue:", totalsRes);
+    if (budRes.status === "fulfilled") setBudgets(budRes.value?.results || []);
     setDataLoading(false);
   }, []);
 
@@ -1999,39 +2405,47 @@ export default function DashboardPage() {
 
             {/* ── Overview tab ── */}
             {activeTab === "overview" && (
-              <div
-                style={{
-                  background: "var(--bg-surface)",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  boxShadow: "var(--shadow-card)",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: "var(--text-3)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.8px",
-                    marginBottom: "16px",
-                  }}
-                >
-                  Spending by Category
-                </p>
+              <div className="bottom-grid">
                 <div
                   style={{
-                    flex: 1,
+                    background: "var(--bg-surface)",
+                    borderRadius: "16px",
+                    padding: "20px",
+                    boxShadow: "var(--shadow-card)",
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minHeight: "300px",
+                    flexDirection: "column",
                   }}
                 >
-                  <ExpensePieChart data={pieData} />
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      color: "var(--text-3)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.8px",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    Spending by Category
+                  </p>
+                  <div
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minHeight: "260px",
+                    }}
+                  >
+                    <ExpensePieChart data={pieData} />
+                  </div>
                 </div>
+                <BudgetWidget
+                  budgets={budgets}
+                  spendMap={Object.fromEntries(
+                    (pieData || []).map((c) => [c.category_name, c.total])
+                  )}
+                />
               </div>
             )}
 
@@ -2061,6 +2475,11 @@ export default function DashboardPage() {
                   selectedMonth={selectedMonth}
                   selectedYear={selectedYear}
                   monthlyTotals={monthlyTotals}
+                />
+                <MonthlyOverview
+                  monthlyTotals={monthlyTotals}
+                  selectedMonth={selectedMonth}
+                  selectedYear={selectedYear}
                 />
               </div>
             )}
