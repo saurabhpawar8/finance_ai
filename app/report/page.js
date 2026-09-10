@@ -982,56 +982,94 @@ function CompareView() {
             </div>
           )}
 
-          {/* New / dropped category callouts */}
+          {/* New / dropped category summary — single compact card */}
           {(newCategories.length > 0 || droppedCategories.length > 0) && (
             <div
-              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+              style={{
+                background: "var(--bg-surface)",
+                borderRadius: "16px",
+                padding: "18px 20px",
+                boxShadow: "var(--shadow-card)",
+              }}
             >
-              {newCategories.map((c) => (
-                <div
-                  key={c.category}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    padding: "12px 16px",
-                    background: "var(--red-bg)",
-                    borderRadius: "10px",
-                    border: "1px solid var(--red-border)",
-                  }}
-                >
-                  <span style={{ fontSize: "13px", color: "var(--red-dim)" }}>
-                    <b>New in {labelB}:</b> {c.category} — ₹
-                    {c.b.toLocaleString("en-IN")}{" "}
-                    <span style={{ color: "var(--text-3)" }}>
-                      (nothing in {labelA})
+              <p
+                style={{
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  color: "var(--text-3)",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  marginBottom: "12px",
+                }}
+              >
+                Categories that changed
+              </p>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+              >
+                {newCategories.map((c) => (
+                  <div
+                    key={c.category}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "6px 0",
+                    }}
+                  >
+                    <span
+                      style={{ fontSize: "12.5px", color: "var(--text-2)" }}
+                    >
+                      <span style={{ color: "var(--red)", fontWeight: "600" }}>
+                        New
+                      </span>{" "}
+                      · {c.category}
                     </span>
-                  </span>
-                </div>
-              ))}
-              {droppedCategories.map((c) => (
-                <div
-                  key={c.category}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    padding: "12px 16px",
-                    background: "var(--green-bg)",
-                    borderRadius: "10px",
-                    border: "1px solid var(--green-border)",
-                  }}
-                >
-                  <span style={{ fontSize: "13px", color: "var(--green-dim)" }}>
-                    <b>
-                      No {c.category} in {labelB}
-                    </b>{" "}
-                    <span style={{ color: "var(--text-3)" }}>
-                      (had ₹{c.a.toLocaleString("en-IN")} in {labelA})
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        color: "var(--red)",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      ₹{c.b.toLocaleString("en-IN")}
                     </span>
-                  </span>
-                </div>
-              ))}
+                  </div>
+                ))}
+                {droppedCategories.map((c) => (
+                  <div
+                    key={c.category}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "6px 0",
+                    }}
+                  >
+                    <span
+                      style={{ fontSize: "12.5px", color: "var(--text-2)" }}
+                    >
+                      <span
+                        style={{ color: "var(--green)", fontWeight: "600" }}
+                      >
+                        Dropped
+                      </span>{" "}
+                      · {c.category}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        color: "var(--text-4)",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      had ₹{c.a.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

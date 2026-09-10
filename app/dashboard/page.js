@@ -40,6 +40,7 @@ import {
   LayoutGrid,
   BarChart2,
   Wallet2,
+  X,
 } from "lucide-react";
 import {
   getSummary,
@@ -49,6 +50,7 @@ import {
   getHeatmap,
   getMonthlyTotals,
   getBudgets,
+  getTransactions,
 } from "@/lib/api";
 import Toast, { showToast } from "@/components/Toast";
 import { useTheme } from "@/lib/ThemeContext";
@@ -344,7 +346,7 @@ function TrendTooltip({ active, payload, label }) {
 }
 
 // ── Spending Trend chart ──────────────────────────────────
-function SpendingTrend({ data, selectedMonth, selectedYear }) {
+function SpendingTrend({ data, selectedMonth, selectedYear, onDayClick }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const now = new Date();
@@ -474,14 +476,31 @@ function SpendingTrend({ data, selectedMonth, selectedYear }) {
             fill="url(#trendGradient)"
             dot={false}
             activeDot={{
-              r: 4,
+              r: 5,
               fill: "#FF4D6D",
               stroke: isDark ? "#111115" : "#FFFFFF",
               strokeWidth: 2,
+              style: { cursor: onDayClick ? "pointer" : "default" },
+              onClick: (e, payload) => {
+                if (onDayClick && payload?.payload?.day)
+                  onDayClick(payload.payload.day);
+              },
             }}
           />
         </AreaChart>
       </ResponsiveContainer>
+      {onDayClick && (
+        <p
+          style={{
+            fontSize: "11px",
+            color: "var(--text-4)",
+            marginTop: "10px",
+            textAlign: "center",
+          }}
+        >
+          Tap any point to see that day's transactions
+        </p>
+      )}
     </div>
   );
 }
@@ -534,6 +553,7 @@ function SpendingVelocity({
   selectedMonth,
   selectedYear,
   monthlyTotals = [],
+  onDayClick,
 }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -782,10 +802,15 @@ function SpendingVelocity({
             fill="url(#velGradient)"
             dot={false}
             activeDot={{
-              r: 4,
+              r: 5,
               fill: "#FF4D6D",
               stroke: isDark ? "#111115" : "#fff",
               strokeWidth: 2,
+              style: { cursor: onDayClick ? "pointer" : "default" },
+              onClick: (e, payload) => {
+                if (onDayClick && payload?.payload?.day)
+                  onDayClick(payload.payload.day);
+              },
             }}
             connectNulls={false}
           />
@@ -801,6 +826,13 @@ function SpendingVelocity({
           />
         </ComposedChart>
       </ResponsiveContainer>
+      {onDayClick && (
+        <p
+          style={{ fontSize: "11px", color: "var(--text-4)", marginTop: "8px" }}
+        >
+          Tap the actual line to see that day's transactions
+        </p>
+      )}
       <div
         style={{
           display: "flex",
@@ -1218,6 +1250,255 @@ function BudgetWidget({ budgets, spendMap }) {
   );
 }
 
+// ── Day Detail modal ───────────────────────────────────────
+function DayDetailModal({ date, onClose }) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [transactions, setTransactions] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await getTransactions({ page_size: 100 });
+        const dayTx = (res?.results || []).filter((tx) => tx.date === date);
+        if (!cancelled) setTransactions(dayTx);
+      } catch {
+        if (!cancelled) setError("Could not connect. Please try again.");
+      }
+      if (!cancelled) setLoading(false);
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [date]);
+
+  const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const dayTotal = transactions.reduce(
+    (s, tx) => s + Number(tx.amount || 0),
+    0
+  );
+
+  return (
+    <div
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        backdropFilter: "blur(4px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 50,
+        padding: "20px",
+      }}
+    >
+      <div
+        style={{
+          background: "var(--bg-surface)",
+          borderRadius: "20px",
+          padding: "28px",
+          width: "100%",
+          maxWidth: "440px",
+          boxShadow: "var(--shadow-elevated)",
+          maxHeight: "85vh",
+          overflowY: "auto",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: "20px",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "16px",
+              fontWeight: "700",
+              color: "var(--text-1)",
+            }}
+          >
+            {dateLabel}
+          </p>
+          <button
+            onClick={onClose}
+            style={{
+              width: "30px",
+              height: "30px",
+              borderRadius: "8px",
+              background: "var(--bg-elevated)",
+              border: "none",
+              color: "var(--text-3)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <X size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+
+        {!loading && transactions.length > 0 && (
+          <div
+            style={{
+              marginBottom: "16px",
+              padding: "14px 16px",
+              background: "var(--bg-inset)",
+              borderRadius: "12px",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "24px",
+                fontWeight: "800",
+                color: "var(--red)",
+                letterSpacing: "-0.5px",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              ₹{dayTotal.toLocaleString("en-IN")}
+            </p>
+            <p
+              style={{
+                fontSize: "12px",
+                color: "var(--text-3)",
+                marginTop: "2px",
+              }}
+            >
+              {transactions.length} transaction
+              {transactions.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+        )}
+
+        {loading && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "40px 20px",
+              gap: "12px",
+            }}
+          >
+            <div style={{ display: "flex", gap: "5px" }}>
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: "7px",
+                    height: "7px",
+                    borderRadius: "50%",
+                    background: "var(--accent-dim)",
+                    animation: `bounce 1.2s infinite ${i * 0.2}s`,
+                  }}
+                />
+              ))}
+            </div>
+            <p style={{ fontSize: "13px", color: "var(--text-3)" }}>
+              Loading transactions…
+            </p>
+          </div>
+        )}
+
+        {error && (
+          <div
+            style={{
+              padding: "12px 16px",
+              borderRadius: "10px",
+              background: "var(--red-bg)",
+              border: "1px solid var(--red-border)",
+              color: "var(--red-dim)",
+              fontSize: "13px",
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && transactions.length === 0 && (
+          <p
+            style={{
+              fontSize: "13px",
+              color: "var(--text-3)",
+              textAlign: "center",
+              padding: "20px 0",
+            }}
+          >
+            No transactions on this day.
+          </p>
+        )}
+
+        {!loading && transactions.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "1px",
+              borderRadius: "12px",
+              overflow: "hidden",
+            }}
+          >
+            {transactions.map((tx, i) => (
+              <div
+                key={tx.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "10px 4px",
+                  borderBottom:
+                    i < transactions.length - 1
+                      ? "1px solid var(--border-subtle)"
+                      : "none",
+                }}
+              >
+                <div>
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "var(--text-1)",
+                    }}
+                  >
+                    {tx.name}
+                  </p>
+                  <p style={{ fontSize: "11px", color: "var(--text-3)" }}>
+                    {tx.category}
+                  </p>
+                </div>
+                <span
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: "700",
+                    color: "var(--red)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  ₹{Number(tx.amount).toLocaleString("en-IN")}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Shared components (outside parent to avoid remount) ───
 function AppHeader({
   onLogout,
@@ -1437,33 +1718,32 @@ function AppHeader({
             <BarChart3 size={14} strokeWidth={2} />
             Reports
           </Link>
-          
+          <button
+            onClick={onLogout}
+            style={{
+              padding: "7px 12px",
+              background: "transparent",
+              border: "none",
+              borderRadius: "8px",
+              color: "var(--text-3)",
+              cursor: "pointer",
+              fontSize: "13px",
+              fontWeight: "500",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              transition: "color 100ms ease",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--text-1)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-3)")
+            }
+          >
+            <LogOut size={14} strokeWidth={2} />
+          </button>
         </div>
-        <button
-          onClick={onLogout}
-          style={{
-            padding: "7px 12px",
-            background: "transparent",
-            border: "none",
-            borderRadius: "8px",
-            color: "var(--text-3)",
-            cursor: "pointer",
-            fontSize: "13px",
-            fontWeight: "500",
-            display: "flex",
-            alignItems: "center",
-            gap: "5px",
-            transition: "color 100ms ease",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.color = "var(--text-1)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.color = "var(--text-3)")
-          }
-        >
-          <LogOut size={14} strokeWidth={2} />
-        </button>
         <button
           onClick={toggleTheme}
           style={{
@@ -1766,6 +2046,7 @@ export default function DashboardPage() {
   const [heatmapData, setHeatmapData] = useState([]);
   const [monthlyTotals, setMonthlyTotals] = useState([]);
   const [budgets, setBudgets] = useState([]);
+  const [explainDate, setExplainDate] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [messages, setMessages] = useState([
@@ -1850,6 +2131,17 @@ export default function DashboardPage() {
       setChatLoading(false);
     },
     [input, chatLoading, loadData]
+  );
+
+  const handleSpikeClick = useCallback(
+    (day) => {
+      const dateStr = `${selectedYear}-${String(selectedMonth).padStart(
+        2,
+        "0"
+      )}-${String(day).padStart(2, "0")}`;
+      setExplainDate(dateStr);
+    },
+    [selectedMonth, selectedYear]
   );
 
   const handleLogout = useCallback(() => {
@@ -2469,6 +2761,7 @@ export default function DashboardPage() {
                     data={heatmapData}
                     selectedMonth={selectedMonth}
                     selectedYear={selectedYear}
+                    onDayClick={handleSpikeClick}
                   />
                 </div>
                 <SpendingVelocity
@@ -2476,6 +2769,7 @@ export default function DashboardPage() {
                   selectedMonth={selectedMonth}
                   selectedYear={selectedYear}
                   monthlyTotals={monthlyTotals}
+                  onDayClick={handleSpikeClick}
                 />
                 <MonthlyOverview
                   monthlyTotals={monthlyTotals}
@@ -2488,6 +2782,14 @@ export default function DashboardPage() {
         )}
       </main>
       <BottomTabs active="dashboard" />
+
+      {explainDate && (
+        <DayDetailModal
+          date={explainDate}
+          onClose={() => setExplainDate(null)}
+        />
+      )}
+
       <Toast />
     </div>
   );
