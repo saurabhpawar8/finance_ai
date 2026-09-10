@@ -17,6 +17,7 @@ import {
   Moon,
   SlidersHorizontal,
   Wallet2,
+  CalendarDays,
   UtensilsCrossed,
   Car,
   ShoppingBag,
@@ -375,11 +376,82 @@ function CardSkeleton() {
 }
 
 // ── Mobile filter sheet ────────────────────────────────────
+// ── Styled date range trigger (wraps native date inputs) ──
+function DateRangeField({ label, value, onChange }) {
+  const inputRef = useRef(null);
+  const displayLabel = value
+    ? new Date(value + "T00:00:00").toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : label;
+
+  return (
+    <div
+      onClick={() =>
+        inputRef.current?.showPicker
+          ? inputRef.current.showPicker()
+          : inputRef.current?.focus()
+      }
+      style={{
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "10px 14px",
+        background: "var(--bg-inset)",
+        boxShadow: "var(--shadow-card)",
+        borderRadius: "10px",
+        cursor: "pointer",
+        width: "100%",
+      }}
+    >
+      <CalendarDays
+        size={14}
+        color="var(--text-3)"
+        strokeWidth={2}
+        style={{ flexShrink: 0 }}
+      />
+      <span
+        style={{
+          fontSize: "13px",
+          color: value ? "var(--text-1)" : "var(--text-3)",
+          fontWeight: value ? "600" : "400",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {displayLabel}
+      </span>
+      <input
+        ref={inputRef}
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: 0,
+          cursor: "pointer",
+          width: "100%",
+          height: "100%",
+        }}
+      />
+    </div>
+  );
+}
+
 function FilterSheet({
   category,
   setCategory,
   wallet,
   setWallet,
+  dateFrom,
+  setDateFrom,
+  dateTo,
+  setDateTo,
   categories,
   wallets,
   onClose,
@@ -515,6 +587,46 @@ function FilterSheet({
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: "12px",
+                fontWeight: "600",
+                color: "var(--text-3)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                marginBottom: "8px",
+              }}
+            >
+              From date
+            </label>
+            <DateRangeField
+              label="Any date"
+              value={dateFrom}
+              onChange={setDateFrom}
+            />
+          </div>
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: "12px",
+                fontWeight: "600",
+                color: "var(--text-3)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                marginBottom: "8px",
+              }}
+            >
+              To date
+            </label>
+            <DateRangeField
+              label="Any date"
+              value={dateTo}
+              onChange={setDateTo}
+            />
           </div>
           <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
             {filtersActive && (
@@ -1064,13 +1176,15 @@ export default function TransactionsPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [wallet, setWallet] = useState("All");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState(["All"]);
   const [wallets, setWallets] = useState(["All"]);
   const [modalTx, setModalTx] = useState(null);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
 
-  const fetchData = async (pg, q, cat, wal) => {
+  const fetchData = async (pg, q, cat, wal, dFrom, dTo) => {
     setLoading(true);
     try {
       const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
@@ -1078,6 +1192,8 @@ export default function TransactionsPage() {
       if (q) params.search = q;
       if (cat && cat !== "All") params.category = cat;
       if (wal && wal !== "All") params.wallet = wal;
+      if (dFrom) params.dateFrom = dFrom;
+      if (dTo) params.dateTo = dTo;
       const res = await getTransactions(params);
       setRows(res?.results || []);
       setCount(res?.count || 0);
@@ -1108,14 +1224,14 @@ export default function TransactionsPage() {
     }
     const t = setTimeout(() => {
       setPage(1);
-      fetchData(1, search, category, wallet);
+      fetchData(1, search, category, wallet, dateFrom, dateTo);
     }, 420);
     return () => clearTimeout(t);
-  }, [search, category, wallet]);
+  }, [search, category, wallet, dateFrom, dateTo]);
 
   useEffect(() => {
     if (!pageMounted.current) pageMounted.current = true;
-    fetchData(page, search, category, wallet);
+    fetchData(page, search, category, wallet, dateFrom, dateTo);
   }, [page]);
 
   const handleSaved = (u) =>
@@ -1124,10 +1240,14 @@ export default function TransactionsPage() {
     setRows((prev) => prev.filter((r) => r.id !== id));
     setCount((c) => c - 1);
   };
-  const filtersActive = search || category !== "All" || wallet !== "All";
-  const chipFiltersActive = category !== "All" || wallet !== "All";
+  const filtersActive =
+    search || category !== "All" || wallet !== "All" || dateFrom || dateTo;
+  const chipFiltersActive =
+    category !== "All" || wallet !== "All" || !!dateFrom || !!dateTo;
   const activeChipCount =
-    (category !== "All" ? 1 : 0) + (wallet !== "All" ? 1 : 0);
+    (category !== "All" ? 1 : 0) +
+    (wallet !== "All" ? 1 : 0) +
+    (dateFrom || dateTo ? 1 : 0);
   const handleLogout = () => {
     removeTokens();
     router.push("/auth");
@@ -1255,25 +1375,25 @@ export default function TransactionsPage() {
               <BarChart3 size={14} strokeWidth={2} />
               Reports
             </Link>
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: "7px 14px",
+                background: "transparent",
+                border: "none",
+                borderRadius: "8px",
+                color: "var(--text-3)",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontWeight: "500",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <LogOut size={14} strokeWidth={2} />
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: "7px 14px",
-              background: "transparent",
-              border: "none",
-              borderRadius: "8px",
-              color: "var(--text-3)",
-              cursor: "pointer",
-              fontSize: "13px",
-              fontWeight: "500",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
-            <LogOut size={14} strokeWidth={2} />
-          </button>
           <button
             onClick={toggleTheme}
             title="Toggle theme"
@@ -1391,12 +1511,28 @@ export default function TransactionsPage() {
                 ))}
               </select>
             </div>
+            <div style={{ flex: 1, minWidth: "150px" }}>
+              <DateRangeField
+                label="From date"
+                value={dateFrom}
+                onChange={setDateFrom}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: "150px" }}>
+              <DateRangeField
+                label="To date"
+                value={dateTo}
+                onChange={setDateTo}
+              />
+            </div>
             {filtersActive && (
               <button
                 onClick={() => {
                   setSearch("");
                   setCategory("All");
                   setWallet("All");
+                  setDateFrom("");
+                  setDateTo("");
                 }}
                 style={{
                   padding: "10px 14px",
@@ -1877,12 +2013,18 @@ export default function TransactionsPage() {
           setCategory={setCategory}
           wallet={wallet}
           setWallet={setWallet}
+          dateFrom={dateFrom}
+          setDateFrom={setDateFrom}
+          dateTo={dateTo}
+          setDateTo={setDateTo}
           categories={categories}
           wallets={wallets}
           onClose={() => setShowFilterSheet(false)}
           onClear={() => {
             setCategory("All");
             setWallet("All");
+            setDateFrom("");
+            setDateTo("");
             setShowFilterSheet(false);
           }}
           filtersActive={chipFiltersActive}

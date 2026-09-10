@@ -4,6 +4,7 @@ import { useTheme } from "@/lib/ThemeContext";
 import { useRouter } from "next/navigation";
 import { Wallet, Sun, Moon } from "lucide-react";
 import { login, register, loginWithGoogle } from "@/lib/api";
+import Link from "next/link";
 
 export default function AuthPage() {
   const [tab, setTab] = useState("login");
@@ -398,6 +399,22 @@ export default function AuthPage() {
               ? "Sign In"
               : "Create Account"}
           </button>
+          <p
+            style={{
+              textAlign: "center",
+              fontSize: "12px",
+              color: "var(--text-4)",
+              marginTop: "20px",
+            }}
+          >
+            By continuing, you agree to our{" "}
+            <Link
+              href="/privacy"
+              style={{ color: "var(--accent-dim)", textDecoration: "none" }}
+            >
+              Privacy Policy
+            </Link>
+          </p>
         </div>
       </div>
     </div>
