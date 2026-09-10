@@ -3,6 +3,18 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+import {
   LayoutDashboard,
   Receipt,
   BarChart3,
@@ -11,6 +23,7 @@ import {
   Sparkles,
   Trophy,
   TrendingUp,
+  TrendingDown,
   Activity,
   Lightbulb,
   ArrowLeft,
@@ -18,8 +31,17 @@ import {
   Moon,
   AlertCircle,
   Wallet2,
+  GitCompare,
+  Minus,
 } from "lucide-react";
-import { getReport, fetchMonthlyReport, removeTokens } from "@/lib/api";
+import {
+  getReport,
+  fetchMonthlyReport,
+  getSummary,
+  getPieSummary,
+  getHeatmap,
+  removeTokens,
+} from "@/lib/api";
 import Toast, { showToast } from "@/components/Toast";
 import { useTheme } from "@/lib/ThemeContext";
 
@@ -47,7 +69,7 @@ const RANGES = [
 const currentYear = new Date().getFullYear();
 const YEARS = [currentYear - 2, currentYear - 1, currentYear];
 
-// ── Parse and display plain text report ──────────────────
+// ── Parse and display plain text AI report ────────────────
 function ReportDisplay({ text }) {
   const sections = useMemo(() => {
     const lines = text.split("\n");
@@ -288,11 +310,12 @@ const selectStyle = {
   backgroundPosition: "right 14px center",
 };
 
-// ── Tab switcher (Download / AI Analysis) ─────────────────
+// ── Tab switcher (Download / AI Analysis / Compare) ───────
 function ReportTabs({ active, onChange }) {
   const tabs = [
     { id: "download", label: "Download", Icon: Download },
     { id: "ai", label: "AI Analysis", Icon: Sparkles },
+    { id: "compare", label: "Compare", Icon: GitCompare },
   ];
   return (
     <div
@@ -303,6 +326,7 @@ function ReportTabs({ active, onChange }) {
         padding: "4px",
         boxShadow: "var(--shadow-card)",
         marginBottom: "20px",
+        flexWrap: "wrap",
       }}
     >
       {tabs.map(({ id, label, Icon }) => {
@@ -325,6 +349,7 @@ function ReportTabs({ active, onChange }) {
               cursor: "pointer",
               transition: "all 150ms ease",
               boxShadow: isActive ? "var(--shadow-accent)" : "none",
+              whiteSpace: "nowrap",
             }}
           >
             <Icon size={14} strokeWidth={2} />
@@ -333,6 +358,1108 @@ function ReportTabs({ active, onChange }) {
         );
       })}
     </div>
+  );
+}
+
+// ── Compare tooltip (grouped bar chart) ───────────────────
+function CompareBarTooltip({ active, payload, label, labelA, labelB }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div
+      style={{
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+        borderRadius: "10px",
+        padding: "12px 14px",
+        boxShadow: "var(--shadow-elevated)",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "12px",
+          color: "var(--text-2)",
+          fontWeight: "700",
+          marginBottom: "6px",
+        }}
+      >
+        {label}
+      </p>
+      {payload.map((p, i) => (
+        <p
+          key={i}
+          style={{
+            fontSize: "13px",
+            color: p.dataKey === "a" ? "var(--accent-dim)" : "#FF4D6D",
+            fontWeight: "600",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {p.dataKey === "a" ? labelA : labelB}: ₹
+          {Number(p.value).toLocaleString("en-IN")}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+// ── Compare tooltip (daily overlay line chart) ────────────
+function CompareLineTooltip({ active, payload, label, labelA, labelB }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div
+      style={{
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+        borderRadius: "10px",
+        padding: "12px 14px",
+        boxShadow: "var(--shadow-elevated)",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "12px",
+          color: "var(--text-2)",
+          fontWeight: "700",
+          marginBottom: "6px",
+        }}
+      >
+        Day {label}
+      </p>
+      {payload.map((p, i) => (
+        <p
+          key={i}
+          style={{
+            fontSize: "13px",
+            color: p.dataKey === "a" ? "var(--accent-dim)" : "#FF4D6D",
+            fontWeight: "600",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {p.dataKey === "a" ? labelA : labelB}:{" "}
+          {p.value != null
+            ? `₹${Number(p.value).toLocaleString("en-IN")}`
+            : "-"}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+// ── Compare tab content ───────────────────────────────────
+function CompareView() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const now = new Date();
+
+  const [monthA, setMonthA] = useState(
+    now.getMonth() + 1 === 1 ? 12 : now.getMonth()
+  );
+  const [yearA, setYearA] = useState(
+    now.getMonth() + 1 === 1 ? now.getFullYear() - 1 : now.getFullYear()
+  );
+  const [monthB, setMonthB] = useState(now.getMonth() + 1);
+  const [yearB, setYearB] = useState(now.getFullYear());
+
+  const [dataA, setDataA] = useState(null);
+  const [dataB, setDataB] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [compared, setCompared] = useState(false);
+
+  const labelA = `${MONTHS.find((m) => m.value === monthA)?.label} ${yearA}`;
+  const labelB = `${MONTHS.find((m) => m.value === monthB)?.label} ${yearB}`;
+
+  const handleCompare = async () => {
+    setError("");
+    setLoading(true);
+    setCompared(true);
+    try {
+      const [sumA, pieA, heatA, sumB, pieB, heatB] = await Promise.allSettled([
+        getSummary(monthA, yearA),
+        getPieSummary(monthA, yearA),
+        getHeatmap(monthA, yearA),
+        getSummary(monthB, yearB),
+        getPieSummary(monthB, yearB),
+        getHeatmap(monthB, yearB),
+      ]);
+      const ok = (r) => r.status === "fulfilled" && r.value?.success;
+      if (ok(sumA) && ok(pieA) && ok(heatA)) {
+        setDataA({
+          summary: sumA.value.data,
+          pie: pieA.value.data,
+          heatmap: heatA.value.data,
+        });
+      } else setDataA(null);
+      if (ok(sumB) && ok(pieB) && ok(heatB)) {
+        setDataB({
+          summary: sumB.value.data,
+          pie: pieB.value.data,
+          heatmap: heatB.value.data,
+        });
+      } else setDataB(null);
+      if (!ok(sumA) || !ok(sumB))
+        setError("Could not load data for one or both months.");
+    } catch {
+      setError("Could not connect. Make sure your backend is running.");
+    }
+    setLoading(false);
+  };
+
+  // ── Derived comparison data ──────────────────────────────
+  const totalA = dataA?.summary?.total_expense || 0;
+  const totalB = dataB?.summary?.total_expense || 0;
+  const delta = totalA > 0 ? ((totalB - totalA) / totalA) * 100 : 0;
+  const deltaUp = delta > 0;
+
+  const categoryChartData = useMemo(() => {
+    if (!dataA || !dataB) return [];
+    const cats = new Set([
+      ...(dataA.pie || []).map((c) => c.category_name),
+      ...(dataB.pie || []).map((c) => c.category_name),
+    ]);
+    const mapA = Object.fromEntries(
+      (dataA.pie || []).map((c) => [c.category_name, c.total])
+    );
+    const mapB = Object.fromEntries(
+      (dataB.pie || []).map((c) => [c.category_name, c.total])
+    );
+    return Array.from(cats)
+      .map((cat) => {
+        const a = mapA[cat] || 0;
+        const b = mapB[cat] || 0;
+        const inA = cat in mapA;
+        const inB = cat in mapB;
+        const changeAmt = b - a;
+        const changePct = a > 0 ? (changeAmt / a) * 100 : b > 0 ? 100 : 0;
+        return { category: cat, a, b, inA, inB, changeAmt, changePct };
+      })
+      .sort((x, y) => y.a + y.b - (x.a + x.b));
+  }, [dataA, dataB]);
+
+  // Biggest mover (excludes new/dropped categories — those get their own callout)
+  const biggestMover = useMemo(() => {
+    const candidates = categoryChartData.filter(
+      (c) => c.inA && c.inB && c.changeAmt !== 0
+    );
+    if (!candidates.length) return null;
+    return candidates.reduce(
+      (max, c) => (Math.abs(c.changeAmt) > Math.abs(max.changeAmt) ? c : max),
+      candidates[0]
+    );
+  }, [categoryChartData]);
+
+  const newCategories = useMemo(
+    () => categoryChartData.filter((c) => !c.inA && c.inB),
+    [categoryChartData]
+  );
+  const droppedCategories = useMemo(
+    () => categoryChartData.filter((c) => c.inA && !c.inB),
+    [categoryChartData]
+  );
+
+  const dailyChartData = useMemo(() => {
+    if (!dataA || !dataB) return [];
+    const daysInA = new Date(yearA, monthA, 0).getDate();
+    const daysInB = new Date(yearB, monthB, 0).getDate();
+    const maxDays = Math.max(daysInA, daysInB);
+    const mapA = {};
+    (dataA.heatmap || []).forEach((d) => {
+      mapA[d.date_only.split("-")[2]] = d.total;
+    });
+    const mapB = {};
+    (dataB.heatmap || []).forEach((d) => {
+      mapB[d.date_only.split("-")[2]] = d.total;
+    });
+    const rows = [];
+    for (let d = 1; d <= maxDays; d++) {
+      const key = String(d).padStart(2, "0");
+      rows.push({
+        day: d,
+        a: d <= daysInA ? mapA[key] || 0 : null,
+        b: d <= daysInB ? mapB[key] || 0 : null,
+      });
+    }
+    return rows;
+  }, [dataA, dataB, monthA, yearA, monthB, yearB]);
+
+  const tickColor = isDark ? "#44445A" : "#6C6C70";
+  const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
+  const fmtY = (v) => (v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`);
+
+  return (
+    <>
+      {/* Month selectors */}
+      <div
+        style={{
+          background: "var(--bg-surface)",
+          borderRadius: "16px",
+          padding: "20px",
+          boxShadow: "var(--shadow-card)",
+          marginBottom: "20px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            marginBottom: "16px",
+          }}
+        >
+          <div
+            style={{
+              width: "34px",
+              height: "34px",
+              borderRadius: "8px",
+              background: "var(--accent-bg)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <GitCompare size={17} color="var(--accent-dim)" strokeWidth={1.8} />
+          </div>
+          <div>
+            <p
+              style={{
+                fontSize: "14px",
+                fontWeight: "700",
+                color: "var(--text-1)",
+              }}
+            >
+              Compare Two Months
+            </p>
+            <p
+              style={{
+                fontSize: "12px",
+                color: "var(--text-3)",
+                marginTop: "2px",
+              }}
+            >
+              Pick any two months to see the difference
+            </p>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr auto 1fr",
+            gap: "12px",
+            alignItems: "center",
+          }}
+        >
+          {/* Month A */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <p
+              style={{
+                fontSize: "10px",
+                fontWeight: "700",
+                color: "var(--accent-dim)",
+                textTransform: "uppercase",
+                letterSpacing: "0.6px",
+              }}
+            >
+              Month A
+            </p>
+            <select
+              value={monthA}
+              onChange={(e) => setMonthA(Number(e.target.value))}
+              style={selectStyle}
+            >
+              {MONTHS.map((m) => (
+                <option
+                  key={m.value}
+                  value={m.value}
+                  style={{ background: "var(--bg-surface)" }}
+                >
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={yearA}
+              onChange={(e) => setYearA(Number(e.target.value))}
+              style={selectStyle}
+            >
+              {YEARS.map((y) => (
+                <option
+                  key={y}
+                  value={y}
+                  style={{ background: "var(--bg-surface)" }}
+                >
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--text-4)",
+            }}
+          >
+            <Minus size={16} strokeWidth={2.5} />
+          </div>
+
+          {/* Month B */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <p
+              style={{
+                fontSize: "10px",
+                fontWeight: "700",
+                color: "#FF4D6D",
+                textTransform: "uppercase",
+                letterSpacing: "0.6px",
+              }}
+            >
+              Month B
+            </p>
+            <select
+              value={monthB}
+              onChange={(e) => setMonthB(Number(e.target.value))}
+              style={selectStyle}
+            >
+              {MONTHS.map((m) => (
+                <option
+                  key={m.value}
+                  value={m.value}
+                  style={{ background: "var(--bg-surface)" }}
+                >
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={yearB}
+              onChange={(e) => setYearB(Number(e.target.value))}
+              style={selectStyle}
+            >
+              {YEARS.map((y) => (
+                <option
+                  key={y}
+                  value={y}
+                  style={{ background: "var(--bg-surface)" }}
+                >
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <button
+          onClick={handleCompare}
+          disabled={loading}
+          style={{
+            width: "100%",
+            marginTop: "16px",
+            padding: "13px",
+            background: loading
+              ? "var(--disabled-bg)"
+              : "var(--accent-gradient)",
+            border: "none",
+            borderRadius: "10px",
+            color: loading ? "var(--text-3)" : "#fff",
+            fontSize: "14px",
+            fontWeight: "700",
+            cursor: loading ? "not-allowed" : "pointer",
+            boxShadow: loading ? "none" : "var(--shadow-accent)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+          }}
+        >
+          <GitCompare size={15} strokeWidth={2} />
+          {loading ? "Comparing…" : "Compare"}
+        </button>
+
+        {error && (
+          <div
+            style={{
+              marginTop: "12px",
+              padding: "12px 16px",
+              borderRadius: "10px",
+              background: "var(--red-bg)",
+              border: "1px solid var(--red-border)",
+              color: "var(--red-dim)",
+              fontSize: "14px",
+            }}
+          >
+            {error}
+          </div>
+        )}
+      </div>
+
+      {loading && <ReportSkeleton />}
+
+      {!loading && compared && dataA && dataB && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* Total comparison */}
+          <div
+            style={{
+              background: "var(--bg-surface)",
+              borderRadius: "16px",
+              padding: "24px",
+              boxShadow: "var(--shadow-card)",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "11px",
+                fontWeight: "700",
+                color: "var(--text-3)",
+                textTransform: "uppercase",
+                letterSpacing: "1px",
+                marginBottom: "18px",
+              }}
+            >
+              Total Spend
+            </p>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "16px",
+              }}
+            >
+              <div style={{ display: "flex", gap: "32px", flexWrap: "wrap" }}>
+                <div>
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      color: "var(--accent-dim)",
+                      fontWeight: "600",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    {labelA}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "30px",
+                      fontWeight: "800",
+                      color: "var(--text-1)",
+                      letterSpacing: "-1px",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    ₹{totalA.toLocaleString("en-IN")}
+                  </p>
+                </div>
+                <div>
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      color: "#FF4D6D",
+                      fontWeight: "600",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    {labelB}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "30px",
+                      fontWeight: "800",
+                      color: "var(--text-1)",
+                      letterSpacing: "-1px",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    ₹{totalB.toLocaleString("en-IN")}
+                  </p>
+                </div>
+              </div>
+              {totalA > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "8px 14px",
+                    borderRadius: "10px",
+                    background: deltaUp ? "var(--red-bg)" : "var(--green-bg)",
+                    border: `1px solid ${
+                      deltaUp ? "var(--red-border)" : "var(--green-border)"
+                    }`,
+                  }}
+                >
+                  {deltaUp ? (
+                    <TrendingUp
+                      size={14}
+                      color="var(--red)"
+                      strokeWidth={2.5}
+                    />
+                  ) : (
+                    <TrendingDown
+                      size={14}
+                      color="var(--green)"
+                      strokeWidth={2.5}
+                    />
+                  )}
+                  <span
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: deltaUp ? "var(--red)" : "var(--green)",
+                    }}
+                  >
+                    {Math.abs(delta).toFixed(1)}% {deltaUp ? "more" : "less"}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Biggest mover callout */}
+          {biggestMover && (
+            <div
+              style={{
+                background: "var(--bg-surface)",
+                borderRadius: "16px",
+                padding: "18px 20px",
+                boxShadow: "var(--shadow-card)",
+                borderLeft: `3px solid ${
+                  biggestMover.changeAmt > 0 ? "var(--red)" : "var(--green)"
+                }`,
+              }}
+            >
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "10px" }}
+              >
+                {biggestMover.changeAmt > 0 ? (
+                  <TrendingUp size={18} color="var(--red)" strokeWidth={2} />
+                ) : (
+                  <TrendingDown
+                    size={18}
+                    color="var(--green)"
+                    strokeWidth={2}
+                  />
+                )}
+                <div>
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      color: "var(--text-1)",
+                      fontWeight: "600",
+                    }}
+                  >
+                    Biggest{" "}
+                    {biggestMover.changeAmt > 0 ? "increase" : "decrease"}:{" "}
+                    <span
+                      style={{
+                        color:
+                          biggestMover.changeAmt > 0
+                            ? "var(--red)"
+                            : "var(--green)",
+                      }}
+                    >
+                      {biggestMover.category}
+                    </span>
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      color: "var(--text-3)",
+                      marginTop: "2px",
+                    }}
+                  >
+                    {biggestMover.changeAmt > 0 ? "+" : ""}₹
+                    {Math.abs(biggestMover.changeAmt).toLocaleString("en-IN")} (
+                    {biggestMover.changeAmt > 0 ? "+" : ""}
+                    {biggestMover.changePct.toFixed(0)}%) from {labelA} to{" "}
+                    {labelB}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* New / dropped category callouts */}
+          {(newCategories.length > 0 || droppedCategories.length > 0) && (
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+            >
+              {newCategories.map((c) => (
+                <div
+                  key={c.category}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "12px 16px",
+                    background: "var(--red-bg)",
+                    borderRadius: "10px",
+                    border: "1px solid var(--red-border)",
+                  }}
+                >
+                  <span style={{ fontSize: "13px", color: "var(--red-dim)" }}>
+                    <b>New in {labelB}:</b> {c.category} — ₹
+                    {c.b.toLocaleString("en-IN")}{" "}
+                    <span style={{ color: "var(--text-3)" }}>
+                      (nothing in {labelA})
+                    </span>
+                  </span>
+                </div>
+              ))}
+              {droppedCategories.map((c) => (
+                <div
+                  key={c.category}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "12px 16px",
+                    background: "var(--green-bg)",
+                    borderRadius: "10px",
+                    border: "1px solid var(--green-border)",
+                  }}
+                >
+                  <span style={{ fontSize: "13px", color: "var(--green-dim)" }}>
+                    <b>
+                      No {c.category} in {labelB}
+                    </b>{" "}
+                    <span style={{ color: "var(--text-3)" }}>
+                      (had ₹{c.a.toLocaleString("en-IN")} in {labelA})
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Category comparison — grouped bar chart with per-row change indicator */}
+          {categoryChartData.length > 0 && (
+            <div
+              style={{
+                background: "var(--bg-surface)",
+                borderRadius: "16px",
+                padding: "20px",
+                boxShadow: "var(--shadow-card)",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  color: "var(--text-3)",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  marginBottom: "16px",
+                }}
+              >
+                Category Breakdown
+              </p>
+              <ResponsiveContainer
+                width="100%"
+                height={Math.max(220, categoryChartData.length * 46)}
+              >
+                <BarChart
+                  data={categoryChartData}
+                  layout="vertical"
+                  margin={{ top: 0, right: 20, left: 10, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={gridColor}
+                    horizontal={false}
+                  />
+                  <XAxis
+                    type="number"
+                    tick={{
+                      fontSize: 10,
+                      fill: tickColor,
+                      fontFamily: "Inter",
+                    }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={fmtY}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="category"
+                    tick={{
+                      fontSize: 11,
+                      fill: tickColor,
+                      fontFamily: "Inter",
+                    }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={110}
+                  />
+                  <Tooltip
+                    content={
+                      <CompareBarTooltip labelA={labelA} labelB={labelB} />
+                    }
+                    cursor={{ fill: "var(--bg-inset)" }}
+                  />
+                  <Bar
+                    dataKey="a"
+                    fill="var(--accent)"
+                    radius={[0, 4, 4, 0]}
+                    maxBarSize={14}
+                  />
+                  <Bar
+                    dataKey="b"
+                    fill="#FF4D6D"
+                    radius={[0, 4, 4, 0]}
+                    maxBarSize={14}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "16px",
+                  marginTop: "8px",
+                  marginBottom: "16px",
+                }}
+              >
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  <div
+                    style={{
+                      width: "10px",
+                      height: "10px",
+                      borderRadius: "3px",
+                      background: "var(--accent)",
+                    }}
+                  />
+                  <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
+                    {labelA}
+                  </span>
+                </div>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  <div
+                    style={{
+                      width: "10px",
+                      height: "10px",
+                      borderRadius: "3px",
+                      background: "#FF4D6D",
+                    }}
+                  />
+                  <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
+                    {labelB}
+                  </span>
+                </div>
+              </div>
+
+              {/* Per-category change list */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "2px",
+                  borderTop: "1px solid var(--border-subtle)",
+                  paddingTop: "10px",
+                }}
+              >
+                {categoryChartData
+                  .filter((c) => c.inA && c.inB)
+                  .map((c) => (
+                    <div
+                      key={c.category}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "8px 4px",
+                      }}
+                    >
+                      <span
+                        style={{ fontSize: "12.5px", color: "var(--text-2)" }}
+                      >
+                        {c.category}
+                      </span>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        {c.changeAmt !== 0 &&
+                          (c.changeAmt > 0 ? (
+                            <TrendingUp
+                              size={11}
+                              color="var(--red)"
+                              strokeWidth={2.5}
+                            />
+                          ) : (
+                            <TrendingDown
+                              size={11}
+                              color="var(--green)"
+                              strokeWidth={2.5}
+                            />
+                          ))}
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            color:
+                              c.changeAmt > 0
+                                ? "var(--red)"
+                                : c.changeAmt < 0
+                                ? "var(--green)"
+                                : "var(--text-4)",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {c.changeAmt === 0
+                            ? "No change"
+                            : `${
+                                c.changeAmt > 0 ? "+" : ""
+                              }${c.changePct.toFixed(0)}%`}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Daily pattern — overlaid line chart */}
+          {dailyChartData.length > 0 && (
+            <div
+              style={{
+                background: "var(--bg-surface)",
+                borderRadius: "16px",
+                padding: "20px",
+                boxShadow: "var(--shadow-card)",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  color: "var(--text-3)",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  marginBottom: "16px",
+                }}
+              >
+                Daily Spending Pattern
+              </p>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart
+                  data={dailyChartData}
+                  margin={{ top: 5, right: 5, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={gridColor}
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="day"
+                    tick={{
+                      fontSize: 10,
+                      fill: tickColor,
+                      fontFamily: "Inter",
+                    }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    tick={{
+                      fontSize: 10,
+                      fill: tickColor,
+                      fontFamily: "Inter",
+                    }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={fmtY}
+                    width={40}
+                  />
+                  <Tooltip
+                    content={
+                      <CompareLineTooltip labelA={labelA} labelB={labelB} />
+                    }
+                    cursor={{
+                      stroke: "var(--border-strong)",
+                      strokeWidth: 1,
+                      strokeDasharray: "4 4",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="a"
+                    stroke="var(--accent)"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                    activeDot={{ r: 4 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="b"
+                    stroke="#FF4D6D"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                    activeDot={{ r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+              <div style={{ display: "flex", gap: "16px", marginTop: "8px" }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  <div
+                    style={{
+                      width: "16px",
+                      height: "2.5px",
+                      background: "var(--accent)",
+                      borderRadius: "2px",
+                    }}
+                  />
+                  <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
+                    {labelA}
+                  </span>
+                </div>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  <div
+                    style={{
+                      width: "16px",
+                      height: "2.5px",
+                      background: "#FF4D6D",
+                      borderRadius: "2px",
+                    }}
+                  />
+                  <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
+                    {labelB}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Quick stats */}
+          <div className="bottom-grid">
+            <div
+              style={{
+                background: "var(--bg-surface)",
+                borderRadius: "16px",
+                padding: "18px 20px",
+                boxShadow: "var(--shadow-card)",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "10px",
+                  color: "var(--accent-dim)",
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.6px",
+                  marginBottom: "8px",
+                }}
+              >
+                {labelA}
+              </p>
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "var(--text-2)",
+                  marginBottom: "4px",
+                }}
+              >
+                Transactions:{" "}
+                <b style={{ color: "var(--text-1)" }}>
+                  {dataA.summary.total_transactions}
+                </b>
+              </p>
+              <p style={{ fontSize: "13px", color: "var(--text-2)" }}>
+                Top category:{" "}
+                <b style={{ color: "var(--text-1)" }}>
+                  {dataA.summary.top_category || "-"}
+                </b>
+              </p>
+            </div>
+            <div
+              style={{
+                background: "var(--bg-surface)",
+                borderRadius: "16px",
+                padding: "18px 20px",
+                boxShadow: "var(--shadow-card)",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "10px",
+                  color: "#FF4D6D",
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.6px",
+                  marginBottom: "8px",
+                }}
+              >
+                {labelB}
+              </p>
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "var(--text-2)",
+                  marginBottom: "4px",
+                }}
+              >
+                Transactions:{" "}
+                <b style={{ color: "var(--text-1)" }}>
+                  {dataB.summary.total_transactions}
+                </b>
+              </p>
+              <p style={{ fontSize: "13px", color: "var(--text-2)" }}>
+                Top category:{" "}
+                <b style={{ color: "var(--text-1)" }}>
+                  {dataB.summary.top_category || "-"}
+                </b>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!loading && !compared && (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "60px 20px",
+            color: "var(--text-3)",
+          }}
+        >
+          <GitCompare
+            size={48}
+            color="var(--text-4)"
+            strokeWidth={1}
+            style={{ margin: "0 auto 16px" }}
+          />
+          <p
+            style={{
+              fontSize: "15px",
+              fontWeight: "600",
+              color: "var(--text-3)",
+              marginBottom: "6px",
+            }}
+          >
+            Pick two months to compare
+          </p>
+          <p style={{ fontSize: "13px" }}>
+            See spending side by side, by category and by day
+          </p>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -493,18 +1620,18 @@ export default function ReportPage() {
           </div>
           <button
             onClick={handleLogout}
+            title="Sign out"
             style={{
-              padding: "7px 14px",
-              background: "transparent",
-              border: "none",
+              width: "32px",
+              height: "32px",
               borderRadius: "8px",
+              background: "var(--bg-elevated)",
+              border: "none",
               color: "var(--text-3)",
               cursor: "pointer",
-              fontSize: "13px",
-              fontWeight: "500",
               display: "flex",
               alignItems: "center",
-              gap: "6px",
+              justifyContent: "center",
             }}
           >
             <LogOut size={14} strokeWidth={2} />
@@ -536,7 +1663,7 @@ export default function ReportPage() {
 
       <main
         className="mobile-main"
-        style={{ maxWidth: "720px", margin: "0 auto", padding: "24px 20px" }}
+        style={{ maxWidth: "760px", margin: "0 auto", padding: "24px 20px" }}
       >
         <div style={{ marginBottom: "20px" }}>
           <h1
@@ -551,11 +1678,10 @@ export default function ReportPage() {
             Reports
           </h1>
           <p style={{ color: "var(--text-3)", fontSize: "14px" }}>
-            Download your expenses or get an AI-powered analysis
+            Download, analyze, or compare your spending
           </p>
         </div>
 
-        {/* TAB SWITCHER */}
         <ReportTabs active={activeTab} onChange={setActiveTab} />
 
         {/* DOWNLOAD TAB */}
@@ -848,6 +1974,9 @@ export default function ReportPage() {
             )}
           </>
         )}
+
+        {/* COMPARE TAB */}
+        {activeTab === "compare" && <CompareView />}
 
         <div style={{ height: "40px" }} />
       </main>
