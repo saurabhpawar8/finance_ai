@@ -41,6 +41,7 @@ import {
   BarChart2,
   Wallet2,
   X,
+  HelpCircle,
 } from "lucide-react";
 import {
   getSummary,
@@ -1744,6 +1745,26 @@ function AppHeader({
             <LogOut size={14} strokeWidth={2} />
           </button>
         </div>
+        <Link
+          href="/features"
+          title="What's included"
+          style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "8px",
+            background: "var(--bg-elevated)",
+            color: "var(--text-3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textDecoration: "none",
+            transition: "color 100ms ease",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-1)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-3)")}
+        >
+          <HelpCircle size={14} strokeWidth={2} />
+        </Link>
         <button
           onClick={toggleTheme}
           style={{
