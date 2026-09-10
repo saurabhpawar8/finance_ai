@@ -1,9 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "@/lib/ThemeContext";
 import { useRouter } from "next/navigation";
 import { Wallet, Sun, Moon } from "lucide-react";
-import { login, register } from "@/lib/api";
+import { login, register, loginWithGoogle } from "@/lib/api";
 
 export default function AuthPage() {
   const [tab, setTab] = useState("login");
@@ -71,6 +71,48 @@ export default function AuthPage() {
     }
     setLoading(false);
   };
+
+  // ── Google Sign-In ──────────────────────────────────────
+  const handleGoogleResponse = async (response) => {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await loginWithGoogle(response.credential);
+      if (res.success) {
+        localStorage.setItem("access_token", res.data.access);
+        localStorage.setItem("refresh_token", res.data.refresh);
+        router.push("/dashboard");
+      } else {
+        setError(parseMessage(res) || "Google sign-in failed.");
+      }
+    } catch {
+      setError("Could not connect to server.");
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          callback: handleGoogleResponse,
+        });
+        window.google.accounts.id.renderButton(
+          document.getElementById("google-signin-btn"),
+          { theme: "filled_black", size: "large", width: 360, shape: "pill" }
+        );
+      }
+    };
+    return () => {
+      if (document.body.contains(script)) document.body.removeChild(script);
+    };
+  }, []);
 
   return (
     <div
@@ -167,6 +209,41 @@ export default function AuthPage() {
           <p style={{ color: "var(--text-3)", fontSize: "14px" }}>
             Track expenses with the power of AI
           </p>
+        </div>
+
+        {/* Google Sign-In */}
+        <div
+          id="google-signin-btn"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: "20px",
+          }}
+        />
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            margin: "20px 0 28px",
+          }}
+        >
+          <div
+            style={{ flex: 1, height: "1px", background: "var(--border)" }}
+          />
+          <span
+            style={{
+              fontSize: "12px",
+              color: "var(--text-3)",
+              fontWeight: "600",
+            }}
+          >
+            OR
+          </span>
+          <div
+            style={{ flex: 1, height: "1px", background: "var(--border)" }}
+          />
         </div>
 
         {/* Tabs */}
