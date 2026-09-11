@@ -913,9 +913,11 @@ export default function DashboardPage() {
       localStorage.setItem("has_transactions", "true");
   }, [summary]);
 
-  const isReturningUser =
-    typeof window !== "undefined" &&
-    localStorage.getItem("has_transactions") === "true";
+  useEffect(() => {
+    setIsReturningUser(localStorage.getItem("has_transactions") === "true");
+  }, []);
+
+  const [isReturningUser, setIsReturningUser] = useState(false);
   const isFirstTime =
     !dataLoading &&
     !isReturningUser &&

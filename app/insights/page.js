@@ -10,6 +10,10 @@ import {
   AreaChart,
   Area,
   ComposedChart,
+  ScatterChart,
+  Scatter,
+  Cell,
+  ReferenceLine,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -1473,6 +1477,401 @@ function SpendingVelocity({
 }
 
 // ── Overview tab content (moved from Dashboard) ───────────
+// ── Category Consistency Scatter ──────────────────────────
+// X = average monthly spend per category, Y = volatility (coefficient of variation)
+const SCATTER_COLORS = [
+  "#6366F1",
+  "#00D4AA",
+  "#FF4D6D",
+  "#F59E0B",
+  "#06B6D4",
+  "#A78BFA",
+  "#F97316",
+  "#EC4899",
+  "#34D399",
+  "#818CF8",
+];
+
+function ConsistencyTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div
+      style={{
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+        borderRadius: "10px",
+        padding: "12px 14px",
+        boxShadow: "var(--shadow-elevated)",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "13px",
+          fontWeight: "700",
+          color: "var(--text-1)",
+          marginBottom: "6px",
+        }}
+      >
+        {d.category}
+      </p>
+      <p
+        style={{
+          fontSize: "12px",
+          color: "var(--text-2)",
+          marginBottom: "2px",
+        }}
+      >
+        Avg:{" "}
+        <b style={{ color: "var(--text-1)" }}>
+          ₹{Math.round(d.avg).toLocaleString("en-IN")}
+        </b>
+        /month
+      </p>
+      <p style={{ fontSize: "12px", color: "var(--text-2)" }}>
+        Volatility:{" "}
+        <b style={{ color: "var(--text-1)" }}>{d.volatility.toFixed(0)}%</b>
+      </p>
+      <p style={{ fontSize: "11px", color: "var(--text-4)", marginTop: "6px" }}>
+        {d.quadrantLabel}
+      </p>
+    </div>
+  );
+}
+
+function CategoryConsistencyChart() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const [points, setPoints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [monthsUsed, setMonthsUsed] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      const now = new Date();
+      // Build list of last 6 months (including current)
+      const monthList = [];
+      for (let i = 0; i < 6; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        monthList.push({ month: d.getMonth() + 1, year: d.getFullYear() });
+      }
+      const results = await Promise.allSettled(
+        monthList.map((m) => getPieSummary(m.month, m.year))
+      );
+      if (cancelled) return;
+
+      // category -> array of monthly totals (0 if not present that month)
+      const catTotals = {};
+      let validMonths = 0;
+      results.forEach((r) => {
+        if (r.status !== "fulfilled" || !r.value?.success) return;
+        validMonths++;
+        const monthMap = {};
+        (r.value.data || []).forEach((c) => {
+          monthMap[c.category_name] = c.total;
+        });
+        // Merge into catTotals — track all categories seen across all months
+        Object.keys(monthMap).forEach((cat) => {
+          if (!catTotals[cat]) catTotals[cat] = [];
+        });
+      });
+      // Second pass: for each known category, build a value per valid month (0 if absent)
+      const allCats = Object.keys(catTotals);
+      const monthMaps = results
+        .filter((r) => r.status === "fulfilled" && r.value?.success)
+        .map((r) => {
+          const m = {};
+          (r.value.data || []).forEach((c) => {
+            m[c.category_name] = c.total;
+          });
+          return m;
+        });
+
+      allCats.forEach((cat) => {
+        catTotals[cat] = monthMaps.map((m) => m[cat] || 0);
+      });
+
+      // Compute avg + coefficient of variation (volatility %) per category
+      const computed = allCats
+        .map((cat) => {
+          const vals = catTotals[cat];
+          const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+          if (avg === 0) return null;
+          const variance =
+            vals.reduce((s, v) => s + Math.pow(v - avg, 2), 0) / vals.length;
+          const stdDev = Math.sqrt(variance);
+          const volatility = (stdDev / avg) * 100; // coefficient of variation as %
+          return { category: cat, avg, volatility };
+        })
+        .filter(Boolean);
+
+      if (!cancelled) {
+        setPoints(computed);
+        setMonthsUsed(validMonths);
+        setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div
+        className="skeleton"
+        style={{ height: "340px", borderRadius: "16px" }}
+      />
+    );
+  }
+
+  if (points.length < 2) {
+    return (
+      <div
+        style={{
+          background: "var(--bg-surface)",
+          borderRadius: "16px",
+          padding: "40px 20px",
+          boxShadow: "var(--shadow-card)",
+          textAlign: "center",
+        }}
+      >
+        <Activity
+          size={36}
+          color="var(--text-4)"
+          strokeWidth={1.5}
+          style={{ margin: "0 auto 14px" }}
+        />
+        <p
+          style={{
+            fontSize: "14px",
+            fontWeight: "600",
+            color: "var(--text-2)",
+            marginBottom: "6px",
+          }}
+        >
+          Not enough data yet
+        </p>
+        <p style={{ fontSize: "12px", color: "var(--text-3)" }}>
+          Needs at least 2 categories with spending history to compare.
+        </p>
+      </div>
+    );
+  }
+
+  const medianX = [...points].sort((a, b) => a.avg - b.avg)[
+    Math.floor(points.length / 2)
+  ].avg;
+  const medianY = [...points].sort((a, b) => a.volatility - b.volatility)[
+    Math.floor(points.length / 2)
+  ].volatility;
+  const maxX = Math.max(...points.map((p) => p.avg)) * 1.15;
+  const maxY = Math.max(...points.map((p) => p.volatility), 20) * 1.15;
+
+  const withQuadrant = points.map((p) => ({
+    ...p,
+    quadrantLabel:
+      p.avg >= medianX && p.volatility < medianY
+        ? "Predictable & significant — like a fixed bill"
+        : p.avg >= medianX && p.volatility >= medianY
+        ? "High spend, unpredictable — worth a budget"
+        : p.avg < medianX && p.volatility < medianY
+        ? "Small and steady"
+        : "Occasional, unpredictable spend",
+  }));
+
+  const tickColor = isDark ? "#44445A" : "#6C6C70";
+  const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
+  const fmtX = (v) => (v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`);
+
+  return (
+    <div
+      style={{
+        background: "var(--bg-surface)",
+        borderRadius: "16px",
+        padding: "20px",
+        boxShadow: "var(--shadow-card)",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "11px",
+          fontWeight: "700",
+          color: "var(--text-3)",
+          textTransform: "uppercase",
+          letterSpacing: "1px",
+          marginBottom: "4px",
+        }}
+      >
+        Category Consistency
+      </p>
+      <p
+        style={{
+          fontSize: "12px",
+          color: "var(--text-4)",
+          marginBottom: "16px",
+        }}
+      >
+        Which categories are predictable vs. volatile, based on {monthsUsed}{" "}
+        month{monthsUsed !== 1 ? "s" : ""}
+      </p>
+
+      <ResponsiveContainer width="100%" height={280}>
+        <ScatterChart margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+          <XAxis
+            type="number"
+            dataKey="avg"
+            name="Avg spend"
+            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={fmtX}
+            domain={[0, maxX]}
+            label={{
+              value: "Avg monthly spend →",
+              position: "insideBottom",
+              offset: -6,
+              fontSize: 10,
+              fill: tickColor,
+            }}
+          />
+          <YAxis
+            type="number"
+            dataKey="volatility"
+            name="Volatility"
+            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v) => `${v}%`}
+            domain={[0, maxY]}
+            label={{
+              value: "Volatility →",
+              angle: -90,
+              position: "insideLeft",
+              fontSize: 10,
+              fill: tickColor,
+            }}
+          />
+          <ReferenceLine
+            x={medianX}
+            stroke="var(--border-strong)"
+            strokeDasharray="4 4"
+          />
+          <ReferenceLine
+            y={medianY}
+            stroke="var(--border-strong)"
+            strokeDasharray="4 4"
+          />
+          <Tooltip
+            content={<ConsistencyTooltip />}
+            cursor={{ strokeDasharray: "3 3" }}
+          />
+          <Scatter data={withQuadrant}>
+            {withQuadrant.map((entry, i) => (
+              <Cell
+                key={i}
+                fill={SCATTER_COLORS[i % SCATTER_COLORS.length]}
+                fillOpacity={0.85}
+                r={7}
+              />
+            ))}
+          </Scatter>
+        </ScatterChart>
+      </ResponsiveContainer>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "8px",
+          marginTop: "12px",
+        }}
+      >
+        <div
+          style={{
+            padding: "8px 10px",
+            background: "var(--bg-inset)",
+            borderRadius: "8px",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "10px",
+              color: "var(--text-3)",
+              fontWeight: "600",
+            }}
+          >
+            ↗ High + steady
+          </p>
+          <p style={{ fontSize: "10px", color: "var(--text-4)" }}>
+            Your fixed bills
+          </p>
+        </div>
+        <div
+          style={{
+            padding: "8px 10px",
+            background: "var(--red-bg)",
+            borderRadius: "8px",
+          }}
+        >
+          <p
+            style={{ fontSize: "10px", color: "var(--red)", fontWeight: "600" }}
+          >
+            ↗ High + volatile
+          </p>
+          <p style={{ fontSize: "10px", color: "var(--text-4)" }}>
+            Worth budgeting
+          </p>
+        </div>
+        <div
+          style={{
+            padding: "8px 10px",
+            background: "var(--bg-inset)",
+            borderRadius: "8px",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "10px",
+              color: "var(--text-3)",
+              fontWeight: "600",
+            }}
+          >
+            ↙ Low + steady
+          </p>
+          <p style={{ fontSize: "10px", color: "var(--text-4)" }}>
+            Small, predictable
+          </p>
+        </div>
+        <div
+          style={{
+            padding: "8px 10px",
+            background: "var(--bg-inset)",
+            borderRadius: "8px",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "10px",
+              color: "var(--text-3)",
+              fontWeight: "600",
+            }}
+          >
+            ↙ Low + volatile
+          </p>
+          <p style={{ fontSize: "10px", color: "var(--text-4)" }}>
+            Occasional spend
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OverviewTab({ month, year, onMonthChange, onYearChange }) {
   const [heatmapData, setHeatmapData] = useState([]);
   const [monthlyTotals, setMonthlyTotals] = useState([]);
@@ -1607,6 +2006,7 @@ function OverviewTab({ month, year, onMonthChange, onYearChange }) {
             monthlyTotals={monthlyTotals}
             onDayClick={setDayDetail}
           />
+          <CategoryConsistencyChart />
         </div>
       )}
 
@@ -1627,8 +2027,9 @@ function ReportTabs({ active, onChange }) {
   ];
   return (
     <div
+      className="insights-tabs"
       style={{
-        display: "inline-flex",
+        display: "flex",
         background: "var(--bg-surface)",
         borderRadius: "12px",
         padding: "4px",
