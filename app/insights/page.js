@@ -79,6 +79,50 @@ const currentYear = new Date().getFullYear();
 const YEARS = [currentYear - 2, currentYear - 1, currentYear];
 
 // ── Parse and display plain text AI report ────────────────
+// ── Parse a single category comparison line ───────────────
+// e.g. "Bills & Utilities ₹3,600 ↓ 74.17% No data ⚠️"
+function parseCategoryLine(line) {
+  let t = line.trim();
+  const hasWarning = t.includes("⚠️");
+  t = t.replace(/⚠️/g, "").trim();
+
+  const match = t.match(
+    /^(.+?)\s+₹([\d,]+(?:\.\d+)?)\s*(?:(↓|↑)\s*([\d.]+%))?\s*(.*)$/
+  );
+  if (!match) return null;
+
+  const [, name, amount, dir, pct, rest] = match;
+  return {
+    name: name.trim(),
+    amount: amount.trim(),
+    direction: dir || null,
+    pct: pct || null,
+    note: rest.trim(),
+    warning: hasWarning,
+  };
+}
+
+// ── Parse an overview stat line ────────────────────────────
+// e.g. "Total Spend: ₹11,191"  or  "vs Last Month: ↓ 72.39% (July: ₹40,500)"
+function parseOverviewLine(line) {
+  const t = line.trim();
+  const idx = t.indexOf(":");
+  if (idx === -1) return null;
+  const label = t.slice(0, idx).trim();
+  const rest = t.slice(idx + 1).trim();
+  const dirMatch = rest.match(/^(↓|↑)\s*([\d.]+%)\s*(.*)$/);
+  if (dirMatch) {
+    return {
+      label,
+      direction: dirMatch[1],
+      pct: dirMatch[2],
+      note: dirMatch[3].trim(),
+      value: null,
+    };
+  }
+  return { label, value: rest, direction: null, pct: null, note: "" };
+}
+
 function ReportDisplay({ text }) {
   const sections = useMemo(() => {
     const lines = text.split("\n");
@@ -115,6 +159,8 @@ function ReportDisplay({ text }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       {sections.map(({ title, lines }, i) => {
         const content = lines.filter((l) => l.trim());
+
+        // ── Report header (first section) ──
         if (i === 0) {
           return (
             <div
@@ -164,12 +210,15 @@ function ReportDisplay({ text }) {
             </div>
           );
         }
+
         if (!content.length) return null;
         const meta = SECTION_META[title] || {
           icon: Activity,
           color: "var(--accent-dim)",
         };
         const Icon = meta.icon;
+        const titleUpper = title.toUpperCase();
+
         return (
           <div
             key={i}
@@ -185,7 +234,7 @@ function ReportDisplay({ text }) {
                 display: "flex",
                 alignItems: "center",
                 gap: "10px",
-                marginBottom: "14px",
+                marginBottom: "16px",
               }}
             >
               <div
@@ -214,73 +263,292 @@ function ReportDisplay({ text }) {
                 {title}
               </p>
             </div>
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "6px" }}
-            >
-              {content.map((line, j) => {
-                const t = line.trim();
-                if (!t || t.match(/^-{3,}$/)) return null;
-                const isPositive = t.startsWith("✅");
-                const isWarning = t.startsWith("⚠️");
-                const isAdvice =
-                  t.startsWith("🟡") ||
-                  t.startsWith("🔴") ||
-                  t.startsWith("🟢");
-                const isBullet = isPositive || isWarning || isAdvice;
-                const borderColor = isPositive
-                  ? "var(--green)"
-                  : isWarning
-                  ? "var(--red)"
-                  : "var(--yellow)";
-                if (isBullet) {
+
+            {/* ── OVERVIEW: structured stat cards ── */}
+            {titleUpper === "OVERVIEW" &&
+              (() => {
+                const prose = content.filter((l) => !l.includes(":"));
+                const statLines = content
+                  .filter((l) => l.includes(":"))
+                  .map(parseOverviewLine)
+                  .filter(Boolean);
+                return (
+                  <>
+                    {prose.map((l, j) => (
+                      <p
+                        key={j}
+                        style={{
+                          fontSize: "13px",
+                          color: "var(--text-3)",
+                          lineHeight: "1.65",
+                          marginBottom: "14px",
+                        }}
+                      >
+                        {l.trim()}
+                      </p>
+                    ))}
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: `repeat(${statLines.length}, 1fr)`,
+                        gap: "10px",
+                      }}
+                    >
+                      {statLines.map((s, j) => {
+                        const dirColor =
+                          s.direction === "↓"
+                            ? "var(--green)"
+                            : s.direction === "↑"
+                            ? "var(--red)"
+                            : "var(--text-1)";
+                        return (
+                          <div
+                            key={j}
+                            style={{
+                              padding: "14px",
+                              background: "var(--bg-inset)",
+                              borderRadius: "12px",
+                            }}
+                          >
+                            <p
+                              style={{
+                                fontSize: "10px",
+                                fontWeight: "700",
+                                color: "var(--text-3)",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.5px",
+                                marginBottom: "8px",
+                              }}
+                            >
+                              {s.label}
+                            </p>
+                            {s.value ? (
+                              <p
+                                style={{
+                                  fontSize: "18px",
+                                  fontWeight: "800",
+                                  color: "var(--text-1)",
+                                  fontVariantNumeric: "tabular-nums",
+                                }}
+                              >
+                                {s.value}
+                              </p>
+                            ) : (
+                              <>
+                                <p
+                                  style={{
+                                    fontSize: "18px",
+                                    fontWeight: "800",
+                                    color: dirColor,
+                                    fontVariantNumeric: "tabular-nums",
+                                  }}
+                                >
+                                  {s.direction} {s.pct}
+                                </p>
+                                {s.note && (
+                                  <p
+                                    style={{
+                                      fontSize: "11px",
+                                      color: "var(--text-4)",
+                                      marginTop: "3px",
+                                    }}
+                                  >
+                                    {s.note}
+                                  </p>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
+
+            {/* ── CATEGORY BREAKDOWN: structured rows ── */}
+            {titleUpper === "CATEGORY BREAKDOWN" && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1px",
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                }}
+              >
+                {content.map((line, j) => {
+                  const cat = parseCategoryLine(line);
+                  if (!cat) return null;
+                  const dirColor =
+                    cat.direction === "↓"
+                      ? "var(--green)"
+                      : cat.direction === "↑"
+                      ? "var(--red)"
+                      : "var(--text-3)";
                   return (
                     <div
                       key={j}
                       style={{
-                        padding: "10px 14px",
-                        background: "var(--bg-inset)",
-                        borderRadius: "10px",
-                        borderLeft: `3px solid ${borderColor}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px 6px",
+                        borderBottom:
+                          j < content.length - 1
+                            ? "1px solid var(--border-subtle)"
+                            : "none",
+                        gap: "10px",
                       }}
                     >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          minWidth: 0,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "600",
+                            color: "var(--text-1)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {cat.name}
+                        </span>
+                        {cat.warning && (
+                          <AlertCircle
+                            size={12}
+                            color="var(--yellow)"
+                            strokeWidth={2.5}
+                            style={{ flexShrink: 0 }}
+                          />
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "700",
+                            color: "var(--text-1)",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          ₹{cat.amount}
+                        </span>
+                        {cat.direction && (
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: "700",
+                              color: dirColor,
+                              background:
+                                cat.direction === "↓"
+                                  ? "var(--green-bg)"
+                                  : "var(--red-bg)",
+                              padding: "2px 7px",
+                              borderRadius: "10px",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {cat.direction} {cat.pct}
+                          </span>
+                        )}
+                        {!cat.direction && cat.note && (
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              color: "var(--text-4)",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {cat.note}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ── Everything else: bullet cards (Advice, Highlights, Watch Out) ── */}
+            {titleUpper !== "OVERVIEW" &&
+              titleUpper !== "CATEGORY BREAKDOWN" && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  {content.map((line, j) => {
+                    const t = line.trim();
+                    if (!t || t.match(/^-{3,}$/)) return null;
+                    const isPositive = t.startsWith("✅");
+                    const isWarning = t.startsWith("⚠️");
+                    const isAdvice =
+                      t.startsWith("🟡") ||
+                      t.startsWith("🔴") ||
+                      t.startsWith("🟢");
+                    const isBullet = isPositive || isWarning || isAdvice;
+                    const borderColor = isPositive
+                      ? "var(--green)"
+                      : isWarning
+                      ? "var(--red)"
+                      : "var(--yellow)";
+                    if (isBullet) {
+                      return (
+                        <div
+                          key={j}
+                          style={{
+                            padding: "12px 14px",
+                            background: "var(--bg-inset)",
+                            borderRadius: "10px",
+                            borderLeft: `3px solid ${borderColor}`,
+                          }}
+                        >
+                          <p
+                            style={{
+                              fontSize: "13px",
+                              color: "var(--text-2)",
+                              lineHeight: "1.7",
+                              margin: 0,
+                            }}
+                          >
+                            {t}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return (
                       <p
+                        key={j}
                         style={{
                           fontSize: "13px",
-                          color: "var(--text-2)",
-                          lineHeight: "1.7",
+                          color: "var(--text-3)",
+                          lineHeight: "1.65",
                           margin: 0,
                         }}
                       >
                         {t}
                       </p>
-                    </div>
-                  );
-                }
-                const isTableRow =
-                  t.includes("₹") ||
-                  t.includes("↓") ||
-                  t.includes("↑") ||
-                  t.includes("No data");
-                return (
-                  <p
-                    key={j}
-                    style={{
-                      fontSize: "13px",
-                      color: isTableRow ? "var(--text-2)" : "var(--text-3)",
-                      lineHeight: "1.65",
-                      margin: 0,
-                      fontFamily: isTableRow
-                        ? "'Courier New', monospace"
-                        : "inherit",
-                      fontWeight:
-                        t.includes(":") && !isTableRow ? "500" : "400",
-                    }}
-                  >
-                    {t}
-                  </p>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              )}
           </div>
         );
       })}
@@ -1359,13 +1627,14 @@ function ReportTabs({ active, onChange }) {
   ];
   return (
     <div
-      className="insights-tabs"
       style={{
+        display: "inline-flex",
         background: "var(--bg-surface)",
         borderRadius: "12px",
         padding: "4px",
         boxShadow: "var(--shadow-card)",
         marginBottom: "20px",
+        flexWrap: "wrap",
       }}
     >
       {tabs.map(({ id, label, Icon }) => {
