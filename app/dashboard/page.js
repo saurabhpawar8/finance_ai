@@ -913,11 +913,9 @@ export default function DashboardPage() {
       localStorage.setItem("has_transactions", "true");
   }, [summary]);
 
-  useEffect(() => {
-    setIsReturningUser(localStorage.getItem("has_transactions") === "true");
-  }, []);
-
-  const [isReturningUser, setIsReturningUser] = useState(false);
+  const isReturningUser =
+    typeof window !== "undefined" &&
+    localStorage.getItem("has_transactions") === "true";
   const isFirstTime =
     !dataLoading &&
     !isReturningUser &&
@@ -1440,11 +1438,32 @@ export default function DashboardPage() {
                     color: "var(--text-3)",
                     textTransform: "uppercase",
                     letterSpacing: "0.8px",
-                    marginBottom: "16px",
+                    marginBottom: "6px",
                   }}
                 >
                   Spending by Category
                 </p>
+                {pieData?.length > 0 &&
+                  (() => {
+                    const top = [...pieData].sort(
+                      (a, b) => b.total - a.total
+                    )[0];
+                    const total = pieData.reduce((s, c) => s + c.total, 0);
+                    const pct =
+                      total > 0 ? Math.round((top.total / total) * 100) : 0;
+                    return (
+                      <p
+                        style={{
+                          fontSize: "13px",
+                          color: "var(--text-2)",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        {top.category_name} is your biggest category at {pct}%
+                        of spend.
+                      </p>
+                    );
+                  })()}
                 <div
                   style={{
                     flex: 1,

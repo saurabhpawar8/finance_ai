@@ -44,6 +44,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  HelpCircle,
 } from "lucide-react";
 import {
   getReport,
@@ -836,6 +837,54 @@ function DayDetailModal({ date, onClose }) {
 }
 
 // ── Spending Calendar Heatmap ─────────────────────────────
+// ── Reusable "what does this mean" expandable ─────────────
+function ChartExplain({ children }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ marginTop: "10px" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "5px",
+          background: "transparent",
+          border: "none",
+          color: "var(--text-4)",
+          fontSize: "11px",
+          fontWeight: "600",
+          cursor: "pointer",
+          padding: "0",
+        }}
+      >
+        <HelpCircle size={12} strokeWidth={2} />
+        {open ? "Hide explanation" : "What does this mean?"}
+      </button>
+      {open && (
+        <div
+          style={{
+            marginTop: "8px",
+            padding: "12px 14px",
+            background: "var(--bg-inset)",
+            borderRadius: "10px",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "12.5px",
+              color: "var(--text-3)",
+              lineHeight: "1.6",
+              margin: 0,
+            }}
+          >
+            {children}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SpendingHeatmap({ data, month, year, onDayClick }) {
   const [tooltip, setTooltip] = useState(null);
   const now = new Date();
@@ -869,6 +918,23 @@ function SpendingHeatmap({ data, month, year, onDayClick }) {
     year === now.getFullYear() && month === now.getMonth() + 1;
   const todayDay = isCurrentMonth ? now.getDate() : -1;
 
+  const validCells = cells.filter((c) => c && c.total > 0);
+  const biggestDay =
+    validCells.length > 0
+      ? validCells.reduce(
+          (max, c) => (c.total > max.total ? c : max),
+          validCells[0]
+        )
+      : null;
+  const takeaway = biggestDay
+    ? `Your biggest spending day was ${new Date(
+        biggestDay.date + "T00:00:00"
+      ).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+      })} (₹${Number(biggestDay.total).toLocaleString("en-IN")}).`
+    : "No spending logged this month yet.";
+
   return (
     <div
       style={{
@@ -887,10 +953,19 @@ function SpendingHeatmap({ data, month, year, onDayClick }) {
           color: "var(--text-3)",
           textTransform: "uppercase",
           letterSpacing: "1px",
-          marginBottom: "14px",
+          marginBottom: "6px",
         }}
       >
         Spending Calendar
+      </p>
+      <p
+        style={{
+          fontSize: "13px",
+          color: "var(--text-2)",
+          marginBottom: "14px",
+        }}
+      >
+        {takeaway}
       </p>
       <div
         style={{
@@ -1071,6 +1146,7 @@ function SpendingTrend({ data, month, year, onDayClick }) {
     chartData.push({ day: d, amount: dataMap[dateStr] || 0 });
   }
   const totalSpend = (data || []).reduce((s, d) => s + d.total, 0);
+  const dailyAvg = today > 0 ? totalSpend / today : 0;
   const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
   const tickColor = isDark ? "#44445A" : "#6C6C70";
   const fmtY = (v) =>
@@ -1104,10 +1180,23 @@ function SpendingTrend({ data, month, year, onDayClick }) {
           color: "var(--red)",
           letterSpacing: "-1px",
           fontVariantNumeric: "tabular-nums",
-          marginBottom: "8px",
+          marginBottom: "6px",
         }}
       >
         ₹{totalSpend.toLocaleString("en-IN")}
+      </p>
+      <p
+        style={{
+          fontSize: "13px",
+          color: "var(--text-2)",
+          marginBottom: "8px",
+        }}
+      >
+        {dailyAvg > 0
+          ? `You're spending ₹${Math.round(dailyAvg).toLocaleString(
+              "en-IN"
+            )} per day on average.`
+          : "No spending logged yet this month."}
       </p>
       <ResponsiveContainer width="100%" height={180}>
         <AreaChart
@@ -1472,6 +1561,13 @@ function SpendingVelocity({
           {Math.round(historicalAvg).toLocaleString("en-IN")}
         </p>
       )}
+      <ChartExplain>
+        This projects where you'll likely end up by month-end. It looks at your
+        recent months' average, compares your current pace to that average, and
+        scales the rest of the month accordingly. The range (not a single
+        number) reflects real uncertainty, one-off big purchases or a light
+        history can shift the actual outcome either way.
+      </ChartExplain>
     </div>
   );
 }
@@ -1686,6 +1782,9 @@ function CategoryConsistencyChart() {
   const tickColor = isDark ? "#44445A" : "#6C6C70";
   const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
   const fmtX = (v) => (v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`);
+  const mostVolatile = [...points].sort(
+    (a, b) => b.volatility - a.volatility
+  )[0];
 
   return (
     <div
@@ -1703,20 +1802,20 @@ function CategoryConsistencyChart() {
           color: "var(--text-3)",
           textTransform: "uppercase",
           letterSpacing: "1px",
-          marginBottom: "4px",
+          marginBottom: "6px",
         }}
       >
         Category Consistency
       </p>
       <p
         style={{
-          fontSize: "12px",
-          color: "var(--text-4)",
+          fontSize: "13px",
+          color: "var(--text-2)",
           marginBottom: "16px",
         }}
       >
-        Which categories are predictable vs. volatile, based on {monthsUsed}{" "}
-        month{monthsUsed !== 1 ? "s" : ""}
+        {mostVolatile.category} is your least predictable category, it swings
+        the most month to month.
       </p>
 
       <ResponsiveContainer width="100%" height={280}>
@@ -1868,6 +1967,13 @@ function CategoryConsistencyChart() {
           </p>
         </div>
       </div>
+      <ChartExplain>
+        Each dot is a category. Further right means you spend more on it each
+        month, on average. Higher up means the amount changes a lot from month
+        to month. Categories in the top-right (red) tend to spike unpredictably
+      , those are the best candidates for a budget, since a fixed limit gives
+        you a warning before they run away.
+      </ChartExplain>
     </div>
   );
 }
@@ -2290,6 +2396,24 @@ function CompareView() {
     }
     return rows;
   }, [dataA, dataB, monthA, yearA, monthB, yearB]);
+
+  const dailyTakeaway = useMemo(() => {
+    if (!dailyChartData.length) return "";
+    const half = Math.floor(dailyChartData.length / 2);
+    const bFirstHalf = dailyChartData
+      .slice(0, half)
+      .reduce((s, d) => s + (d.b || 0), 0);
+    const bSecondHalf = dailyChartData
+      .slice(half)
+      .reduce((s, d) => s + (d.b || 0), 0);
+    if (bFirstHalf === 0 && bSecondHalf === 0)
+      return `No daily data yet for ${labelB}.`;
+    if (bFirstHalf > bSecondHalf * 1.3)
+      return `${labelB} was front-loaded — more spent in the first half of the month.`;
+    if (bSecondHalf > bFirstHalf * 1.3)
+      return `${labelB} was back-loaded — more spent in the second half of the month.`;
+    return `${labelB} spending was fairly even across the month.`;
+  }, [dailyChartData, labelB]);
 
   const tickColor = isDark ? "#44445A" : "#6C6C70";
   const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
@@ -2992,10 +3116,19 @@ function CompareView() {
                   color: "var(--text-3)",
                   textTransform: "uppercase",
                   letterSpacing: "1px",
-                  marginBottom: "16px",
+                  marginBottom: "6px",
                 }}
               >
                 Daily Spending Pattern
+              </p>
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "var(--text-2)",
+                  marginBottom: "16px",
+                }}
+              >
+                {dailyTakeaway}
               </p>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart
