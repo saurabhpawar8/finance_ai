@@ -778,7 +778,7 @@ function TrendTooltip({ active, payload, label }) {
   );
 }
 
-function SpendingTrend({ data, month, year }) {
+function SpendingTrend({ data, month, year, onDayClick }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const now = new Date();
@@ -887,14 +887,36 @@ function SpendingTrend({ data, month, year }) {
             fill="url(#trendGradient)"
             dot={false}
             activeDot={{
-              r: 4,
+              r: 5,
               fill: "#FF4D6D",
               stroke: isDark ? "#111115" : "#FFFFFF",
               strokeWidth: 2,
+              style: { cursor: onDayClick ? "pointer" : "default" },
+              onClick: (e, payload) => {
+                if (onDayClick && payload?.payload?.day) {
+                  const dateStr = `${year}-${String(month).padStart(
+                    2,
+                    "0"
+                  )}-${String(payload.payload.day).padStart(2, "0")}`;
+                  onDayClick(dateStr);
+                }
+              },
             }}
           />
         </AreaChart>
       </ResponsiveContainer>
+      {onDayClick && (
+        <p
+          style={{
+            fontSize: "11px",
+            color: "var(--text-4)",
+            marginTop: "8px",
+            textAlign: "center",
+          }}
+        >
+          Tap any point to see that day's transactions
+        </p>
+      )}
     </div>
   );
 }
@@ -940,7 +962,13 @@ function VelocityTooltip({ active, payload, label }) {
   );
 }
 
-function SpendingVelocity({ data, month, year, monthlyTotals = [] }) {
+function SpendingVelocity({
+  data,
+  month,
+  year,
+  monthlyTotals = [],
+  onDayClick,
+}) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const now = new Date();
@@ -1123,10 +1151,20 @@ function SpendingVelocity({ data, month, year, monthlyTotals = [] }) {
             fill="url(#velGradient)"
             dot={false}
             activeDot={{
-              r: 4,
+              r: 5,
               fill: "#FF4D6D",
               stroke: isDark ? "#111115" : "#fff",
               strokeWidth: 2,
+              style: { cursor: onDayClick ? "pointer" : "default" },
+              onClick: (e, payload) => {
+                if (onDayClick && payload?.payload?.day) {
+                  const dateStr = `${year}-${String(month).padStart(
+                    2,
+                    "0"
+                  )}-${String(payload.payload.day).padStart(2, "0")}`;
+                  onDayClick(dateStr);
+                }
+              },
             }}
             connectNulls={false}
           />
@@ -1142,6 +1180,13 @@ function SpendingVelocity({ data, month, year, monthlyTotals = [] }) {
           />
         </ComposedChart>
       </ResponsiveContainer>
+      {onDayClick && (
+        <p
+          style={{ fontSize: "11px", color: "var(--text-4)", marginTop: "8px" }}
+        >
+          Tap the actual line to see that day's transactions
+        </p>
+      )}
       {historicalMonths.length > 0 && (
         <p
           style={{
@@ -1280,13 +1325,19 @@ function OverviewTab({ month, year, onMonthChange, onYearChange }) {
               year={year}
               onDayClick={setDayDetail}
             />
-            <SpendingTrend data={heatmapData} month={month} year={year} />
+            <SpendingTrend
+              data={heatmapData}
+              month={month}
+              year={year}
+              onDayClick={setDayDetail}
+            />
           </div>
           <SpendingVelocity
             data={heatmapData}
             month={month}
             year={year}
             monthlyTotals={monthlyTotals}
+            onDayClick={setDayDetail}
           />
         </div>
       )}
@@ -1308,14 +1359,13 @@ function ReportTabs({ active, onChange }) {
   ];
   return (
     <div
+      className="insights-tabs"
       style={{
-        display: "inline-flex",
         background: "var(--bg-surface)",
         borderRadius: "12px",
         padding: "4px",
         boxShadow: "var(--shadow-card)",
         marginBottom: "20px",
-        flexWrap: "wrap",
       }}
     >
       {tabs.map(({ id, label, Icon }) => {

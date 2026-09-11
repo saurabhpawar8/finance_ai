@@ -320,3 +320,20 @@ select:focus {
     padding: 14px 14px 100px !important;
   }
 }
+
+.insights-tabs {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .insights-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+  }
+  .insights-tabs button {
+    width: 100%;
+    justify-content: center;
+  }
+}
