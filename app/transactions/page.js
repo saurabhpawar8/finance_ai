@@ -1358,7 +1358,7 @@ export default function TransactionsPage() {
               Budgets
             </Link>
             <Link
-              href="/report"
+              href="/insights"
               style={{
                 padding: "7px 14px",
                 background: "transparent",
@@ -1373,7 +1373,7 @@ export default function TransactionsPage() {
               }}
             >
               <BarChart3 size={14} strokeWidth={2} />
-              Reports
+              Insights
             </Link>
             <button
               onClick={handleLogout}
@@ -1980,7 +1980,7 @@ export default function TransactionsPage() {
           { href: "/dashboard", Icon: LayoutDashboard, label: "Dashboard" },
           { href: "/transactions", Icon: Receipt, label: "Transactions" },
           { href: "/budgets", Icon: Wallet2, label: "Budgets" },
-          { href: "/report", Icon: BarChart3, label: "Reports" },
+          { href: "/insights", Icon: BarChart3, label: "Insights" },
         ].map(({ href, Icon, label }) => {
           const active = label === "Transactions";
           return (

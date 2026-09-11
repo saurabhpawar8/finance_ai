@@ -593,10 +593,9 @@ export default function BudgetsPage() {
 
   const loadData = async () => {
     setLoading(true);
-    const now = new Date();
     const [budRes, pieRes, catRes] = await Promise.allSettled([
       getBudgets(),
-      getPieSummary(now.getMonth() + 1, now.getFullYear()),
+      getPieSummary(),
       getCategories(),
     ]);
     if (budRes.status === "fulfilled") setBudgets(budRes.value?.results || []);
@@ -718,7 +717,7 @@ export default function BudgetsPage() {
               Transactions
             </Link>
             <Link
-              href="/report"
+              href="/insights"
               style={{
                 padding: "7px 14px",
                 background: "transparent",
@@ -733,27 +732,27 @@ export default function BudgetsPage() {
               }}
             >
               <BarChart3 size={14} strokeWidth={2} />
-              Reports
+              Insights
             </Link>
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: "7px 14px",
+                background: "transparent",
+                border: "none",
+                borderRadius: "8px",
+                color: "var(--text-3)",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontWeight: "500",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <LogOut size={14} strokeWidth={2} />
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: "7px 14px",
-              background: "transparent",
-              border: "none",
-              borderRadius: "8px",
-              color: "var(--text-3)",
-              cursor: "pointer",
-              fontSize: "13px",
-              fontWeight: "500",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
-            <LogOut size={14} strokeWidth={2} />
-          </button>
           <button
             onClick={toggleTheme}
             title="Toggle theme"
@@ -918,7 +917,7 @@ export default function BudgetsPage() {
           { href: "/dashboard", Icon: LayoutDashboard, label: "Dashboard" },
           { href: "/transactions", Icon: Receipt, label: "Transactions" },
           { href: "/budgets", Icon: Wallet2, label: "Budgets" },
-          { href: "/report", Icon: BarChart3, label: "Reports" },
+          { href: "/insights", Icon: BarChart3, label: "Insights" },
         ].map(({ href, Icon, label }) => {
           const active = label === "Budgets";
           return (

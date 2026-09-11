@@ -4,20 +4,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ComposedChart,
-  Line,
-} from "recharts";
-import {
   Wallet,
   LayoutDashboard,
   Receipt,
@@ -41,15 +27,12 @@ import {
   BarChart2,
   Wallet2,
   X,
-  HelpCircle,
 } from "lucide-react";
 import {
   getSummary,
   getPieSummary,
   sendChat,
   removeTokens,
-  getHeatmap,
-  getMonthlyTotals,
   getBudgets,
   getTransactions,
 } from "@/lib/api";
@@ -123,943 +106,6 @@ function CountUp({ to, prefix = "", decimals = 0, duration = 1600 }) {
   );
 }
 
-// ── Spending Calendar Heatmap ─────────────────────────────
-function SpendingHeatmap({ data, selectedMonth, selectedYear }) {
-  const [tooltip, setTooltip] = useState(null);
-  const now = new Date();
-  const year = selectedYear || now.getFullYear();
-  const month = selectedMonth ? selectedMonth - 1 : now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = new Date(year, month, 1).getDay();
-  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-  const dataMap = {};
-  (data || []).forEach((d) => {
-    dataMap[d.date_only] = d.total;
-  });
-  const maxTotal = Math.max(...(data || []).map((d) => d.total), 1);
-  const cells = [];
-  for (let i = 0; i < startOffset; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
-      d
-    ).padStart(2, "0")}`;
-    cells.push({ day: d, date: dateStr, total: dataMap[dateStr] || 0 });
-  }
-  const getColor = (total) => {
-    if (!total) return "rgba(255,255,255,0.06)";
-    const t = Math.min(total / maxTotal, 1);
-    if (t < 0.25) return "rgba(251,146,60,0.4)";
-    if (t < 0.5) return "rgba(239,100,68,0.6)";
-    if (t < 0.75) return "rgba(239,68,68,0.78)";
-    return "rgba(239,68,68,0.96)";
-  };
-  const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
-  const todayDay = isCurrentMonth ? now.getDate() : -1;
-  const monthLabel = new Date(year, month, 1).toLocaleDateString("en-IN", {
-    month: "long",
-    year: "numeric",
-  });
-
-  return (
-    <div
-      style={{
-        background: "var(--bg-surface)",
-        borderRadius: "16px",
-        padding: "20px",
-        boxShadow: "var(--shadow-card)",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "14px",
-        }}
-      >
-        <p
-          style={{
-            fontSize: "11px",
-            fontWeight: "700",
-            color: "var(--text-3)",
-            textTransform: "uppercase",
-            letterSpacing: "1px",
-          }}
-        >
-          Spending Calendar
-        </p>
-        <span style={{ fontSize: "12px", color: "var(--text-4)" }}>
-          {monthLabel}
-        </span>
-      </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(7, 1fr)",
-          gap: "3px",
-          marginBottom: "3px",
-        }}
-      >
-        {DAYS.map((d) => (
-          <div
-            key={d}
-            style={{
-              fontSize: "10px",
-              color: "var(--text-3)",
-              textAlign: "center",
-              fontWeight: "600",
-            }}
-          >
-            {d}
-          </div>
-        ))}
-      </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(7, 1fr)",
-          gap: "3px",
-          flex: 1,
-        }}
-      >
-        {cells.map((cell, i) => (
-          <div
-            key={i}
-            style={{
-              aspectRatio: "1",
-              borderRadius: "4px",
-              background: cell ? getColor(cell.total) : "transparent",
-              border:
-                cell?.day === todayDay
-                  ? "1.5px solid var(--accent)"
-                  : "1px solid transparent",
-              cursor: cell ? "default" : "auto",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "transform 100ms ease",
-            }}
-            onMouseEnter={(e) => {
-              if (cell) {
-                setTooltip(cell);
-                e.currentTarget.style.transform = "scale(1.15)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              setTooltip(null);
-              e.currentTarget.style.transform = "scale(1)";
-            }}
-          >
-            {cell && (
-              <span
-                style={{
-                  fontSize: "9px",
-                  color:
-                    cell.total > 0 ? "rgba(255,255,255,0.8)" : "var(--text-4)",
-                  fontWeight: "600",
-                }}
-              >
-                {cell.day}
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
-      <div style={{ marginTop: "10px", minHeight: "34px" }}>
-        {tooltip ? (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "7px 12px",
-              background: "var(--bg-inset)",
-              borderRadius: "8px",
-            }}
-          >
-            <span style={{ fontSize: "12px", color: "var(--text-2)" }}>
-              {new Date(tooltip.date + "T00:00:00").toLocaleDateString(
-                "en-IN",
-                { weekday: "short", day: "numeric", month: "short" }
-              )}
-            </span>
-            <span
-              style={{
-                fontSize: "13px",
-                fontWeight: "700",
-                color: tooltip.total > 0 ? "var(--red)" : "var(--text-4)",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {tooltip.total > 0
-                ? `₹${Number(tooltip.total).toLocaleString("en-IN")}`
-                : "No spending"}
-            </span>
-          </div>
-        ) : (
-          <div />
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Trend tooltip ─────────────────────────────────────────
-function TrendTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  const amount = payload[0].value;
-  return (
-    <div
-      style={{
-        background: "var(--bg-elevated)",
-        borderRadius: "10px",
-        padding: "10px 14px",
-        boxShadow: "var(--shadow-elevated)",
-        border: "1px solid var(--border)",
-      }}
-    >
-      <p
-        style={{
-          fontSize: "11px",
-          color: "var(--text-3)",
-          marginBottom: "4px",
-        }}
-      >
-        Day {label}
-      </p>
-      <p
-        style={{
-          fontSize: "15px",
-          fontWeight: "700",
-          color: amount > 0 ? "var(--red)" : "var(--text-3)",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {amount > 0
-          ? `₹${Number(amount).toLocaleString("en-IN")}`
-          : "No spending"}
-      </p>
-    </div>
-  );
-}
-
-// ── Spending Trend chart ──────────────────────────────────
-function SpendingTrend({ data, selectedMonth, selectedYear, onDayClick }) {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-  const now = new Date();
-  const year = selectedYear || now.getFullYear();
-  const month = selectedMonth ? selectedMonth - 1 : now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const today =
-    year === now.getFullYear() && month === now.getMonth()
-      ? now.getDate()
-      : daysInMonth;
-  const dataMap = {};
-  (data || []).forEach((d) => {
-    dataMap[d.date_only] = d.total;
-  });
-  const chartData = [];
-  for (let d = 1; d <= today; d++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
-      d
-    ).padStart(2, "0")}`;
-    chartData.push({ day: d, amount: dataMap[dateStr] || 0 });
-  }
-  const monthLabel = new Date(year, month, 1).toLocaleDateString("en-IN", {
-    month: "long",
-    year: "numeric",
-  });
-  const totalSpend = (data || []).reduce((s, d) => s + d.total, 0);
-  const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
-  const tickColor = isDark ? "#44445A" : "#6C6C70";
-  const fmtY = (v) =>
-    v === 0 ? "" : v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`;
-
-  return (
-    <div
-      style={{
-        background: "var(--bg-surface)",
-        borderRadius: "16px",
-        padding: "20px",
-        boxShadow: "var(--shadow-card)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          marginBottom: "4px",
-        }}
-      >
-        <div>
-          <p
-            style={{
-              fontSize: "11px",
-              fontWeight: "700",
-              color: "var(--text-3)",
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-              marginBottom: "6px",
-            }}
-          >
-            Spending Trend
-          </p>
-          <p
-            style={{
-              fontSize: "22px",
-              fontWeight: "800",
-              color: "var(--red)",
-              letterSpacing: "-1px",
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
-            ₹{totalSpend.toLocaleString("en-IN")}
-          </p>
-        </div>
-        <span
-          style={{ fontSize: "12px", color: "var(--text-4)", marginTop: "2px" }}
-        >
-          {monthLabel}
-        </span>
-      </div>
-      <ResponsiveContainer width="100%" height={180}>
-        <AreaChart
-          data={chartData}
-          margin={{ top: 16, right: 4, left: 0, bottom: 0 }}
-        >
-          <defs>
-            <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop
-                offset="5%"
-                stopColor="#FF4D6D"
-                stopOpacity={isDark ? 0.3 : 0.15}
-              />
-              <stop offset="95%" stopColor="#FF4D6D" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke={gridColor}
-            vertical={false}
-          />
-          <XAxis
-            dataKey="day"
-            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
-            tickLine={false}
-            axisLine={false}
-            interval={Math.floor(daysInMonth / 6)}
-          />
-          <YAxis
-            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={fmtY}
-            width={40}
-          />
-          <Tooltip
-            content={<TrendTooltip />}
-            cursor={{
-              stroke: "var(--border-strong)",
-              strokeWidth: 1,
-              strokeDasharray: "4 4",
-            }}
-          />
-          <Area
-            type="monotone"
-            dataKey="amount"
-            stroke="#FF4D6D"
-            strokeWidth={2}
-            fill="url(#trendGradient)"
-            dot={false}
-            activeDot={{
-              r: 5,
-              fill: "#FF4D6D",
-              stroke: isDark ? "#111115" : "#FFFFFF",
-              strokeWidth: 2,
-              style: { cursor: onDayClick ? "pointer" : "default" },
-              onClick: (e, payload) => {
-                if (onDayClick && payload?.payload?.day)
-                  onDayClick(payload.payload.day);
-              },
-            }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-      {onDayClick && (
-        <p
-          style={{
-            fontSize: "11px",
-            color: "var(--text-4)",
-            marginTop: "10px",
-            textAlign: "center",
-          }}
-        >
-          Tap any point to see that day's transactions
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ── Velocity tooltip ──────────────────────────────────────
-function VelocityTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  const actual = payload.find((p) => p.dataKey === "actual");
-  const projected = payload.find((p) => p.dataKey === "projected");
-  const value = actual?.value ?? projected?.value;
-  const isProj = !actual?.value && !!projected?.value;
-  if (!value) return null;
-  return (
-    <div
-      style={{
-        background: "var(--bg-elevated)",
-        border: "1px solid var(--border)",
-        borderRadius: "10px",
-        padding: "10px 14px",
-        boxShadow: "var(--shadow-elevated)",
-      }}
-    >
-      <p
-        style={{
-          fontSize: "11px",
-          color: "var(--text-3)",
-          marginBottom: "4px",
-        }}
-      >
-        Day {label}
-        {isProj ? " · projected" : ""}
-      </p>
-      <p
-        style={{
-          fontSize: "15px",
-          fontWeight: "700",
-          color: isProj ? "var(--accent-dim)" : "var(--red)",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        ₹{Number(value).toLocaleString("en-IN")}
-      </p>
-    </div>
-  );
-}
-
-// ── Spending Velocity ─────────────────────────────────────
-function SpendingVelocity({
-  data,
-  selectedMonth,
-  selectedYear,
-  monthlyTotals = [],
-  onDayClick,
-}) {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-  const now = new Date();
-  const year = selectedYear || now.getFullYear();
-  const month = selectedMonth ? selectedMonth - 1 : now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
-  const today = isCurrentMonth ? now.getDate() : daysInMonth;
-  const dataMap = {};
-  (data || []).forEach((d) => {
-    dataMap[d.date_only] = d.total;
-  });
-
-  let cumulative = 0;
-  const chartData = [];
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
-      d
-    ).padStart(2, "0")}`;
-    cumulative += dataMap[dateStr] || 0;
-    chartData.push({
-      day: d,
-      actual: d <= today ? cumulative : null,
-      projected: null,
-      daySpend: dataMap[dateStr] || 0,
-    });
-  }
-
-  const totalSoFar = chartData[today - 1]?.actual || 0;
-  const daysRemaining = daysInMonth - today;
-
-  const currentMonthLabel = new Date(year, month, 1).toLocaleDateString(
-    "en-IN",
-    { month: "short", year: "numeric" }
-  );
-  const historicalMonths = (monthlyTotals || [])
-    .filter((m) => m.month !== currentMonthLabel)
-    .slice(-3);
-  const historicalAvg =
-    historicalMonths.length > 0
-      ? historicalMonths.reduce((s, m) => s + m.total, 0) /
-        historicalMonths.length
-      : 0;
-  const completionRatio = today / daysInMonth;
-  const expectedSoFar = historicalAvg * completionRatio;
-  const deviation = expectedSoFar > 0 ? totalSoFar / expectedSoFar : 1;
-  const historicalDailyAvg =
-    historicalAvg > 0 ? historicalAvg / daysInMonth : totalSoFar / (today || 1);
-  const projectedRemaining = historicalDailyAvg * daysRemaining * deviation;
-  const projectedTotal = Math.round(totalSoFar + projectedRemaining);
-  const rangeLow = Math.round(projectedTotal * 0.87);
-  const rangeHigh = Math.round(projectedTotal * 1.13);
-
-  if (isCurrentMonth && daysRemaining > 0) {
-    chartData[today - 1].projected = chartData[today - 1].actual;
-    let projCum = totalSoFar;
-    const dailyStep =
-      daysRemaining > 0 ? projectedRemaining / daysRemaining : 0;
-    for (let d = today + 1; d <= daysInMonth; d++) {
-      projCum += dailyStep;
-      chartData[d - 1].projected = Math.round(projCum);
-    }
-  }
-
-  const maxDaySpend = Math.max(...(data || []).map((d) => d.total), 0);
-  const maxDay = (data || []).find((d) => d.total === maxDaySpend);
-  const deviationPct = Math.round(Math.abs(deviation - 1) * 100);
-  const deviationUp = deviation > 1;
-  const tickColor = isDark ? "#44445A" : "#6C6C70";
-  const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
-  const fmtY = (v) =>
-    v >= 100000
-      ? `₹${(v / 100000).toFixed(1)}L`
-      : v >= 1000
-      ? `₹${(v / 1000).toFixed(0)}k`
-      : `₹${v}`;
-
-  return (
-    <div
-      style={{
-        background: "var(--bg-surface)",
-        borderRadius: "16px",
-        padding: "20px",
-        boxShadow: "var(--shadow-card)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          marginBottom: "20px",
-        }}
-      >
-        <div>
-          <p
-            style={{
-              fontSize: "11px",
-              fontWeight: "700",
-              color: "var(--text-3)",
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-              marginBottom: "6px",
-            }}
-          >
-            Spending Velocity
-          </p>
-          <p
-            style={{
-              fontSize: "28px",
-              fontWeight: "800",
-              color: "var(--text-1)",
-              letterSpacing: "-1.5px",
-              fontVariantNumeric: "tabular-nums",
-              lineHeight: 1,
-            }}
-          >
-            ₹{totalSoFar.toLocaleString("en-IN")}
-          </p>
-          {isCurrentMonth && daysRemaining > 0 && (
-            <div style={{ marginTop: "8px" }}>
-              <p style={{ fontSize: "13px", color: "var(--text-3)" }}>
-                Projected{" "}
-                <span
-                  style={{
-                    color: "var(--accent-dim)",
-                    fontWeight: "700",
-                    fontVariantNumeric: "tabular-nums",
-                  }}
-                >
-                  ₹{rangeLow.toLocaleString("en-IN")} – ₹
-                  {rangeHigh.toLocaleString("en-IN")}
-                </span>
-              </p>
-              {historicalMonths.length > 0 && deviationPct > 0 && (
-                <p
-                  style={{
-                    fontSize: "12px",
-                    marginTop: "3px",
-                    color: deviationUp ? "var(--red)" : "var(--green)",
-                    fontWeight: "600",
-                  }}
-                >
-                  {deviationUp ? "↑" : "↓"} {deviationPct}%{" "}
-                  {deviationUp ? "above" : "below"} your usual pace
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-        {maxDay && maxDaySpend > 0 && (
-          <div
-            style={{
-              textAlign: "right",
-              padding: "10px 14px",
-              background: "var(--red-bg)",
-              borderRadius: "10px",
-              border: "1px solid var(--red-border)",
-            }}
-          >
-            <p
-              style={{
-                fontSize: "10px",
-                color: "var(--text-3)",
-                fontWeight: "600",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                marginBottom: "3px",
-              }}
-            >
-              Biggest day
-            </p>
-            <p
-              style={{
-                fontSize: "14px",
-                fontWeight: "800",
-                color: "var(--red)",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              ₹{Number(maxDaySpend).toLocaleString("en-IN")}
-            </p>
-            <p
-              style={{
-                fontSize: "11px",
-                color: "var(--text-4)",
-                marginTop: "2px",
-              }}
-            >
-              {new Date(maxDay.date_only + "T00:00:00").toLocaleDateString(
-                "en-IN",
-                { day: "numeric", month: "short" }
-              )}
-            </p>
-          </div>
-        )}
-      </div>
-      <ResponsiveContainer width="100%" height={200}>
-        <ComposedChart
-          data={chartData}
-          margin={{ top: 5, right: 5, left: 0, bottom: 0 }}
-        >
-          <defs>
-            <linearGradient id="velGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop
-                offset="5%"
-                stopColor="#FF4D6D"
-                stopOpacity={isDark ? 0.25 : 0.12}
-              />
-              <stop offset="95%" stopColor="#FF4D6D" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke={gridColor}
-            vertical={false}
-          />
-          <XAxis
-            dataKey="day"
-            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
-            tickLine={false}
-            axisLine={false}
-            interval={Math.floor(daysInMonth / 6)}
-          />
-          <YAxis
-            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={fmtY}
-            width={45}
-          />
-          <Tooltip
-            content={<VelocityTooltip />}
-            cursor={{
-              stroke: "var(--border-strong)",
-              strokeWidth: 1,
-              strokeDasharray: "4 4",
-            }}
-          />
-          <Area
-            type="monotone"
-            dataKey="actual"
-            stroke="#FF4D6D"
-            strokeWidth={2.5}
-            fill="url(#velGradient)"
-            dot={false}
-            activeDot={{
-              r: 5,
-              fill: "#FF4D6D",
-              stroke: isDark ? "#111115" : "#fff",
-              strokeWidth: 2,
-              style: { cursor: onDayClick ? "pointer" : "default" },
-              onClick: (e, payload) => {
-                if (onDayClick && payload?.payload?.day)
-                  onDayClick(payload.payload.day);
-              },
-            }}
-            connectNulls={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="projected"
-            stroke="var(--accent-dim)"
-            strokeWidth={1.5}
-            strokeDasharray="5 5"
-            dot={false}
-            activeDot={{ r: 3, fill: "var(--accent-dim)" }}
-            connectNulls={false}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-      {onDayClick && (
-        <p
-          style={{ fontSize: "11px", color: "var(--text-4)", marginTop: "8px" }}
-        >
-          Tap the actual line to see that day's transactions
-        </p>
-      )}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginTop: "12px",
-          flexWrap: "wrap",
-          gap: "8px",
-        }}
-      >
-        <div style={{ display: "flex", gap: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <div
-              style={{
-                width: "20px",
-                height: "2.5px",
-                background: "#FF4D6D",
-                borderRadius: "2px",
-              }}
-            />
-            <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
-              Actual
-            </span>
-          </div>
-          {isCurrentMonth && daysRemaining > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div
-                style={{
-                  width: "20px",
-                  height: "0",
-                  borderTop: "2px dashed var(--accent-dim)",
-                }}
-              />
-              <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
-                Projected
-              </span>
-            </div>
-          )}
-        </div>
-        {historicalMonths.length > 0 && (
-          <span style={{ fontSize: "11px", color: "var(--text-4)" }}>
-            Based on {historicalMonths.length} month
-            {historicalMonths.length > 1 ? "s" : ""} history · avg ₹
-            {Math.round(historicalAvg).toLocaleString("en-IN")}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Monthly bar tooltip ───────────────────────────────────
-function MonthlyBarTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  const value = payload[0].value;
-  return (
-    <div
-      style={{
-        background: "var(--bg-elevated)",
-        border: "1px solid var(--border)",
-        borderRadius: "10px",
-        padding: "10px 14px",
-        boxShadow: "var(--shadow-elevated)",
-      }}
-    >
-      <p
-        style={{
-          fontSize: "11px",
-          color: "var(--text-3)",
-          marginBottom: "4px",
-        }}
-      >
-        {label}
-      </p>
-      <p
-        style={{
-          fontSize: "15px",
-          fontWeight: "700",
-          color: "var(--red)",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        ₹{Number(value).toLocaleString("en-IN")}
-      </p>
-    </div>
-  );
-}
-
-// ── Monthly Overview bar chart (last 12 months) ───────────
-function MonthlyOverview({ monthlyTotals = [], selectedMonth, selectedYear }) {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-  const now = new Date();
-  const currentMonthLabel = new Date(
-    selectedYear || now.getFullYear(),
-    (selectedMonth || now.getMonth() + 1) - 1,
-    1
-  ).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
-
-  const data = (monthlyTotals || []).map((m) => ({
-    month: m.month,
-    total: m.total,
-    isCurrent: m.month === currentMonthLabel,
-  }));
-
-  if (!data.length) return null;
-
-  const avg = data.reduce((s, d) => s + d.total, 0) / data.length;
-  const highest = data.reduce(
-    (max, d) => (d.total > max.total ? d : max),
-    data[0]
-  );
-  const tickColor = isDark ? "#44445A" : "#6C6C70";
-  const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
-  const fmtY = (v) =>
-    v >= 100000
-      ? `₹${(v / 100000).toFixed(1)}L`
-      : v >= 1000
-      ? `₹${(v / 1000).toFixed(0)}k`
-      : `₹${v}`;
-
-  return (
-    <div
-      style={{
-        background: "var(--bg-surface)",
-        borderRadius: "16px",
-        padding: "20px",
-        boxShadow: "var(--shadow-card)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          marginBottom: "16px",
-        }}
-      >
-        <div>
-          <p
-            style={{
-              fontSize: "11px",
-              fontWeight: "700",
-              color: "var(--text-3)",
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-              marginBottom: "6px",
-            }}
-          >
-            Monthly Overview
-          </p>
-          <p style={{ fontSize: "12px", color: "var(--text-4)" }}>
-            Avg ₹{Math.round(avg).toLocaleString("en-IN")}/month · Highest{" "}
-            {highest.month}
-          </p>
-        </div>
-      </div>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke={gridColor}
-            vertical={false}
-          />
-          <XAxis
-            dataKey="month"
-            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
-            tickLine={false}
-            axisLine={false}
-            interval={data.length > 8 ? 1 : 0}
-          />
-          <YAxis
-            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={fmtY}
-            width={45}
-          />
-          <Tooltip
-            content={<MonthlyBarTooltip />}
-            cursor={{ fill: "var(--bg-inset)" }}
-          />
-          <Bar dataKey="total" radius={[6, 6, 0, 0]} maxBarSize={36}>
-            {data.map((entry, i) => (
-              <Cell
-                key={i}
-                fill={entry.isCurrent ? "var(--accent)" : "#FF4D6D"}
-                fillOpacity={entry.isCurrent ? 1 : isDark ? 0.55 : 0.4}
-              />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-      <div style={{ display: "flex", gap: "16px", marginTop: "12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <div
-            style={{
-              width: "10px",
-              height: "10px",
-              borderRadius: "3px",
-              background: "var(--accent)",
-            }}
-          />
-          <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
-            Selected month
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <div
-            style={{
-              width: "10px",
-              height: "10px",
-              borderRadius: "3px",
-              background: "#FF4D6D",
-              opacity: 0.5,
-            }}
-          />
-          <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
-            Other months
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Budget widget (top urgent budgets) ────────────────────
 function BudgetWidget({ budgets, spendMap }) {
   if (!budgets || budgets.length === 0) {
@@ -1112,7 +158,6 @@ function BudgetWidget({ budgets, spendMap }) {
     );
   }
 
-  // Sort by urgency: over-budget first, then by % used descending
   const withStatus = budgets.map((b) => {
     const spent = spendMap[b.category] || 0;
     const pct = b.budget_amount > 0 ? (spent / b.budget_amount) * 100 : 0;
@@ -1247,255 +292,6 @@ function BudgetWidget({ budgets, spendMap }) {
       >
         Manage budgets <ArrowRight size={13} strokeWidth={2} />
       </Link>
-    </div>
-  );
-}
-
-// ── Day Detail modal ───────────────────────────────────────
-function DayDetailModal({ date, onClose }) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [transactions, setTransactions] = useState([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const res = await getTransactions({ page_size: 100 });
-        const dayTx = (res?.results || []).filter((tx) => tx.date === date);
-        if (!cancelled) setTransactions(dayTx);
-      } catch {
-        if (!cancelled) setError("Could not connect. Please try again.");
-      }
-      if (!cancelled) setLoading(false);
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [date]);
-
-  const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-IN", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-  const dayTotal = transactions.reduce(
-    (s, tx) => s + Number(tx.amount || 0),
-    0
-  );
-
-  return (
-    <div
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.6)",
-        backdropFilter: "blur(4px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 50,
-        padding: "20px",
-      }}
-    >
-      <div
-        style={{
-          background: "var(--bg-surface)",
-          borderRadius: "20px",
-          padding: "28px",
-          width: "100%",
-          maxWidth: "440px",
-          boxShadow: "var(--shadow-elevated)",
-          maxHeight: "85vh",
-          overflowY: "auto",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: "20px",
-          }}
-        >
-          <p
-            style={{
-              fontSize: "16px",
-              fontWeight: "700",
-              color: "var(--text-1)",
-            }}
-          >
-            {dateLabel}
-          </p>
-          <button
-            onClick={onClose}
-            style={{
-              width: "30px",
-              height: "30px",
-              borderRadius: "8px",
-              background: "var(--bg-elevated)",
-              border: "none",
-              color: "var(--text-3)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <X size={14} strokeWidth={2.5} />
-          </button>
-        </div>
-
-        {!loading && transactions.length > 0 && (
-          <div
-            style={{
-              marginBottom: "16px",
-              padding: "14px 16px",
-              background: "var(--bg-inset)",
-              borderRadius: "12px",
-            }}
-          >
-            <p
-              style={{
-                fontSize: "24px",
-                fontWeight: "800",
-                color: "var(--red)",
-                letterSpacing: "-0.5px",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              ₹{dayTotal.toLocaleString("en-IN")}
-            </p>
-            <p
-              style={{
-                fontSize: "12px",
-                color: "var(--text-3)",
-                marginTop: "2px",
-              }}
-            >
-              {transactions.length} transaction
-              {transactions.length !== 1 ? "s" : ""}
-            </p>
-          </div>
-        )}
-
-        {loading && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "40px 20px",
-              gap: "12px",
-            }}
-          >
-            <div style={{ display: "flex", gap: "5px" }}>
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: "7px",
-                    height: "7px",
-                    borderRadius: "50%",
-                    background: "var(--accent-dim)",
-                    animation: `bounce 1.2s infinite ${i * 0.2}s`,
-                  }}
-                />
-              ))}
-            </div>
-            <p style={{ fontSize: "13px", color: "var(--text-3)" }}>
-              Loading transactions…
-            </p>
-          </div>
-        )}
-
-        {error && (
-          <div
-            style={{
-              padding: "12px 16px",
-              borderRadius: "10px",
-              background: "var(--red-bg)",
-              border: "1px solid var(--red-border)",
-              color: "var(--red-dim)",
-              fontSize: "13px",
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        {!loading && !error && transactions.length === 0 && (
-          <p
-            style={{
-              fontSize: "13px",
-              color: "var(--text-3)",
-              textAlign: "center",
-              padding: "20px 0",
-            }}
-          >
-            No transactions on this day.
-          </p>
-        )}
-
-        {!loading && transactions.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "1px",
-              borderRadius: "12px",
-              overflow: "hidden",
-            }}
-          >
-            {transactions.map((tx, i) => (
-              <div
-                key={tx.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "10px 4px",
-                  borderBottom:
-                    i < transactions.length - 1
-                      ? "1px solid var(--border-subtle)"
-                      : "none",
-                }}
-              >
-                <div>
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "var(--text-1)",
-                    }}
-                  >
-                    {tx.name}
-                  </p>
-                  <p style={{ fontSize: "11px", color: "var(--text-3)" }}>
-                    {tx.category}
-                  </p>
-                </div>
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: "700",
-                    color: "var(--red)",
-                    fontVariantNumeric: "tabular-nums",
-                  }}
-                >
-                  ₹{Number(tx.amount).toLocaleString("en-IN")}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -1695,7 +491,7 @@ function AppHeader({
             Budgets
           </Link>
           <Link
-            href="/report"
+            href="/insights"
             style={{
               padding: "7px 12px",
               background: "transparent",
@@ -1717,7 +513,7 @@ function AppHeader({
             }
           >
             <BarChart3 size={14} strokeWidth={2} />
-            Reports
+            Insights
           </Link>
           <button
             onClick={onLogout}
@@ -1745,26 +541,6 @@ function AppHeader({
             <LogOut size={14} strokeWidth={2} />
           </button>
         </div>
-        <Link
-          href="/features"
-          title="What's included"
-          style={{
-            width: "32px",
-            height: "32px",
-            borderRadius: "8px",
-            background: "var(--bg-elevated)",
-            color: "var(--text-3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            textDecoration: "none",
-            transition: "color 100ms ease",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-1)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-3)")}
-        >
-          <HelpCircle size={14} strokeWidth={2} />
-        </Link>
         <button
           onClick={toggleTheme}
           style={{
@@ -1980,7 +756,7 @@ function BottomTabs({ active }) {
         { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
         { href: "/transactions", icon: Receipt, label: "Transactions" },
         { href: "/budgets", icon: Wallet2, label: "Budgets" },
-        { href: "/report", icon: BarChart3, label: "Reports" },
+        { href: "/insights", icon: BarChart3, label: "Insights" },
       ].map(({ href, icon: Icon, label }) => {
         const isActive = active === label.toLowerCase();
         return (
@@ -2008,54 +784,6 @@ function BottomTabs({ active }) {
   );
 }
 
-// ── Page tab switcher (Overview / Analytics) ──────────────
-function PageTabs({ active, onChange }) {
-  const tabs = [
-    { id: "overview", label: "Overview", Icon: LayoutGrid },
-    { id: "analytics", label: "Analytics", Icon: BarChart2 },
-  ];
-  return (
-    <div
-      style={{
-        display: "inline-flex",
-        background: "var(--bg-surface)",
-        borderRadius: "12px",
-        padding: "4px",
-        boxShadow: "var(--shadow-card)",
-        marginBottom: "16px",
-      }}
-    >
-      {tabs.map(({ id, label, Icon }) => {
-        const isActive = active === id;
-        return (
-          <button
-            key={id}
-            onClick={() => onChange(id)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "8px 16px",
-              borderRadius: "8px",
-              border: "none",
-              background: isActive ? "var(--accent-gradient)" : "transparent",
-              color: isActive ? "#fff" : "var(--text-3)",
-              fontSize: "13px",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 150ms ease",
-              boxShadow: isActive ? "var(--shadow-accent)" : "none",
-            }}
-          >
-            <Icon size={14} strokeWidth={2} />
-            {label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 // ── Main ─────────────────────────────────────────────────
 export default function DashboardPage() {
   const router = useRouter();
@@ -2064,12 +792,8 @@ export default function DashboardPage() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [summary, setSummary] = useState(null);
   const [pieData, setPieData] = useState([]);
-  const [heatmapData, setHeatmapData] = useState([]);
-  const [monthlyTotals, setMonthlyTotals] = useState([]);
   const [budgets, setBudgets] = useState([]);
-  const [explainDate, setExplainDate] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
   const [messages, setMessages] = useState([
     {
       role: "bot",
@@ -2081,22 +805,15 @@ export default function DashboardPage() {
   const messagesEndRef = useRef(null);
 
   const loadData = useCallback(async (month, year) => {
-    const [sumRes, pieRes, heatRes, totalsRes, budRes] =
-      await Promise.allSettled([
-        getSummary(month, year),
-        getPieSummary(month, year),
-        getHeatmap(month, year),
-        getMonthlyTotals(),
-        getBudgets(),
-      ]);
+    const [sumRes, pieRes, budRes] = await Promise.allSettled([
+      getSummary(month, year),
+      getPieSummary(month, year),
+      getBudgets(),
+    ]);
     if (sumRes.status === "fulfilled" && sumRes.value?.success)
       setSummary(sumRes.value.data);
     if (pieRes.status === "fulfilled" && pieRes.value?.success)
       setPieData(pieRes.value.data);
-    if (heatRes.status === "fulfilled" && heatRes.value?.success)
-      setHeatmapData(heatRes.value.data);
-    if (totalsRes.status === "fulfilled" && totalsRes.value?.success)
-      setMonthlyTotals(totalsRes.value.data);
     if (budRes.status === "fulfilled") setBudgets(budRes.value?.results || []);
     setDataLoading(false);
   }, []);
@@ -2114,7 +831,6 @@ export default function DashboardPage() {
     setDataLoading(true);
     setSummary(null);
     setPieData([]);
-    setHeatmapData([]);
     loadData(selectedMonth, selectedYear);
   }, [selectedMonth, selectedYear, loadData]);
 
@@ -2152,17 +868,6 @@ export default function DashboardPage() {
       setChatLoading(false);
     },
     [input, chatLoading, loadData]
-  );
-
-  const handleSpikeClick = useCallback(
-    (day) => {
-      const dateStr = `${selectedYear}-${String(selectedMonth).padStart(
-        2,
-        "0"
-      )}-${String(day).padStart(2, "0")}`;
-      setExplainDate(dateStr);
-    },
-    [selectedMonth, selectedYear]
   );
 
   const handleLogout = useCallback(() => {
@@ -2714,102 +1419,77 @@ export default function DashboardPage() {
               <ChatBox {...chatProps} fullWidth={true} />
             </div>
 
-            {/* ── Tab switcher ── */}
-            <PageTabs active={activeTab} onChange={setActiveTab} />
-
-            {/* ── Overview tab ── */}
-            {activeTab === "overview" && (
-              <div className="bottom-grid">
-                <div
-                  style={{
-                    background: "var(--bg-surface)",
-                    borderRadius: "16px",
-                    padding: "20px",
-                    boxShadow: "var(--shadow-card)",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: "11px",
-                      fontWeight: "600",
-                      color: "var(--text-3)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.8px",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    Spending by Category
-                  </p>
-                  <div
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      minHeight: "260px",
-                    }}
-                  >
-                    <ExpensePieChart data={pieData} />
-                  </div>
-                </div>
-                <BudgetWidget
-                  budgets={budgets}
-                  spendMap={Object.fromEntries(
-                    (pieData || []).map((c) => [c.category_name, c.total])
-                  )}
-                />
-              </div>
-            )}
-
-            {/* ── Analytics tab ── */}
-            {activeTab === "analytics" && (
+            {/* ── Overview: Pie chart | Budgets ── */}
+            <div className="bottom-grid">
               <div
                 style={{
+                  background: "var(--bg-surface)",
+                  borderRadius: "16px",
+                  padding: "20px",
+                  boxShadow: "var(--shadow-card)",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "16px",
                 }}
               >
-                <div className="bottom-grid">
-                  <SpendingHeatmap
-                    data={heatmapData}
-                    selectedMonth={selectedMonth}
-                    selectedYear={selectedYear}
-                  />
-                  <SpendingTrend
-                    data={heatmapData}
-                    selectedMonth={selectedMonth}
-                    selectedYear={selectedYear}
-                    onDayClick={handleSpikeClick}
-                  />
+                <p
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "600",
+                    color: "var(--text-3)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.8px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  Spending by Category
+                </p>
+                <div
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: "260px",
+                  }}
+                >
+                  <ExpensePieChart data={pieData} />
                 </div>
-                <SpendingVelocity
-                  data={heatmapData}
-                  selectedMonth={selectedMonth}
-                  selectedYear={selectedYear}
-                  monthlyTotals={monthlyTotals}
-                  onDayClick={handleSpikeClick}
-                />
-                <MonthlyOverview
-                  monthlyTotals={monthlyTotals}
-                  selectedMonth={selectedMonth}
-                  selectedYear={selectedYear}
-                />
               </div>
-            )}
+              <BudgetWidget
+                budgets={budgets}
+                spendMap={Object.fromEntries(
+                  (pieData || []).map((c) => [c.category_name, c.total])
+                )}
+              />
+            </div>
+
+            {/* ── Link to deeper analysis ── */}
+            <Link
+              href="/insights"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                marginTop: "16px",
+                padding: "14px",
+                background: "var(--bg-surface)",
+                boxShadow: "var(--shadow-card)",
+                borderRadius: "14px",
+                color: "var(--text-2)",
+                textDecoration: "none",
+                fontSize: "13px",
+                fontWeight: "600",
+              }}
+            >
+              <BarChart2 size={15} strokeWidth={2} />
+              View trends, projections & reports
+              <ArrowRight size={13} strokeWidth={2} />
+            </Link>
           </>
         )}
       </main>
       <BottomTabs active="dashboard" />
-
-      {explainDate && (
-        <DayDetailModal
-          date={explainDate}
-          onClose={() => setExplainDate(null)}
-        />
-      )}
 
       <Toast />
     </div>

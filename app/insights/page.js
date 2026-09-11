@@ -7,6 +7,9 @@ import {
   Bar,
   LineChart,
   Line,
+  AreaChart,
+  Area,
+  ComposedChart,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -33,6 +36,10 @@ import {
   Wallet2,
   GitCompare,
   Minus,
+  LayoutGrid,
+  ChevronLeft,
+  ChevronRight,
+  X,
 } from "lucide-react";
 import {
   getReport,
@@ -40,6 +47,8 @@ import {
   getSummary,
   getPieSummary,
   getHeatmap,
+  getMonthlyTotals,
+  getTransactions,
   removeTokens,
 } from "@/lib/api";
 import Toast, { showToast } from "@/components/Toast";
@@ -310,9 +319,989 @@ const selectStyle = {
   backgroundPosition: "right 14px center",
 };
 
-// ── Tab switcher (Download / AI Analysis / Compare) ───────
+// ── Day Detail modal ───────────────────────────────────────
+function DayDetailModal({ date, onClose }) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [transactions, setTransactions] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await getTransactions({ page_size: 100 });
+        const dayTx = (res?.results || []).filter((tx) => tx.date === date);
+        if (!cancelled) setTransactions(dayTx);
+      } catch {
+        if (!cancelled) setError("Could not connect. Please try again.");
+      }
+      if (!cancelled) setLoading(false);
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [date]);
+
+  const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const dayTotal = transactions.reduce(
+    (s, tx) => s + Number(tx.amount || 0),
+    0
+  );
+
+  return (
+    <div
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        backdropFilter: "blur(4px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 50,
+        padding: "20px",
+      }}
+    >
+      <div
+        style={{
+          background: "var(--bg-surface)",
+          borderRadius: "20px",
+          padding: "28px",
+          width: "100%",
+          maxWidth: "440px",
+          boxShadow: "var(--shadow-elevated)",
+          maxHeight: "85vh",
+          overflowY: "auto",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: "20px",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "16px",
+              fontWeight: "700",
+              color: "var(--text-1)",
+            }}
+          >
+            {dateLabel}
+          </p>
+          <button
+            onClick={onClose}
+            style={{
+              width: "30px",
+              height: "30px",
+              borderRadius: "8px",
+              background: "var(--bg-elevated)",
+              border: "none",
+              color: "var(--text-3)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <X size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+        {!loading && transactions.length > 0 && (
+          <div
+            style={{
+              marginBottom: "16px",
+              padding: "14px 16px",
+              background: "var(--bg-inset)",
+              borderRadius: "12px",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "24px",
+                fontWeight: "800",
+                color: "var(--red)",
+                letterSpacing: "-0.5px",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              ₹{dayTotal.toLocaleString("en-IN")}
+            </p>
+            <p
+              style={{
+                fontSize: "12px",
+                color: "var(--text-3)",
+                marginTop: "2px",
+              }}
+            >
+              {transactions.length} transaction
+              {transactions.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+        )}
+        {loading && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "40px 20px",
+              gap: "12px",
+            }}
+          >
+            <div style={{ display: "flex", gap: "5px" }}>
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: "7px",
+                    height: "7px",
+                    borderRadius: "50%",
+                    background: "var(--accent-dim)",
+                    animation: `bounce 1.2s infinite ${i * 0.2}s`,
+                  }}
+                />
+              ))}
+            </div>
+            <p style={{ fontSize: "13px", color: "var(--text-3)" }}>
+              Loading transactions…
+            </p>
+          </div>
+        )}
+        {error && (
+          <div
+            style={{
+              padding: "12px 16px",
+              borderRadius: "10px",
+              background: "var(--red-bg)",
+              border: "1px solid var(--red-border)",
+              color: "var(--red-dim)",
+              fontSize: "13px",
+            }}
+          >
+            {error}
+          </div>
+        )}
+        {!loading && !error && transactions.length === 0 && (
+          <p
+            style={{
+              fontSize: "13px",
+              color: "var(--text-3)",
+              textAlign: "center",
+              padding: "20px 0",
+            }}
+          >
+            No transactions on this day.
+          </p>
+        )}
+        {!loading && transactions.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "1px",
+              borderRadius: "12px",
+              overflow: "hidden",
+            }}
+          >
+            {transactions.map((tx, i) => (
+              <div
+                key={tx.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "10px 4px",
+                  borderBottom:
+                    i < transactions.length - 1
+                      ? "1px solid var(--border-subtle)"
+                      : "none",
+                }}
+              >
+                <div>
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "var(--text-1)",
+                    }}
+                  >
+                    {tx.name}
+                  </p>
+                  <p style={{ fontSize: "11px", color: "var(--text-3)" }}>
+                    {tx.category}
+                  </p>
+                </div>
+                <span
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: "700",
+                    color: "var(--red)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  ₹{Number(tx.amount).toLocaleString("en-IN")}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Spending Calendar Heatmap ─────────────────────────────
+function SpendingHeatmap({ data, month, year, onDayClick }) {
+  const [tooltip, setTooltip] = useState(null);
+  const now = new Date();
+  const monthIdx = month - 1;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const firstDay = new Date(year, monthIdx, 1).getDay();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+  const dataMap = {};
+  (data || []).forEach((d) => {
+    dataMap[d.date_only] = d.total;
+  });
+  const maxTotal = Math.max(...(data || []).map((d) => d.total), 1);
+  const cells = [];
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(
+      d
+    ).padStart(2, "0")}`;
+    cells.push({ day: d, date: dateStr, total: dataMap[dateStr] || 0 });
+  }
+  const getColor = (total) => {
+    if (!total) return "rgba(255,255,255,0.06)";
+    const t = Math.min(total / maxTotal, 1);
+    if (t < 0.25) return "rgba(251,146,60,0.4)";
+    if (t < 0.5) return "rgba(239,100,68,0.6)";
+    if (t < 0.75) return "rgba(239,68,68,0.78)";
+    return "rgba(239,68,68,0.96)";
+  };
+  const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const isCurrentMonth =
+    year === now.getFullYear() && month === now.getMonth() + 1;
+  const todayDay = isCurrentMonth ? now.getDate() : -1;
+
+  return (
+    <div
+      style={{
+        background: "var(--bg-surface)",
+        borderRadius: "16px",
+        padding: "20px",
+        boxShadow: "var(--shadow-card)",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "11px",
+          fontWeight: "700",
+          color: "var(--text-3)",
+          textTransform: "uppercase",
+          letterSpacing: "1px",
+          marginBottom: "14px",
+        }}
+      >
+        Spending Calendar
+      </p>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gap: "3px",
+          marginBottom: "3px",
+        }}
+      >
+        {DAYS.map((d) => (
+          <div
+            key={d}
+            style={{
+              fontSize: "10px",
+              color: "var(--text-3)",
+              textAlign: "center",
+              fontWeight: "600",
+            }}
+          >
+            {d}
+          </div>
+        ))}
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gap: "3px",
+          flex: 1,
+        }}
+      >
+        {cells.map((cell, i) => (
+          <div
+            key={i}
+            onClick={() => cell?.total > 0 && onDayClick?.(cell.date)}
+            style={{
+              aspectRatio: "1",
+              borderRadius: "4px",
+              background: cell ? getColor(cell.total) : "transparent",
+              border:
+                cell?.day === todayDay
+                  ? "1.5px solid var(--accent)"
+                  : "1px solid transparent",
+              cursor: cell?.total > 0 ? "pointer" : "default",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "transform 100ms ease",
+            }}
+            onMouseEnter={(e) => {
+              if (cell) {
+                setTooltip(cell);
+                e.currentTarget.style.transform = "scale(1.15)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              setTooltip(null);
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+          >
+            {cell && (
+              <span
+                style={{
+                  fontSize: "9px",
+                  color:
+                    cell.total > 0 ? "rgba(255,255,255,0.8)" : "var(--text-4)",
+                  fontWeight: "600",
+                }}
+              >
+                {cell.day}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: "10px", minHeight: "34px" }}>
+        {tooltip ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "7px 12px",
+              background: "var(--bg-inset)",
+              borderRadius: "8px",
+            }}
+          >
+            <span style={{ fontSize: "12px", color: "var(--text-2)" }}>
+              {new Date(tooltip.date + "T00:00:00").toLocaleDateString(
+                "en-IN",
+                { weekday: "short", day: "numeric", month: "short" }
+              )}
+            </span>
+            <span
+              style={{
+                fontSize: "13px",
+                fontWeight: "700",
+                color: tooltip.total > 0 ? "var(--red)" : "var(--text-4)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {tooltip.total > 0
+                ? `₹${Number(tooltip.total).toLocaleString("en-IN")}`
+                : "No spending"}
+            </span>
+          </div>
+        ) : (
+          <div />
+        )}
+      </div>
+      {onDayClick && (
+        <p
+          style={{ fontSize: "11px", color: "var(--text-4)", marginTop: "4px" }}
+        >
+          Tap a day to see transactions
+        </p>
+      )}
+    </div>
+  );
+}
+
+function TrendTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  const amount = payload[0].value;
+  return (
+    <div
+      style={{
+        background: "var(--bg-elevated)",
+        borderRadius: "10px",
+        padding: "10px 14px",
+        boxShadow: "var(--shadow-elevated)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "11px",
+          color: "var(--text-3)",
+          marginBottom: "4px",
+        }}
+      >
+        Day {label}
+      </p>
+      <p
+        style={{
+          fontSize: "15px",
+          fontWeight: "700",
+          color: amount > 0 ? "var(--red)" : "var(--text-3)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {amount > 0
+          ? `₹${Number(amount).toLocaleString("en-IN")}`
+          : "No spending"}
+      </p>
+    </div>
+  );
+}
+
+function SpendingTrend({ data, month, year }) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const now = new Date();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const today =
+    year === now.getFullYear() && month === now.getMonth() + 1
+      ? now.getDate()
+      : daysInMonth;
+  const dataMap = {};
+  (data || []).forEach((d) => {
+    dataMap[d.date_only] = d.total;
+  });
+  const chartData = [];
+  for (let d = 1; d <= today; d++) {
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(
+      d
+    ).padStart(2, "0")}`;
+    chartData.push({ day: d, amount: dataMap[dateStr] || 0 });
+  }
+  const totalSpend = (data || []).reduce((s, d) => s + d.total, 0);
+  const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
+  const tickColor = isDark ? "#44445A" : "#6C6C70";
+  const fmtY = (v) =>
+    v === 0 ? "" : v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`;
+
+  return (
+    <div
+      style={{
+        background: "var(--bg-surface)",
+        borderRadius: "16px",
+        padding: "20px",
+        boxShadow: "var(--shadow-card)",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "11px",
+          fontWeight: "700",
+          color: "var(--text-3)",
+          textTransform: "uppercase",
+          letterSpacing: "1px",
+          marginBottom: "6px",
+        }}
+      >
+        Spending Trend
+      </p>
+      <p
+        style={{
+          fontSize: "22px",
+          fontWeight: "800",
+          color: "var(--red)",
+          letterSpacing: "-1px",
+          fontVariantNumeric: "tabular-nums",
+          marginBottom: "8px",
+        }}
+      >
+        ₹{totalSpend.toLocaleString("en-IN")}
+      </p>
+      <ResponsiveContainer width="100%" height={180}>
+        <AreaChart
+          data={chartData}
+          margin={{ top: 16, right: 4, left: 0, bottom: 0 }}
+        >
+          <defs>
+            <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop
+                offset="5%"
+                stopColor="#FF4D6D"
+                stopOpacity={isDark ? 0.3 : 0.15}
+              />
+              <stop offset="95%" stopColor="#FF4D6D" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={gridColor}
+            vertical={false}
+          />
+          <XAxis
+            dataKey="day"
+            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
+            tickLine={false}
+            axisLine={false}
+            interval={Math.floor(daysInMonth / 6)}
+          />
+          <YAxis
+            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={fmtY}
+            width={40}
+          />
+          <Tooltip
+            content={<TrendTooltip />}
+            cursor={{
+              stroke: "var(--border-strong)",
+              strokeWidth: 1,
+              strokeDasharray: "4 4",
+            }}
+          />
+          <Area
+            type="monotone"
+            dataKey="amount"
+            stroke="#FF4D6D"
+            strokeWidth={2}
+            fill="url(#trendGradient)"
+            dot={false}
+            activeDot={{
+              r: 4,
+              fill: "#FF4D6D",
+              stroke: isDark ? "#111115" : "#FFFFFF",
+              strokeWidth: 2,
+            }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function VelocityTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  const actual = payload.find((p) => p.dataKey === "actual");
+  const projected = payload.find((p) => p.dataKey === "projected");
+  const value = actual?.value ?? projected?.value;
+  const isProj = !actual?.value && !!projected?.value;
+  if (!value) return null;
+  return (
+    <div
+      style={{
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+        borderRadius: "10px",
+        padding: "10px 14px",
+        boxShadow: "var(--shadow-elevated)",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "11px",
+          color: "var(--text-3)",
+          marginBottom: "4px",
+        }}
+      >
+        Day {label}
+        {isProj ? " · projected" : ""}
+      </p>
+      <p
+        style={{
+          fontSize: "15px",
+          fontWeight: "700",
+          color: isProj ? "var(--accent-dim)" : "var(--red)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        ₹{Number(value).toLocaleString("en-IN")}
+      </p>
+    </div>
+  );
+}
+
+function SpendingVelocity({ data, month, year, monthlyTotals = [] }) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const now = new Date();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const isCurrentMonth =
+    year === now.getFullYear() && month === now.getMonth() + 1;
+  const today = isCurrentMonth ? now.getDate() : daysInMonth;
+  const dataMap = {};
+  (data || []).forEach((d) => {
+    dataMap[d.date_only] = d.total;
+  });
+  let cumulative = 0;
+  const chartData = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(
+      d
+    ).padStart(2, "0")}`;
+    cumulative += dataMap[dateStr] || 0;
+    chartData.push({
+      day: d,
+      actual: d <= today ? cumulative : null,
+      projected: null,
+    });
+  }
+  const totalSoFar = chartData[today - 1]?.actual || 0;
+  const daysRemaining = daysInMonth - today;
+  const currentMonthLabel = new Date(year, month - 1, 1).toLocaleDateString(
+    "en-IN",
+    { month: "short", year: "numeric" }
+  );
+  const historicalMonths = (monthlyTotals || [])
+    .filter((m) => m.month !== currentMonthLabel)
+    .slice(-3);
+  const historicalAvg =
+    historicalMonths.length > 0
+      ? historicalMonths.reduce((s, m) => s + m.total, 0) /
+        historicalMonths.length
+      : 0;
+  const completionRatio = today / daysInMonth;
+  const expectedSoFar = historicalAvg * completionRatio;
+  const deviation = expectedSoFar > 0 ? totalSoFar / expectedSoFar : 1;
+  const historicalDailyAvg =
+    historicalAvg > 0 ? historicalAvg / daysInMonth : totalSoFar / (today || 1);
+  const projectedRemaining = historicalDailyAvg * daysRemaining * deviation;
+  const projectedTotal = Math.round(totalSoFar + projectedRemaining);
+  const rangeLow = Math.round(projectedTotal * 0.87);
+  const rangeHigh = Math.round(projectedTotal * 1.13);
+  if (isCurrentMonth && daysRemaining > 0) {
+    chartData[today - 1].projected = chartData[today - 1].actual;
+    let projCum = totalSoFar;
+    const dailyStep =
+      daysRemaining > 0 ? projectedRemaining / daysRemaining : 0;
+    for (let d = today + 1; d <= daysInMonth; d++) {
+      projCum += dailyStep;
+      chartData[d - 1].projected = Math.round(projCum);
+    }
+  }
+  const deviationPct = Math.round(Math.abs(deviation - 1) * 100);
+  const deviationUp = deviation > 1;
+  const tickColor = isDark ? "#44445A" : "#6C6C70";
+  const gridColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
+  const fmtY = (v) =>
+    v >= 100000
+      ? `₹${(v / 100000).toFixed(1)}L`
+      : v >= 1000
+      ? `₹${(v / 1000).toFixed(0)}k`
+      : `₹${v}`;
+
+  return (
+    <div
+      style={{
+        background: "var(--bg-surface)",
+        borderRadius: "16px",
+        padding: "20px",
+        boxShadow: "var(--shadow-card)",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "11px",
+          fontWeight: "700",
+          color: "var(--text-3)",
+          textTransform: "uppercase",
+          letterSpacing: "1px",
+          marginBottom: "6px",
+        }}
+      >
+        Spending Velocity
+      </p>
+      <p
+        style={{
+          fontSize: "28px",
+          fontWeight: "800",
+          color: "var(--text-1)",
+          letterSpacing: "-1.5px",
+          fontVariantNumeric: "tabular-nums",
+          lineHeight: 1,
+          marginBottom: "8px",
+        }}
+      >
+        ₹{totalSoFar.toLocaleString("en-IN")}
+      </p>
+      {isCurrentMonth && daysRemaining > 0 && (
+        <div style={{ marginBottom: "16px" }}>
+          <p style={{ fontSize: "13px", color: "var(--text-3)" }}>
+            Projected{" "}
+            <span
+              style={{
+                color: "var(--accent-dim)",
+                fontWeight: "700",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              ₹{rangeLow.toLocaleString("en-IN")} – ₹
+              {rangeHigh.toLocaleString("en-IN")}
+            </span>
+          </p>
+          {historicalMonths.length > 0 && deviationPct > 0 && (
+            <p
+              style={{
+                fontSize: "12px",
+                marginTop: "3px",
+                color: deviationUp ? "var(--red)" : "var(--green)",
+                fontWeight: "600",
+              }}
+            >
+              {deviationUp ? "↑" : "↓"} {deviationPct}%{" "}
+              {deviationUp ? "above" : "below"} your usual pace
+            </p>
+          )}
+        </div>
+      )}
+      <ResponsiveContainer width="100%" height={200}>
+        <ComposedChart
+          data={chartData}
+          margin={{ top: 5, right: 5, left: 0, bottom: 0 }}
+        >
+          <defs>
+            <linearGradient id="velGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop
+                offset="5%"
+                stopColor="#FF4D6D"
+                stopOpacity={isDark ? 0.25 : 0.12}
+              />
+              <stop offset="95%" stopColor="#FF4D6D" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={gridColor}
+            vertical={false}
+          />
+          <XAxis
+            dataKey="day"
+            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
+            tickLine={false}
+            axisLine={false}
+            interval={Math.floor(daysInMonth / 6)}
+          />
+          <YAxis
+            tick={{ fontSize: 10, fill: tickColor, fontFamily: "Inter" }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={fmtY}
+            width={45}
+          />
+          <Tooltip
+            content={<VelocityTooltip />}
+            cursor={{
+              stroke: "var(--border-strong)",
+              strokeWidth: 1,
+              strokeDasharray: "4 4",
+            }}
+          />
+          <Area
+            type="monotone"
+            dataKey="actual"
+            stroke="#FF4D6D"
+            strokeWidth={2.5}
+            fill="url(#velGradient)"
+            dot={false}
+            activeDot={{
+              r: 4,
+              fill: "#FF4D6D",
+              stroke: isDark ? "#111115" : "#fff",
+              strokeWidth: 2,
+            }}
+            connectNulls={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="projected"
+            stroke="var(--accent-dim)"
+            strokeWidth={1.5}
+            strokeDasharray="5 5"
+            dot={false}
+            activeDot={{ r: 3, fill: "var(--accent-dim)" }}
+            connectNulls={false}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+      {historicalMonths.length > 0 && (
+        <p
+          style={{
+            fontSize: "11px",
+            color: "var(--text-4)",
+            marginTop: "10px",
+          }}
+        >
+          Based on {historicalMonths.length} month
+          {historicalMonths.length > 1 ? "s" : ""} history · avg ₹
+          {Math.round(historicalAvg).toLocaleString("en-IN")}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Overview tab content (moved from Dashboard) ───────────
+function OverviewTab({ month, year, onMonthChange, onYearChange }) {
+  const [heatmapData, setHeatmapData] = useState([]);
+  const [monthlyTotals, setMonthlyTotals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dayDetail, setDayDetail] = useState(null);
+  const now = new Date();
+  const isCurrent = month === now.getMonth() + 1 && year === now.getFullYear();
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      const [heatRes, totalsRes] = await Promise.allSettled([
+        getHeatmap(month, year),
+        getMonthlyTotals(),
+      ]);
+      if (cancelled) return;
+      if (heatRes.status === "fulfilled" && heatRes.value?.success)
+        setHeatmapData(heatRes.value.data);
+      if (totalsRes.status === "fulfilled" && totalsRes.value?.success)
+        setMonthlyTotals(totalsRes.value.data);
+      setLoading(false);
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [month, year]);
+
+  const goBack = () => {
+    if (month === 1) {
+      onMonthChange(12);
+      onYearChange(year - 1);
+    } else onMonthChange(month - 1);
+  };
+  const goForward = () => {
+    if (isCurrent) return;
+    if (month === 12) {
+      onMonthChange(1);
+      onYearChange(year + 1);
+    } else onMonthChange(month + 1);
+  };
+  const monthLabel = new Date(year, month - 1, 1).toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
+
+  return (
+    <>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "16px",
+        }}
+      >
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            background: "var(--bg-surface)",
+            borderRadius: "10px",
+            overflow: "hidden",
+            boxShadow: "var(--shadow-card)",
+          }}
+        >
+          <button
+            onClick={goBack}
+            style={{
+              padding: "9px 13px",
+              background: "transparent",
+              border: "none",
+              borderRight: "1px solid var(--border)",
+              color: "var(--text-3)",
+              cursor: "pointer",
+              display: "flex",
+            }}
+          >
+            <ChevronLeft size={14} strokeWidth={2.5} />
+          </button>
+          <span
+            style={{
+              padding: "9px 16px",
+              fontSize: "13px",
+              fontWeight: "700",
+              color: "var(--text-1)",
+            }}
+          >
+            {monthLabel}
+          </span>
+          <button
+            onClick={goForward}
+            disabled={isCurrent}
+            style={{
+              padding: "9px 13px",
+              background: "transparent",
+              border: "none",
+              borderLeft: "1px solid var(--border)",
+              color: isCurrent ? "var(--text-4)" : "var(--text-3)",
+              cursor: isCurrent ? "not-allowed" : "pointer",
+              display: "flex",
+            }}
+          >
+            <ChevronRight size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <ReportSkeleton />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div className="bottom-grid">
+            <SpendingHeatmap
+              data={heatmapData}
+              month={month}
+              year={year}
+              onDayClick={setDayDetail}
+            />
+            <SpendingTrend data={heatmapData} month={month} year={year} />
+          </div>
+          <SpendingVelocity
+            data={heatmapData}
+            month={month}
+            year={year}
+            monthlyTotals={monthlyTotals}
+          />
+        </div>
+      )}
+
+      {dayDetail && (
+        <DayDetailModal date={dayDetail} onClose={() => setDayDetail(null)} />
+      )}
+    </>
+  );
+}
+
+// ── Tab switcher (Overview / Download / AI Analysis / Compare) ───────
 function ReportTabs({ active, onChange }) {
   const tabs = [
+    { id: "overview", label: "Overview", Icon: LayoutGrid },
     { id: "download", label: "Download", Icon: Download },
     { id: "ai", label: "AI Analysis", Icon: Sparkles },
     { id: "compare", label: "Compare", Icon: GitCompare },
@@ -1511,7 +2500,7 @@ export default function ReportPage() {
   const [error, setError] = useState("");
   const [range, setRange] = useState("this_month");
   const [downloading, setDownloading] = useState(false);
-  const [activeTab, setActiveTab] = useState("download");
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     if (!localStorage.getItem("access_token")) router.push("/auth");
@@ -1713,14 +2702,24 @@ export default function ReportPage() {
               marginBottom: "4px",
             }}
           >
-            Reports
+            Insights
           </h1>
           <p style={{ color: "var(--text-3)", fontSize: "14px" }}>
-            Download, analyze, or compare your spending
+            Trends, projections, reports, and comparisons
           </p>
         </div>
 
         <ReportTabs active={activeTab} onChange={setActiveTab} />
+
+        {/* OVERVIEW TAB */}
+        {activeTab === "overview" && (
+          <OverviewTab
+            month={month}
+            year={year}
+            onMonthChange={setMonth}
+            onYearChange={setYear}
+          />
+        )}
 
         {/* DOWNLOAD TAB */}
         {activeTab === "download" && (
@@ -2025,9 +3024,9 @@ export default function ReportPage() {
           { href: "/dashboard", Icon: LayoutDashboard, label: "Dashboard" },
           { href: "/transactions", Icon: Receipt, label: "Transactions" },
           { href: "/budgets", Icon: Wallet2, label: "Budgets" },
-          { href: "/report", Icon: BarChart3, label: "Reports" },
+          { href: "/insights", Icon: BarChart3, label: "Insights" },
         ].map(({ href, Icon, label }) => {
-          const active = label === "Reports";
+          const active = label === "Insights";
           return (
             <Link
               key={href}
